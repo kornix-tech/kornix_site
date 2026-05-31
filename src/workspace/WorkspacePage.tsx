@@ -90,25 +90,6 @@ export function WorkspacePage() {
 
     return fieldsQuery.data?.features.map((feature) => feature.properties.fieldSeasonId) ?? [];
   }, [fieldsQuery.data, state.fieldSeasonIds, state.fieldsExplicitlyCleared, state.tab]);
-  const chartSelectionLabel = useMemo(() => {
-    if (!fieldsQuery.data || chartFieldSeasonIds.length === 0) {
-      return 'на нескольких полях';
-    }
-
-    if (chartFieldSeasonIds.length === fieldsQuery.data.features.length) {
-      return 'на всех полях';
-    }
-
-    if (chartFieldSeasonIds.length === 1) {
-      const selectedField = fieldsQuery.data.features.find(
-        (feature) => feature.properties.fieldSeasonId === chartFieldSeasonIds[0]
-      );
-      return `на поле ${selectedField?.properties.fieldKey ?? chartFieldSeasonIds[0]}`;
-    }
-
-    return 'на нескольких полях';
-  }, [chartFieldSeasonIds, fieldsQuery.data]);
-
   const updateState = useCallback(
     (patch: Partial<WorkspaceUrlState>, replace = false) => {
       const nextState = { ...state, ...patch };
@@ -299,7 +280,6 @@ export function WorkspacePage() {
             <WaterRegimeChart
               fields={fieldsQuery.data.features}
               fieldSeasonIds={chartFieldSeasonIds}
-              selectionLabel={chartSelectionLabel}
               from={state.from}
               to={state.to}
               calculationRunId={activeCalculationRunId}

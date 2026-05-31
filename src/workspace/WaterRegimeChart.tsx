@@ -213,28 +213,6 @@ function formatDateShortLabel(day: string): string {
   return `${date}.${month}.${year.slice(-2)}`;
 }
 
-function parseDateShortLabel(value: string): string | null {
-  const match = value.trim().match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
-  if (!match) {
-    return null;
-  }
-
-  const [, day, month, shortYear] = match;
-  const year = `20${shortYear}`;
-  const iso = `${year}-${month}-${day}`;
-  const parsed = new Date(`${iso}T00:00:00Z`);
-  if (
-    !Number.isFinite(parsed.getTime()) ||
-    parsed.getUTCFullYear() !== Number(year) ||
-    parsed.getUTCMonth() + 1 !== Number(month) ||
-    parsed.getUTCDate() !== Number(day)
-  ) {
-    return null;
-  }
-
-  return iso;
-}
-
 function CompactDateInput({
   value,
   ariaLabel,
@@ -244,46 +222,16 @@ function CompactDateInput({
   ariaLabel: string;
   onChange: (day: string) => void;
 }) {
-  const [draft, setDraft] = useState(formatDateShortLabel(value));
-
-  useEffect(() => {
-    setDraft(formatDateShortLabel(value));
-  }, [value]);
-
-  function commit(nextDraft: string) {
-    const parsed = parseDateShortLabel(nextDraft);
-    if (parsed) {
-      onChange(parsed);
-      return;
-    }
-    setDraft(formatDateShortLabel(value));
-  }
-
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      aria-label={ariaLabel}
-      placeholder="ДД.ММ.ГГ"
-      value={draft}
-      onBlur={() => commit(draft)}
-      onChange={(event) => {
-        const nextDraft = event.target.value;
-        setDraft(nextDraft);
-        const parsed = parseDateShortLabel(nextDraft);
-        if (parsed) {
-          onChange(parsed);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') {
-          commit(draft);
-        }
-        if (event.key === 'Escape') {
-          setDraft(formatDateShortLabel(value));
-        }
-      }}
-    />
+    <span className="compact-date-picker">
+      <span aria-hidden="true">{formatDateShortLabel(value)}</span>
+      <input
+        type="date"
+        aria-label={ariaLabel}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </span>
   );
 }
 
@@ -530,7 +478,6 @@ export function WaterRegimeChart({
   calculationRunId,
   fields,
   fieldSeasonIds,
-  selectionLabel,
   from,
   to,
   onFromChange,
@@ -542,7 +489,6 @@ export function WaterRegimeChart({
   calculationRunId: string | null;
   fields: FieldSeasonMapFeature[];
   fieldSeasonIds: string[];
-  selectionLabel: string;
   from: string;
   to: string;
   onFromChange: (value: string) => void;
@@ -575,12 +521,6 @@ export function WaterRegimeChart({
 
   return (
     <section className="chart-panel">
-      <div className="chart-toolbar">
-        <div className="chart-profile-title">
-          <strong>Погода, водный режим почвы, орошение {selectionLabel}</strong>
-        </div>
-      </div>
-
       {fieldSeasonIds.length === 0 && (
         <div className="empty-state">Выберите одно или несколько полей слева.</div>
       )}
@@ -656,6 +596,18 @@ function ChartBody({
   );
   const saturation = fullSaturationMm(rows);
   const aggregation = profile.aggregation;
+  const singleSelectedField =
+    selectedCount === 1
+      ? fields.find((field) => field.properties.fieldSeasonId === profile.selectedFieldSeasonIds[0])
+      : undefined;
+  const singleSelectedFieldLabel = singleSelectedField
+    ? [
+        singleSelectedField.properties.fieldKey,
+        singleSelectedField.properties.cropName ?? singleSelectedField.properties.fieldName
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
   const profileCsv = buildProfileCsv(rows, saturation, forecastStart);
 
   useEffect(() => {
@@ -714,7 +666,7 @@ function ChartBody({
               {aggregation.selectedFieldCount} полей · {aggregation.totalAreaHa.toFixed(1)} га
             </span>
           )}
-          {!aggregation && selectedCount === 1 && <span>одно поле</span>}
+          {!aggregation && selectedCount === 1 && <span>{singleSelectedFieldLabel ?? 'одно поле'}</span>}
         </div>
 
         <div className="chart-caption chart-caption-muted">
@@ -830,20 +782,20 @@ function ChartTimeZoom({
   const forecastInVisibleWindow = forecastStartIndex >= viewFromIndex && forecastStartIndex <= viewToIndex;
   const forecastInWindowLeft = ((forecastStartIndex - viewFromIndex) / visibleWindowDays) * 100;
   const minimumWindowDays = Math.min(5, maxIndex);
-  const scaleTicksByDay = [
-    { day: from, left: 0, kind: 'edge' },
-    { day: viewFrom, left: viewLeft, kind: 'secondary' },
-    { day: forecastStart, left: forecastLeft, kind: 'forecast' },
-    { day: viewTo, left: viewEndLeft, kind: 'secondary' },
-    { day: to, left: 100, kind: 'edge' }
-  ].reduce<Map<string, { day: string; left: number; kind: string }>>((ticksByDay, tick) => {
-    const existingTick = ticksByDay.get(tick.day);
-    if (!existingTick || tick.kind === 'edge') {
-      ticksByDay.set(tick.day, tick);
-    }
-    return ticksByDay;
-  }, new Map());
-  const scaleTicks = Array.from(scaleTicksByDay.values()).sort((left, right) => left.left - right.left);
+  const scaleTicks = Array.from({ length: Math.floor(maxIndex / 7) + 1 }, (_, index) => {
+    const dayOffset = index * 7;
+    const day = addDaysIso(from, dayOffset);
+    const kind = dayOffset % 28 === 0 ? 'major' : dayOffset % 14 === 0 ? 'medium' : 'dense';
+    return {
+      day,
+      left: maxIndex === 0 ? 0 : (dayOffset / maxIndex) * 100,
+      kind
+    };
+  }).filter((tick) => tick.day === from || dayDiff(tick.day, to) >= 14);
+
+  if (scaleTicks.at(-1)?.day !== to) {
+    scaleTicks.push({ day: to, left: 100, kind: 'edge' });
+  }
 
   function changeZoomStart(nextIndex: number) {
     const safeIndex = clamp(nextIndex, 0, Math.max(0, viewToIndex - minimumWindowDays));
@@ -862,21 +814,15 @@ function ChartTimeZoom({
   return (
     <div className="chart-time-zoom">
       <div className="chart-zoom-track-wrap">
-        <div
-          className="chart-zoom-edge-label chart-zoom-edge-label-start"
-          style={{ left: `${viewLeft}%` }}
-        >
-          {formatDateLabel(viewFrom)}
-        </div>
-        <div
-          className="chart-zoom-edge-label chart-zoom-edge-label-end"
-          style={{ left: `${viewEndLeft}%` }}
-        >
-          {formatDateLabel(viewTo)}
-        </div>
         <div className="chart-zoom-track">
           <span className="chart-zoom-forecast" style={{ left: `${forecastLeft}%` }} />
           <span className="chart-zoom-window" style={{ left: `${viewLeft}%`, right: `${viewRight}%` }}>
+            <span className="chart-zoom-edge-label chart-zoom-edge-label-start">
+              {formatDateShortLabel(viewFrom)}
+            </span>
+            <span className="chart-zoom-edge-label chart-zoom-edge-label-end">
+              {formatDateShortLabel(viewTo)}
+            </span>
             {forecastInVisibleWindow && (
               <span className="chart-zoom-boundary" style={{ left: `${forecastInWindowLeft}%` }} />
             )}
