@@ -15,6 +15,8 @@ export type FieldDataQualityDto = {
   calculationAvailable: boolean;
   hasActiveMapping: boolean;
   messages: string[];
+  forcingKind?: string | null;
+  metricSourceVersion?: string | null;
 };
 
 export type CalculationWindowDto = {
@@ -28,7 +30,7 @@ export type FieldSeasonMapPropertiesDto = {
   fieldSeasonId: string;
   fieldKey: string;
   fieldName: string;
-  areaHa: number;
+  areaHa: number | null;
   cropName: string | null;
   cropSowingDate: string | null;
   latestStatus: FieldWaterRegimeStatusCode;
@@ -70,7 +72,7 @@ export type FieldSeasonCatalogFieldDto = {
   fieldSeasonId: string;
   fieldKey: string;
   fieldName: string;
-  areaHa: number;
+  areaHa: number | null;
   cropName: string | null;
   cropSowingDate: string | null;
   koef_upper_limit: number | null;
@@ -192,9 +194,9 @@ export type KornixProfileTimeseriesDto = {
   seasonYear: 2026;
   calculationRunId: CalculationRunId;
   window: CalculationWindowDto;
-  serverDate?: string;
-  forecastStartDate?: string;
-  forecastEndDate?: string;
+  serverDate: string;
+  forecastStartDate: string;
+  forecastEndDate: string;
   selectedFieldSeasonIds: string[];
   aggregation: null | {
     mode: 'area_weighted_mean';

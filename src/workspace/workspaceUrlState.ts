@@ -5,6 +5,7 @@ export type WorkspaceTab = 'map' | 'chart' | 'irrigation';
 const MAX_URL_FIELD_IDS = 120;
 const FIELD_SEASON_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,96}$/;
 const CALCULATION_RUN_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,160}$/;
+const RESERVED_CALCULATION_RUN_IDS = new Set(['catalog']);
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export type WorkspaceUrlState = {
@@ -105,7 +106,9 @@ export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/
     tab,
     seasonYear: Number.isFinite(seasonYearRaw) && seasonYearRaw > 2000 ? seasonYearRaw : 2026,
     calculationRunId:
-      calculationRunIdParam && CALCULATION_RUN_ID_PATTERN.test(calculationRunIdParam)
+      calculationRunIdParam &&
+      CALCULATION_RUN_ID_PATTERN.test(calculationRunIdParam) &&
+      !RESERVED_CALCULATION_RUN_IDS.has(calculationRunIdParam)
         ? calculationRunIdParam
         : null,
     mapDay: tab === 'map' ? parsedMapDay : DEFAULT_WORKSPACE_STATE.mapDay,

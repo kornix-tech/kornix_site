@@ -114,6 +114,14 @@ function getLabelScale(zoom: number): number {
   return clamp((zoom - 7) / 5, 0.38, 1.08);
 }
 
+function hasRenderableGeometry(feature: FieldSeasonMapFeature): boolean {
+  const geometry = feature.geometry;
+  if (geometry.type === 'Polygon') {
+    return geometry.coordinates.some((ring) => ring.length >= 4);
+  }
+  return geometry.coordinates.some((polygon) => polygon.some((ring) => ring.length >= 4));
+}
+
 function styleForMetric(
   field: FieldSeasonMapPropertiesDto | undefined,
   mode: MapDisplayMode,
@@ -242,14 +250,19 @@ export function FieldMap({
       labelLayerRef.current.remove();
     }
 
-    const ranges = {
-      water_percent: valueRange(fields, (field) => deriveWaterMetrics(field).available_water_fraction_pct),
-      precipitation: valueRange(fields, (field) => field.precipitation_effective_daily_mm),
-      irrigation: valueRange(fields, (field) => field.irrigation_effective_daily_mm),
-      temperature_sum: valueRange(fields, (field) => field.positive_temperature_sum_from_sowing_c)
+    const renderableFields: FieldSeasonMapFeatureCollection = {
+      ...fields,
+      features: fields.features.filter(hasRenderableGeometry)
     };
 
-    const layer = L.geoJSON(fields, {
+    const ranges = {
+      water_percent: valueRange(renderableFields, (field) => deriveWaterMetrics(field).available_water_fraction_pct),
+      precipitation: valueRange(renderableFields, (field) => field.precipitation_effective_daily_mm),
+      irrigation: valueRange(renderableFields, (field) => field.irrigation_effective_daily_mm),
+      temperature_sum: valueRange(renderableFields, (field) => field.positive_temperature_sum_from_sowing_c)
+    };
+
+    const layer = L.geoJSON(renderableFields, {
       style: (feature) => {
         const fieldSeasonId = feature?.properties?.fieldSeasonId;
         const selected = fieldSeasonId && selectedFieldSeasonIds.includes(fieldSeasonId);
@@ -303,7 +316,7 @@ export function FieldMap({
     labels.addTo(map);
     labelLayerRef.current = labels;
 
-    const boundsKey = fields.features.map((feature) => feature.properties.fieldSeasonId).join('|');
+    const boundsKey = renderableFields.features.map((feature) => feature.properties.fieldSeasonId).join('|');
     const bounds = layer.getBounds();
     if (bounds.isValid() && fittedBoundsKeyRef.current !== boundsKey) {
       map.fitBounds(bounds, { padding: [28, 28] });

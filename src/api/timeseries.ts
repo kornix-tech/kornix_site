@@ -64,10 +64,13 @@ function addDaysIso(day: string, offset: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function areaWeighted(values: Array<{ value: number | null; areaHa: number }>) {
-  const valid = values.filter((row) => row.value !== null);
+function areaWeighted(values: Array<{ value: number | null; areaHa: number | null }>) {
+  const rowsWithArea = values.filter((row): row is { value: number | null; areaHa: number } =>
+    typeof row.areaHa === 'number' && row.areaHa > 0
+  );
+  const valid = rowsWithArea.filter((row) => row.value !== null);
   const validArea = valid.reduce((sum, row) => sum + row.areaHa, 0);
-  const totalArea = values.reduce((sum, row) => sum + row.areaHa, 0);
+  const totalArea = rowsWithArea.reduce((sum, row) => sum + row.areaHa, 0);
   if (valid.length === 0 || validArea === 0) {
     return { value: null, coverage: 0, validArea, totalArea };
   }
@@ -135,7 +138,7 @@ export function buildMockProfileTimeseries(params: {
       ? {
           mode: 'area_weighted_mean' as const,
           selectedFieldCount: seriesFields.length,
-          totalAreaHa: seriesFields.reduce((sum, feature) => sum + feature.properties.areaHa, 0)
+          totalAreaHa: seriesFields.reduce((sum, feature) => sum + (feature.properties.areaHa ?? 0), 0)
         }
       : null;
 

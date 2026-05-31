@@ -46,6 +46,19 @@ docker compose -f docker-compose.dev.yml up --build
 http://localhost:5173
 ```
 
+## Интеграционный запуск с backend
+
+Для smoke-проверки с реальным backend используйте `.env.integration.example`:
+
+```bash
+cp .env.integration.example .env
+npm run dev -- --host 0.0.0.0
+```
+
+После изменения любых `VITE_*` переменных перезапускайте Vite dev server:
+эти значения читаются на старте dev server или встраиваются на этапе build.
+Mock-режим не использовать для backend smoke.
+
 ## Production-like режим
 
 `docker-compose.yml` собирает статический frontend и запускает Nginx внутри контейнера. Это ближе к будущему VDS-развертыванию, чем Vite dev server.

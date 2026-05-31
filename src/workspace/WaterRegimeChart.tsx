@@ -370,7 +370,10 @@ function weightedCoefficient(
       areaHa: field.properties.areaHa
     }))
     .filter((entry): entry is { value: number; areaHa: number } =>
-      typeof entry.value === 'number' && Number.isFinite(entry.value) && entry.areaHa > 0
+      typeof entry.value === 'number' &&
+      Number.isFinite(entry.value) &&
+      typeof entry.areaHa === 'number' &&
+      entry.areaHa > 0
     );
 
   const totalAreaHa = weightedValues.reduce((sum, entry) => sum + entry.areaHa, 0);

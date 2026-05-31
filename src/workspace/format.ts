@@ -6,7 +6,7 @@ export function formatNumber(value: number | null | undefined, digits = 1): stri
 }
 
 export function formatArea(value: number | null | undefined): string {
-  return `${formatNumber(value, 1)} га`;
+  return typeof value === 'number' && !Number.isNaN(value) ? `${formatNumber(value, 1)} га` : 'нет данных';
 }
 
 export function todayIso(): string {

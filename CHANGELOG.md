@@ -24,6 +24,12 @@
   frontend DTO.
 - Tooltip и форматирование площади устойчивее к пропускам `fieldName`,
   `areaHa` и блока `dataQuality`.
+- TypeScript-контракт API v1 ужесточён: даты profile-timeseries обязательны,
+  `areaHa` в map properties допускает `null`, а `FieldDataQualityDto` принимает
+  дополнительные поля источника данных.
+- URL parser больше не принимает служебный `calculationRunId=catalog`, чтобы
+  placeholder каталога не уходил в backend map/profile endpoints.
+- Добавлен `.env.integration.example` для backend smoke без mock API.
 - Обновлён frontend-контракт до API v1.1: добавлены даты backend
   `serverDate`, `forecastStartDate`, `forecastEndDate`, каталог полей до
   первого расчёта и поддержка пустого сценария `irrigation_tasks`.
