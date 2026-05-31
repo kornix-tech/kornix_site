@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+coverage
+.vite
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+*.log
