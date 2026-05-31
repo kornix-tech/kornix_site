@@ -45,22 +45,22 @@ const MONTH_GENITIVE = [
 ];
 
 function localDateIso(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 function addDaysIso(day: string, offset: number): string {
-  const date = new Date(`${day}T00:00:00`);
-  date.setDate(date.getDate() + offset);
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offset);
   return localDateIso(date);
 }
 
 function isoWeekStart(day: string): string {
-  const date = new Date(`${day}T00:00:00`);
-  const weekday = date.getDay() || 7;
-  date.setDate(date.getDate() + 1 - weekday);
+  const date = new Date(`${day}T00:00:00Z`);
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 1 - weekday);
   return localDateIso(date);
 }
 
@@ -82,8 +82,8 @@ function formatDayShort(day: string): string {
 }
 
 function monthName(day: string): string {
-  const date = new Date(`${day}T00:00:00`);
-  return new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(date);
+  const date = new Date(`${day}T00:00:00Z`);
+  return new Intl.DateTimeFormat('ru-RU', { month: 'long', timeZone: 'UTC' }).format(date);
 }
 
 function isoWeekNumber(day: string): number {
@@ -102,7 +102,7 @@ function decadeLabel(day: string): string {
 }
 
 function isWeekStart(day: string): boolean {
-  const weekday = new Date(`${day}T00:00:00`).getDay();
+  const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
   return weekday === 1;
 }
 
@@ -196,11 +196,11 @@ function nextSteppedValue(currentValue: string, direction: 1 | -1): string {
     return '';
   }
 
-  return String(Math.min(120, Math.max(0, parsed + direction)));
+  return String(Math.min(120, Math.max(1, parsed + direction)));
 }
 
-function usePersistentIrrigationValues(seasonYear: number) {
-  const storageKey = `kornix-irrigation-input:${seasonYear}`;
+function usePersistentIrrigationValues(seasonYear: number, storageScope: string) {
+  const storageKey = `kornix-irrigation-input:${storageScope}:${seasonYear}`;
 
   const persistValues = useCallback((nextValues: IrrigationValues) => {
     try {
@@ -255,8 +255,8 @@ function usePersistentIrrigationValues(seasonYear: number) {
   return [values, updateValue, pruneValues] as const;
 }
 
-function useApprovedIrrigationSignature(seasonYear: number) {
-  const storageKey = `kornix-irrigation-approved:${seasonYear}`;
+function useApprovedIrrigationSignature(seasonYear: number, storageScope: string) {
+  const storageKey = `kornix-irrigation-approved:${storageScope}:${seasonYear}`;
   const [approvedSignature, setApprovedSignature] = useState<string>(() => {
     if (typeof window === 'undefined') {
       return '';
@@ -325,6 +325,7 @@ function sortedFields(fields: FieldSeasonMapFeatureCollection): FieldSeasonMapFe
 export function IrrigationInputTable({
   fields,
   seasonYear,
+  storageScope,
   serverDate,
   forecastStartDate,
   forecastEndDate,
@@ -332,6 +333,7 @@ export function IrrigationInputTable({
 }: {
   fields: FieldSeasonMapFeatureCollection;
   seasonYear: number;
+  storageScope: string;
   serverDate: string;
   forecastStartDate: string;
   forecastEndDate: string;
@@ -361,8 +363,8 @@ export function IrrigationInputTable({
   );
   const tableFields = useMemo(() => sortedFields(fields), [fields]);
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
-  const [values, updateValue, pruneValues] = usePersistentIrrigationValues(seasonYear);
-  const [approvedSignature, approveSignature] = useApprovedIrrigationSignature(seasonYear);
+  const [values, updateValue, pruneValues] = usePersistentIrrigationValues(seasonYear, storageScope);
+  const [approvedSignature, approveSignature] = useApprovedIrrigationSignature(seasonYear, storageScope);
   const [isSavingApproval, setIsSavingApproval] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
   const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);

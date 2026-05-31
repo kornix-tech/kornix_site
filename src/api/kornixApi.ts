@@ -6,7 +6,10 @@ import type {
   CalculationRunId,
   FieldSeasonCatalogDto,
   CurrentUserDto,
+  FieldSeasonMapFeature,
+  FieldSeasonMapPropertiesDto,
   FieldSeasonMapFeatureCollection,
+  IrrigationRecommendationDto,
   IrrigationTaskPayloadDto,
   KornixCalculateRequest,
   KornixCalculateResponse,
@@ -34,6 +37,72 @@ function delay<T>(value: T, ms = 200): Promise<T> {
   return new Promise((resolve) => window.setTimeout(() => resolve(value), ms));
 }
 
+type CamelCaseRecommendationDto = {
+  fieldSeasonId: string;
+  recommendedIrrigationDate?: string | null;
+  recommendedIrrigationMm?: number | null;
+  recommendedIrrigationReasonCode?: string | null;
+  recommendedIrrigationPriority?: 'ok' | 'warning' | 'critical' | null;
+  recommendedIrrigationConfidence?: number | null;
+};
+
+type MapPropertiesWithCamelCaseRecommendation = FieldSeasonMapPropertiesDto & {
+  recommendedIrrigationDate?: string | null;
+  recommendedIrrigationMm?: number | null;
+};
+
+function normalizeRecommendation(
+  recommendation: IrrigationRecommendationDto | CamelCaseRecommendationDto
+): IrrigationRecommendationDto {
+  const legacy = recommendation as CamelCaseRecommendationDto;
+  const current = recommendation as IrrigationRecommendationDto;
+  return {
+    fieldSeasonId: current.fieldSeasonId,
+    recommended_irrigation_date: current.recommended_irrigation_date ?? legacy.recommendedIrrigationDate ?? null,
+    recommended_irrigation_mm: current.recommended_irrigation_mm ?? legacy.recommendedIrrigationMm ?? null,
+    recommended_irrigation_reason_code:
+      current.recommended_irrigation_reason_code ?? legacy.recommendedIrrigationReasonCode ?? null,
+    recommended_irrigation_priority:
+      current.recommended_irrigation_priority ?? legacy.recommendedIrrigationPriority ?? null,
+    recommended_irrigation_confidence:
+      current.recommended_irrigation_confidence ?? legacy.recommendedIrrigationConfidence ?? null
+  };
+}
+
+function normalizeMapProperties(properties: MapPropertiesWithCamelCaseRecommendation): FieldSeasonMapPropertiesDto {
+  return {
+    ...properties,
+    fieldName: properties.fieldName || properties.fieldKey,
+    recommended_irrigation_date:
+      properties.recommended_irrigation_date ?? properties.recommendedIrrigationDate ?? null,
+    recommended_irrigation_mm: properties.recommended_irrigation_mm ?? properties.recommendedIrrigationMm ?? null,
+    dataQuality: properties.dataQuality ?? {
+      forcingComplete: false,
+      calculationAvailable: false,
+      hasActiveMapping: false,
+      messages: ['Backend не вернул блок качества данных по полю.']
+    }
+  };
+}
+
+function normalizeMapFeatureCollection(collection: FieldSeasonMapFeatureCollection): FieldSeasonMapFeatureCollection {
+  return {
+    ...collection,
+    features: collection.features.map((feature) => ({
+      ...feature,
+      geometry: feature.geometry ?? { type: 'MultiPolygon' as const, coordinates: [] },
+      properties: normalizeMapProperties(feature.properties as MapPropertiesWithCamelCaseRecommendation)
+    })) as FieldSeasonMapFeature[]
+  };
+}
+
+function normalizeProfileTimeseries(profile: KornixProfileTimeseriesDto): KornixProfileTimeseriesDto {
+  return {
+    ...profile,
+    recommendations: profile.recommendations.map(normalizeRecommendation)
+  };
+}
+
 function catalogToMapFeatureCollection(catalog: FieldSeasonCatalogDto): FieldSeasonMapFeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -51,7 +120,7 @@ function catalogToMapFeatureCollection(catalog: FieldSeasonCatalogDto): FieldSea
           fieldId: field.fieldId,
           fieldSeasonId: field.fieldSeasonId,
           fieldKey: field.fieldKey,
-          fieldName: field.fieldName,
+          fieldName: field.fieldName || field.fieldKey,
           areaHa: field.areaHa,
           cropName: field.cropName,
           cropSowingDate: field.cropSowingDate,
@@ -129,9 +198,10 @@ export const kornixApi = {
       calculationRunId: params.calculationRunId,
       day: params.day
     });
-    return requestJson<FieldSeasonMapFeatureCollection>(
+    const collection = await requestJson<FieldSeasonMapFeatureCollection>(
       `/api/v1/kornix/field-seasons/map?${query.toString()}`
     );
+    return normalizeMapFeatureCollection(collection);
   },
 
   async getFieldSeasonCatalog(params: { seasonYear: number }): Promise<FieldSeasonMapFeatureCollection> {
@@ -171,9 +241,10 @@ export const kornixApi = {
     if (params.fieldSeasonIds.length > 1) {
       query.set('aggregation', params.aggregation ?? 'area_weighted_mean');
     }
-    return requestJson<KornixProfileTimeseriesDto>(
+    const profile = await requestJson<KornixProfileTimeseriesDto>(
       `/api/v1/kornix/water-regime/profile-timeseries?${query.toString()}`
     );
+    return normalizeProfileTimeseries(profile);
   },
 
   metrics: KORNIX_METRICS

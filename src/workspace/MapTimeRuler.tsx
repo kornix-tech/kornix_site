@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 
 function addDaysIso(day: string, offset: number): string {
-  const date = new Date(`${day}T00:00:00`);
-  date.setDate(date.getDate() + offset);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const nextDay = String(date.getDate()).padStart(2, '0');
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offset);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const nextDay = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${nextDay}`;
 }
 

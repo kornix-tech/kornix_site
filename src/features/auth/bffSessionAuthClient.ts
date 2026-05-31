@@ -10,9 +10,6 @@ export class BffSessionAuthClient implements AuthClient {
       if (error instanceof ApiError && error.code === 'auth_required') {
         return null;
       }
-      if (error instanceof TypeError) {
-        return null;
-      }
       throw error;
     }
   }

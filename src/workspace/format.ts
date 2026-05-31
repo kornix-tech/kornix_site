@@ -1,11 +1,11 @@
 export function formatNumber(value: number | null | undefined, digits = 1): string {
-  if (value === null || value === undefined || Number.isNaN(value)) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
     return 'нет данных';
   }
   return value.toFixed(digits).replace(/\.0$/, '');
 }
 
-export function formatArea(value: number): string {
+export function formatArea(value: number | null | undefined): string {
   return `${formatNumber(value, 1)} га`;
 }
 

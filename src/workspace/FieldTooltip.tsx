@@ -18,15 +18,17 @@ function escapeHtml(value: string): string {
 export function buildFieldTooltipHtml(field: FieldSeasonMapPropertiesDto): string {
   const derived = deriveWaterMetrics(field);
   const thresholds = deriveWaterThresholds(field);
-  const messages = field.dataQuality.messages.length
-    ? `<div class="tooltip-warning">${field.dataQuality.messages.map(escapeHtml).join('<br />')}</div>`
+  const dataQualityMessages = field.dataQuality?.messages ?? [];
+  const messages = dataQualityMessages.length
+    ? `<div class="tooltip-warning">${dataQualityMessages.map(escapeHtml).join('<br />')}</div>`
     : '';
+  const fieldName = field.fieldName || field.fieldKey;
   const cropName = field.cropName ? escapeHtml(field.cropName) : 'культура не указана';
   const cropSowingDate = field.cropSowingDate ? escapeHtml(field.cropSowingDate) : 'не указана';
 
   return `
     <div class="field-tooltip">
-      <strong>${escapeHtml(field.fieldName)}</strong>
+      <strong>${escapeHtml(fieldName)}</strong>
       <div>${escapeHtml(field.fieldKey)} · ${formatArea(field.areaHa)}</div>
       <div>${cropName} · сев: ${cropSowingDate}</div>
       <hr />

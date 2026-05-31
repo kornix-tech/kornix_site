@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { kornixApi } from '../api/kornixApi';
 import { useAuth } from '../features/auth/AuthProvider';
+import { isMockRuntimeAllowed } from '../config/runtimeSafety';
+import { ApiError } from '../shared/api/httpClient';
 import type { MapDisplayMode } from './FieldMap';
 import { ExportActions } from './ExportActions';
 import { FieldSelectorPanel } from './FieldSelectorPanel';
@@ -31,6 +33,7 @@ export function WorkspacePage() {
   const [searchParams] = useSearchParams();
   const [mapDisplayMode, setMapDisplayMode] = useState<MapDisplayMode>('status');
   const [chartCsv, setChartCsv] = useState<string | null>(null);
+  const autoDateRangeRef = useRef<string | null>(null);
   const location = useLocation();
   const state = useMemo(
     () => parseWorkspaceState(searchParams, location.pathname),
@@ -40,6 +43,8 @@ export function WorkspacePage() {
   const { user, logout } = useAuth();
   const canonicalPath = workspacePathForTab(state.tab);
   const canonicalSearch = serializeWorkspaceState(state).toString();
+  const dateRangeSearchValue = `${searchParams.get('from') ?? ''}:${searchParams.get('to') ?? ''}`;
+  const hasDateRangeParams = searchParams.has('from') || searchParams.has('to');
 
   useEffect(() => {
     const currentSearch = searchParams.toString();
@@ -61,12 +66,15 @@ export function WorkspacePage() {
   });
 
   const mockCalculationRunId =
-    import.meta.env.VITE_ENABLE_MOCK_API === 'true' ? 'mock-sp-2026-initial' : null;
+    import.meta.env.VITE_ENABLE_MOCK_API === 'true' && isMockRuntimeAllowed() ? 'mock-sp-2026-initial' : null;
   const activeCalculationRunId =
     state.calculationRunId ?? contextQuery.data?.latestCalculationRunId ?? mockCalculationRunId;
   const serverDate = contextQuery.data?.serverDate ?? DEFAULT_WORKSPACE_STATE.mapDay;
   const forecastStartDate = contextQuery.data?.forecastStartDate ?? DEFAULT_WORKSPACE_STATE.to;
   const forecastEndDate = contextQuery.data?.forecastEndDate ?? DEFAULT_WORKSPACE_STATE.to;
+  const localStorageScope = `${contextQuery.data?.organizationCode ?? user?.organizationCode ?? 'unknown'}:${
+    user?.id ?? 'anonymous'
+  }`;
   const effectiveMapDay =
     state.mapDay === DEFAULT_WORKSPACE_STATE.mapDay && contextQuery.data?.serverDate
       ? contextQuery.data.serverDate
@@ -88,7 +96,8 @@ export function WorkspacePage() {
     queryFn: () => kornixApi.getFieldSeasonCatalog({ seasonYear: state.seasonYear }),
     retry: 1
   });
-  const workspaceFields = fieldsQuery.data ?? catalogQuery.data;
+  const calculatedFields = activeCalculationRunId ? fieldsQuery.data : undefined;
+  const workspaceFields = calculatedFields ?? catalogQuery.data;
   const chartFieldSeasonIds = useMemo(() => {
     const availableFieldSeasonIds = new Set(
       workspaceFields?.features.map((feature) => feature.properties.fieldSeasonId) ?? []
@@ -120,6 +129,27 @@ export function WorkspacePage() {
     }
   }, [contextQuery.data?.latestCalculationRunId, state.calculationRunId, updateState]);
 
+  useEffect(() => {
+    const context = contextQuery.data;
+    const hasManualDateRange = hasDateRangeParams && autoDateRangeRef.current !== dateRangeSearchValue;
+    if (!context || hasManualDateRange) {
+      return;
+    }
+
+    const nextFrom = context.calculationWindow.from;
+    const nextTo = context.calculationWindow.to || context.forecastEndDate;
+    if (state.from !== nextFrom || state.to !== nextTo) {
+      autoDateRangeRef.current = `${nextFrom}:${nextTo}`;
+      updateState({ from: nextFrom, to: nextTo }, true);
+    }
+  }, [contextQuery.data, dateRangeSearchValue, hasDateRangeParams, state.from, state.to, updateState]);
+
+  useEffect(() => {
+    if (!contextQuery.data && !contextQuery.isLoading) {
+      console.warn('KORNIX backend dates are unavailable; frontend uses Moscow-date fallback.');
+    }
+  }, [contextQuery.data, contextQuery.isLoading]);
+
   const selectFieldFromMap = useCallback(
     (fieldSeasonId: string) => {
       updateState({ tab: 'chart', fieldSeasonIds: [fieldSeasonId], fieldsExplicitlyCleared: false });
@@ -141,7 +171,7 @@ export function WorkspacePage() {
   }
 
   function handleExportMapData() {
-    if (!workspaceFields) {
+    if (!calculatedFields) {
       return;
     }
 
@@ -164,7 +194,7 @@ export function WorkspacePage() {
         'recommended_irrigation_date',
         'recommended_irrigation_mm'
       ],
-      ...workspaceFields.features.map((feature) => {
+      ...calculatedFields.features.map((feature) => {
         const field = feature.properties;
         const derived = deriveWaterMetrics(field);
         return [
@@ -258,17 +288,25 @@ export function WorkspacePage() {
       )}
       {activeCalculationRunId && fieldsQuery.isLoading && <div className="empty-state">Загрузка полей…</div>}
       {!activeCalculationRunId && catalogQuery.isLoading && <div className="empty-state">Загрузка каталога полей…</div>}
-      {fieldsQuery.isError && <div className="error-state">Не удалось загрузить карту полей.</div>}
+      {fieldsQuery.isError && <div className="error-state">{queryErrorMessage(fieldsQuery.error, 'Не удалось загрузить карту полей.')}</div>}
       {catalogQuery.isError && !activeCalculationRunId && (
-        <div className="error-state">Не удалось загрузить каталог полей для первого расчёта.</div>
+        <div className="error-state">
+          {queryErrorMessage(catalogQuery.error, 'Не удалось загрузить каталог полей для первого расчёта.')}
+        </div>
+      )}
+      {!activeCalculationRunId && state.tab === 'map' && workspaceFields && (
+        <div className="empty-state">Карта появится после первого расчёта. Поля для ввода поливов уже загружены из каталога.</div>
+      )}
+      {!activeCalculationRunId && state.tab === 'chart' && workspaceFields && (
+        <div className="empty-state">График водного режима появится после расчёта. Перейдите во вкладку ввода поливов и отправьте сценарий.</div>
       )}
 
-      {workspaceFields && state.tab === 'map' && (
+      {activeCalculationRunId && calculatedFields && state.tab === 'map' && (
         <section className="map-layout">
           <div className="map-main">
             <Suspense fallback={<div className="empty-state">Загрузка карты…</div>}>
               <FieldMap
-                fields={workspaceFields}
+                fields={calculatedFields}
                 mode={mapDisplayMode}
                 selectedFieldSeasonIds={state.fieldSeasonIds}
                 onSelectField={selectFieldFromMap}
@@ -288,10 +326,10 @@ export function WorkspacePage() {
         </section>
       )}
 
-      {workspaceFields && state.tab === 'chart' && (
+      {activeCalculationRunId && calculatedFields && state.tab === 'chart' && (
         <section className="chart-layout">
           <FieldSelectorPanel
-            fields={workspaceFields}
+            fields={calculatedFields}
             selectedFieldSeasonIds={chartFieldSeasonIds}
             onChange={(fieldSeasonIds) =>
               updateState({ fieldSeasonIds, fieldsExplicitlyCleared: fieldSeasonIds.length === 0 })
@@ -299,7 +337,7 @@ export function WorkspacePage() {
           />
           <Suspense fallback={<div className="chart-panel empty-state">Загрузка графика…</div>}>
             <WaterRegimeChart
-              fields={workspaceFields.features}
+              fields={calculatedFields.features}
               fieldSeasonIds={chartFieldSeasonIds}
               from={state.from}
               to={state.to}
@@ -320,8 +358,10 @@ export function WorkspacePage() {
       {workspaceFields && state.tab === 'irrigation' && (
         <Suspense fallback={<div className="irrigation-panel empty-state">Загрузка таблицы поливов…</div>}>
           <IrrigationInputTable
+            key={localStorageScope}
             fields={workspaceFields}
             seasonYear={state.seasonYear}
+            storageScope={localStorageScope}
             serverDate={serverDate}
             forecastStartDate={forecastStartDate}
             forecastEndDate={forecastEndDate}
@@ -346,4 +386,13 @@ function ReadinessSummary({ context }: { context: Awaited<ReturnType<typeof korn
       расчёт: {context.latestCalculationStatus} · {context.irrigatedFieldCount2026}/{context.fieldCount}
     </span>
   );
+}
+
+function queryErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    const requestId = error.requestId ? ` · ${error.requestId}` : '';
+    return `${error.code}: ${error.message}${requestId}`;
+  }
+
+  return fallback;
 }

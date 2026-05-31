@@ -174,15 +174,15 @@ const CHART_TOOLTIP_PROPS = {
 };
 
 function localDateIso(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 function addDaysIso(day: string, offset: number): string {
-  const date = new Date(`${day}T00:00:00`);
-  date.setDate(date.getDate() + offset);
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offset);
   return localDateIso(date);
 }
 

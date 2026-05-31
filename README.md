@@ -116,13 +116,22 @@ Backend должен реализовать:
 
 ```http
 GET  /api/v1/me
+GET  /api/v1/auth/csrf
 GET  /api/v1/auth/login?returnTo=/map
 POST /api/v1/auth/logout
 GET  /api/v1/kornix/current-context
+GET  /api/v1/kornix/field-seasons/catalog?seasonYear=2026
 POST /api/v1/kornix/water-regime/calculate
 GET  /api/v1/kornix/field-seasons/map?calculationRunId=...&day=YYYY-MM-DD
 GET  /api/v1/kornix/water-regime/profile-timeseries?calculationRunId=...&fieldSeasonIds=...&aggregation=area_weighted_mean
 ```
+
+`current-context` должен отдавать календарные даты backend в московской зоне:
+`serverDate`, `forecastStartDate`, `forecastEndDate`. Если готового
+`latestCalculationRunId` ещё нет, frontend строит таблицу первого расчёта через
+каталог полей `field-seasons/catalog`.
+Для `POST`, `PUT`, `PATCH`, `DELETE` frontend перед запросом получает CSRF token
+через `/api/v1/auth/csrf`, если token ещё не пришёл в cookie или meta.
 
 Проверка `/api/v1/me` для будущего backend:
 
@@ -145,11 +154,16 @@ cookie.
 
 ## API checklist
 
-Актуальный frontend-контракт API v1.0 находится в
+Актуальный frontend-контракт API v1.1 находится в
 [`docs/kornix-frontend-api-v1.md`](docs/kornix-frontend-api-v1.md).
-Он фиксирует tenant-scoped BFF workflow, групповой `calculationRunId`, отправку
-только `irrigation_tasks`, v1.0 `long_name_for_code`, правило `null != 0` и
-разделение рекомендаций от задач полива.
+Он фиксирует tenant-scoped BFF workflow, групповой `calculationRunId`, каталог
+полей до первого расчёта, backend-даты, отправку только `irrigation_tasks`,
+v1.0 `long_name_for_code`, правило `null != 0` и разделение рекомендаций от
+задач полива.
+
+Backend error envelope должен иметь форму
+`{ "error": { "code", "message", "details", "requestId" } }`; frontend
+показывает `code/message` и сохраняет `requestId` в `ApiError`.
 
 Исторические требования к KORNIX system API сохранены в
 [`docs/kornix-system-api-requirements-v0.2.md`](docs/kornix-system-api-requirements-v0.2.md).

@@ -3,6 +3,27 @@
 ## [Unreleased]
 
 ### Changed
+- Mock `calculationRunId` на рабочей странице теперь подчиняется той же
+  runtime-защите, что mock API/auth, и не подставляется вне разрешённых
+  локальных host.
+- BFF auth больше не маскирует сетевые ошибки `/api/v1/me` под гостевую
+  сессию: реальные ошибки backend показываются как сбой проверки авторизации.
+- Календарная арифметика карты, графика и ввода поливов переведена на
+  timezone-neutral ISO-дни, чтобы не зависеть от локальной зоны браузера.
+- Шаговые стрелки ввода полива больше не создают значение `0`: нижняя граница
+  после пустого значения — `1` мм.
+- Черновики и признак утверждения поливов в `localStorage` теперь разделены по
+  пользователю и организации, а не только по году сезона.
+- Unsafe API-запросы получают CSRF token через `/api/v1/auth/csrf`, если token
+  отсутствует в cookie/meta перед `POST`, `PUT`, `PATCH` или `DELETE`.
+- HTTP-клиент разбирает backend error envelope и сохраняет `code`, `message`,
+  `details`, `requestId` в `ApiError` для понятного отображения в UI.
+- Catalog-flow первого расчёта разделён с расчётными map/profile: каталог
+  используется для таблицы поливов, а карта и график требуют `calculationRunId`.
+- API-adapter нормализует legacy camelCase рекомендации backend в snake_case
+  frontend DTO.
+- Tooltip и форматирование площади устойчивее к пропускам `fieldName`,
+  `areaHa` и блока `dataQuality`.
 - Обновлён frontend-контракт до API v1.1: добавлены даты backend
   `serverDate`, `forecastStartDate`, `forecastEndDate`, каталог полей до
   первого расчёта и поддержка пустого сценария `irrigation_tasks`.
