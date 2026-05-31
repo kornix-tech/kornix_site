@@ -65,6 +65,28 @@ export type FieldSeasonMapFeatureCollection = GeoJSON.FeatureCollection<
   day: string;
 };
 
+export type FieldSeasonCatalogFieldDto = {
+  fieldId: string;
+  fieldSeasonId: string;
+  fieldKey: string;
+  fieldName: string;
+  areaHa: number;
+  cropName: string | null;
+  cropSowingDate: string | null;
+  koef_upper_limit: number | null;
+  koef_optimum: number | null;
+  koef_lower_limit: number | null;
+  latestStatus?: FieldWaterRegimeStatusCode;
+  geometry?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
+};
+
+export type FieldSeasonCatalogDto = {
+  organizationCode: 'SP';
+  seasonYear: 2026;
+  generatedAt: string;
+  fields: FieldSeasonCatalogFieldDto[];
+};
+
 export type RequiredBackendMetricLongName =
   | 'air_temperature_daily_c'
   | 'relative_humidity_daily_pct'
@@ -101,6 +123,9 @@ export type KornixCurrentContextDto = {
   organizationName: string;
   seasonYear: 2026;
   calculationWindow: CalculationWindowDto;
+  serverDate: string;
+  forecastStartDate: string;
+  forecastEndDate: string;
   fieldCount: number;
   irrigatedFieldCount2026: number;
   latestCalculationRunId: CalculationRunId | null;
@@ -167,6 +192,9 @@ export type KornixProfileTimeseriesDto = {
   seasonYear: 2026;
   calculationRunId: CalculationRunId;
   window: CalculationWindowDto;
+  serverDate?: string;
+  forecastStartDate?: string;
+  forecastEndDate?: string;
   selectedFieldSeasonIds: string[];
   aggregation: null | {
     mode: 'area_weighted_mean';
@@ -202,6 +230,9 @@ export type KornixCalculateResponse = {
   irrigationScenarioHash: string;
   reusedPreviousCalculation: boolean;
   calculationWindow: CalculationWindowDto;
+  serverDate: string;
+  forecastStartDate: string;
+  forecastEndDate: string;
   fieldCount: number;
   irrigatedFieldCount2026: number;
   timing: {

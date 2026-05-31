@@ -7,7 +7,7 @@ import type {
 } from '../types/kornix';
 import { compareFieldKeys } from './FieldSelectorPanel';
 import { fieldStatusClassName, fieldStatusLabel } from './fieldStatusPresentation';
-import { formatArea, todayIso } from './format';
+import { formatArea } from './format';
 
 type IrrigationValues = Record<string, string>;
 
@@ -325,15 +325,21 @@ function sortedFields(fields: FieldSeasonMapFeatureCollection): FieldSeasonMapFe
 export function IrrigationInputTable({
   fields,
   seasonYear,
+  serverDate,
+  forecastStartDate,
+  forecastEndDate,
   onCalculationComplete
 }: {
   fields: FieldSeasonMapFeatureCollection;
   seasonYear: number;
+  serverDate: string;
+  forecastStartDate: string;
+  forecastEndDate: string;
   onCalculationComplete: (calculationRunId: string) => void;
 }) {
-  const today = todayIso();
-  const forecastStart = addDaysIso(today, 1);
-  const forecastEnd = addDaysIso(today, 7);
+  const today = serverDate;
+  const forecastStart = forecastStartDate;
+  const forecastEnd = forecastEndDate;
   const currentWeekStart = isoWeekStart(today);
   const currentWeekEnd = addDaysIso(currentWeekStart, 6);
   const firstDay = `${seasonYear}-04-01`;
@@ -371,15 +377,15 @@ export function IrrigationInputTable({
     [editableEnd, values]
   );
   const approvalState: ApprovalState =
-    irrigationTaskPayload.irrigation_tasks.length === 0
-      ? 'empty'
-      : isSavingApproval
-        ? 'saving'
-        : approvalError
-          ? 'error'
-          : approvedSignature === approvalSignature
+    isSavingApproval
+      ? 'saving'
+      : approvalError
+        ? 'error'
+        : approvedSignature === approvalSignature
           ? 'approved'
-          : 'dirty';
+          : irrigationTaskPayload.irrigation_tasks.length === 0
+            ? 'empty'
+            : 'dirty';
   const actualIrrigationCount = irrigationTaskPayload.irrigation_tasks.filter(
     (task) => task.irrigationDate <= today
   ).length;
@@ -446,7 +452,7 @@ export function IrrigationInputTable({
   }, [today, days.length]);
 
   async function approveIrrigationEvents() {
-    if (irrigationTaskPayload.irrigation_tasks.length === 0 || isSavingApproval) {
+    if (isSavingApproval) {
       return;
     }
 
@@ -506,7 +512,7 @@ export function IrrigationInputTable({
           <button
             type="button"
             className={`irrigation-approve-button irrigation-approve-${approvalState}`}
-            disabled={approvalState === 'empty' || approvalState === 'saving'}
+            disabled={approvalState === 'saving'}
             onClick={() => void approveIrrigationEvents()}
           >
             Утверждаю

@@ -13,6 +13,7 @@ export type WaterThresholdInputs = {
 
 export type DerivedWaterMetrics = {
   available_water_content_mm: number | null;
+  current_available_water_mm: number | null;
   available_water_fraction_pct: number | null;
 };
 
@@ -34,16 +35,18 @@ export function deriveWaterMetrics(inputs: WaterMetricInputs): DerivedWaterMetri
   if (!isFiniteNumber(fc) || !isFiniteNumber(wpc) || !isFiniteNumber(swc) || fc <= wpc) {
     return {
       available_water_content_mm: null,
+      current_available_water_mm: null,
       available_water_fraction_pct: null
     };
   }
 
-  const totalAvailableWaterCapacity = fc - wpc;
-  const availableWaterContent = swc - wpc;
-  const availableWaterFraction = (100 * availableWaterContent) / totalAvailableWaterCapacity;
+  const availableWaterContent = fc - wpc;
+  const currentAvailableWater = swc - wpc;
+  const availableWaterFraction = (100 * currentAvailableWater) / availableWaterContent;
 
   return {
     available_water_content_mm: availableWaterContent,
+    current_available_water_mm: currentAvailableWater,
     available_water_fraction_pct: availableWaterFraction
   };
 }

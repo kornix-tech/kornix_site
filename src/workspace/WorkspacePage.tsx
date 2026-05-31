@@ -64,20 +64,34 @@ export function WorkspacePage() {
     import.meta.env.VITE_ENABLE_MOCK_API === 'true' ? 'mock-sp-2026-initial' : null;
   const activeCalculationRunId =
     state.calculationRunId ?? contextQuery.data?.latestCalculationRunId ?? mockCalculationRunId;
+  const serverDate = contextQuery.data?.serverDate ?? DEFAULT_WORKSPACE_STATE.mapDay;
+  const forecastStartDate = contextQuery.data?.forecastStartDate ?? DEFAULT_WORKSPACE_STATE.to;
+  const forecastEndDate = contextQuery.data?.forecastEndDate ?? DEFAULT_WORKSPACE_STATE.to;
+  const effectiveMapDay =
+    state.mapDay === DEFAULT_WORKSPACE_STATE.mapDay && contextQuery.data?.serverDate
+      ? contextQuery.data.serverDate
+      : state.mapDay;
 
   const fieldsQuery = useQuery({
-    queryKey: ['field-season-map', activeCalculationRunId, state.mapDay],
+    queryKey: ['field-season-map', activeCalculationRunId, effectiveMapDay],
     enabled: Boolean(activeCalculationRunId),
     queryFn: () =>
       kornixApi.getFieldSeasonMap({
         calculationRunId: activeCalculationRunId ?? '',
-        day: state.mapDay
+        day: effectiveMapDay
       }),
     placeholderData: (previousData) => previousData
   });
+  const catalogQuery = useQuery({
+    queryKey: ['field-season-catalog', state.seasonYear],
+    enabled: !activeCalculationRunId,
+    queryFn: () => kornixApi.getFieldSeasonCatalog({ seasonYear: state.seasonYear }),
+    retry: 1
+  });
+  const workspaceFields = fieldsQuery.data ?? catalogQuery.data;
   const chartFieldSeasonIds = useMemo(() => {
     const availableFieldSeasonIds = new Set(
-      fieldsQuery.data?.features.map((feature) => feature.properties.fieldSeasonId) ?? []
+      workspaceFields?.features.map((feature) => feature.properties.fieldSeasonId) ?? []
     );
 
     if (state.tab !== 'chart' || state.fieldsExplicitlyCleared) {
@@ -88,8 +102,8 @@ export function WorkspacePage() {
       return state.fieldSeasonIds.filter((fieldSeasonId) => availableFieldSeasonIds.has(fieldSeasonId));
     }
 
-    return fieldsQuery.data?.features.map((feature) => feature.properties.fieldSeasonId) ?? [];
-  }, [fieldsQuery.data, state.fieldSeasonIds, state.fieldsExplicitlyCleared, state.tab]);
+    return workspaceFields?.features.map((feature) => feature.properties.fieldSeasonId) ?? [];
+  }, [workspaceFields, state.fieldSeasonIds, state.fieldsExplicitlyCleared, state.tab]);
   const updateState = useCallback(
     (patch: Partial<WorkspaceUrlState>, replace = false) => {
       const nextState = { ...state, ...patch };
@@ -127,7 +141,7 @@ export function WorkspacePage() {
   }
 
   function handleExportMapData() {
-    if (!fieldsQuery.data) {
+    if (!workspaceFields) {
       return;
     }
 
@@ -150,11 +164,11 @@ export function WorkspacePage() {
         'recommended_irrigation_date',
         'recommended_irrigation_mm'
       ],
-      ...fieldsQuery.data.features.map((feature) => {
+      ...workspaceFields.features.map((feature) => {
         const field = feature.properties;
         const derived = deriveWaterMetrics(field);
         return [
-          state.mapDay,
+          effectiveMapDay,
           mapDisplayMode,
           field.fieldKey,
           field.fieldName,
@@ -174,7 +188,7 @@ export function WorkspacePage() {
       })
     ]);
 
-    downloadCsv(`kornix-map-${state.mapDay}-${mapDisplayMode}`, rows);
+    downloadCsv(`kornix-map-${effectiveMapDay}-${mapDisplayMode}`, rows);
   }
 
   function handleExportChartData() {
@@ -217,7 +231,7 @@ export function WorkspacePage() {
             <button
               type="button"
               className={state.tab === 'map' ? 'tab-active' : ''}
-              onClick={() => updateState({ tab: 'map', mapDay: DEFAULT_WORKSPACE_STATE.mapDay })}
+              onClick={() => updateState({ tab: 'map', mapDay: serverDate })}
             >
               Карта
             </button>
@@ -239,25 +253,32 @@ export function WorkspacePage() {
         </div>
       </header>
 
-      {!activeCalculationRunId && (
-        <div className="empty-state">Нет расчёта. Утвердите поливы, чтобы получить calculationRunId.</div>
+      {!activeCalculationRunId && !workspaceFields && (
+        <div className="empty-state">Нет расчёта. Загружаем каталог полей для первого расчёта.</div>
       )}
       {activeCalculationRunId && fieldsQuery.isLoading && <div className="empty-state">Загрузка полей…</div>}
+      {!activeCalculationRunId && catalogQuery.isLoading && <div className="empty-state">Загрузка каталога полей…</div>}
       {fieldsQuery.isError && <div className="error-state">Не удалось загрузить карту полей.</div>}
+      {catalogQuery.isError && !activeCalculationRunId && (
+        <div className="error-state">Не удалось загрузить каталог полей для первого расчёта.</div>
+      )}
 
-      {fieldsQuery.data && state.tab === 'map' && (
+      {workspaceFields && state.tab === 'map' && (
         <section className="map-layout">
           <div className="map-main">
             <Suspense fallback={<div className="empty-state">Загрузка карты…</div>}>
               <FieldMap
-                fields={fieldsQuery.data}
+                fields={workspaceFields}
                 mode={mapDisplayMode}
                 selectedFieldSeasonIds={state.fieldSeasonIds}
                 onSelectField={selectFieldFromMap}
               />
             </Suspense>
             <MapTimeRuler
-              day={state.mapDay}
+              day={effectiveMapDay}
+              serverDate={serverDate}
+              forecastStartDate={forecastStartDate}
+              forecastEndDate={forecastEndDate}
               onChange={(mapDay) => updateState({ mapDay }, true)}
             />
           </div>
@@ -267,10 +288,10 @@ export function WorkspacePage() {
         </section>
       )}
 
-      {fieldsQuery.data && state.tab === 'chart' && (
+      {workspaceFields && state.tab === 'chart' && (
         <section className="chart-layout">
           <FieldSelectorPanel
-            fields={fieldsQuery.data}
+            fields={workspaceFields}
             selectedFieldSeasonIds={chartFieldSeasonIds}
             onChange={(fieldSeasonIds) =>
               updateState({ fieldSeasonIds, fieldsExplicitlyCleared: fieldSeasonIds.length === 0 })
@@ -278,11 +299,14 @@ export function WorkspacePage() {
           />
           <Suspense fallback={<div className="chart-panel empty-state">Загрузка графика…</div>}>
             <WaterRegimeChart
-              fields={fieldsQuery.data.features}
+              fields={workspaceFields.features}
               fieldSeasonIds={chartFieldSeasonIds}
               from={state.from}
               to={state.to}
               calculationRunId={activeCalculationRunId}
+              serverDate={serverDate}
+              forecastStartDate={forecastStartDate}
+              forecastEndDate={forecastEndDate}
               onFromChange={(from) => updateState({ from })}
               onToChange={(to) => updateState({ to })}
               onCsvChange={setChartCsv}
@@ -293,11 +317,14 @@ export function WorkspacePage() {
         </section>
       )}
 
-      {fieldsQuery.data && state.tab === 'irrigation' && (
+      {workspaceFields && state.tab === 'irrigation' && (
         <Suspense fallback={<div className="irrigation-panel empty-state">Загрузка таблицы поливов…</div>}>
           <IrrigationInputTable
-            fields={fieldsQuery.data}
+            fields={workspaceFields}
             seasonYear={state.seasonYear}
+            serverDate={serverDate}
+            forecastStartDate={forecastStartDate}
+            forecastEndDate={forecastEndDate}
             onCalculationComplete={(calculationRunId) => {
               updateState({ calculationRunId }, true);
               void contextQuery.refetch();

@@ -4,6 +4,7 @@ import { mockAuthUser } from '../features/auth/mockAuthClient';
 import { requestJson } from '../shared/api/httpClient';
 import type {
   CalculationRunId,
+  FieldSeasonCatalogDto,
   CurrentUserDto,
   FieldSeasonMapFeatureCollection,
   IrrigationTaskPayloadDto,
@@ -15,15 +16,70 @@ import type {
 import {
   buildMockCalculateResponse,
   buildMockFieldSeasonMapForDay,
+  getMockFieldSeasonCatalog,
   getMockCurrentContext,
   MOCK_INITIAL_CALCULATION_RUN_ID
 } from './mockData';
 import { buildMockProfileTimeseries } from './timeseries';
 
 const mockEnabled = import.meta.env.VITE_ENABLE_MOCK_API === 'true' && isMockRuntimeAllowed();
+const DEFAULT_CALCULATION_REQUEST_TIMEOUT_MS = 120_000;
+const configuredCalculationTimeoutMs = Number(import.meta.env.VITE_KORNIX_CALCULATION_TIMEOUT_MS);
+const CALCULATION_REQUEST_TIMEOUT_MS =
+  Number.isFinite(configuredCalculationTimeoutMs) && configuredCalculationTimeoutMs > 0
+    ? configuredCalculationTimeoutMs
+    : DEFAULT_CALCULATION_REQUEST_TIMEOUT_MS;
 
 function delay<T>(value: T, ms = 200): Promise<T> {
   return new Promise((resolve) => window.setTimeout(() => resolve(value), ms));
+}
+
+function catalogToMapFeatureCollection(catalog: FieldSeasonCatalogDto): FieldSeasonMapFeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    generatedAt: catalog.generatedAt,
+    organizationCode: catalog.organizationCode,
+    seasonYear: catalog.seasonYear,
+    calculationRunId: 'catalog',
+    day: '',
+    features: catalog.fields.map((field) => {
+      const geometry = field.geometry ?? { type: 'MultiPolygon' as const, coordinates: [] };
+      return {
+        type: 'Feature' as const,
+        geometry,
+        properties: {
+          fieldId: field.fieldId,
+          fieldSeasonId: field.fieldSeasonId,
+          fieldKey: field.fieldKey,
+          fieldName: field.fieldName,
+          areaHa: field.areaHa,
+          cropName: field.cropName,
+          cropSowingDate: field.cropSowingDate,
+          latestStatus: field.latestStatus ?? 'not_calculated',
+          day: '',
+          soil_total_capacity_water_mm: null,
+          soil_field_capacity_water_mm: null,
+          soil_wilting_point_capacity_water_mm: null,
+          soil_water_content_mm: null,
+          koef_upper_limit: field.koef_upper_limit,
+          koef_optimum: field.koef_optimum,
+          koef_lower_limit: field.koef_lower_limit,
+          precipitation_effective_daily_mm: null,
+          irrigation_effective_daily_mm: null,
+          positive_temperature_sum_from_sowing_c: null,
+          crop_transpiration_daily_mm: null,
+          recommended_irrigation_date: null,
+          recommended_irrigation_mm: null,
+          dataQuality: {
+            forcingComplete: false,
+            calculationAvailable: false,
+            hasActiveMapping: true,
+            messages: ['Поле загружено из каталога до первого расчёта.']
+          }
+        }
+      };
+    })
+  };
 }
 
 export const kornixApi = {
@@ -53,6 +109,7 @@ export const kornixApi = {
 
     return requestJson<KornixCalculateResponse>('/api/v1/kornix/water-regime/calculate', {
       method: 'POST',
+      timeoutMs: CALCULATION_REQUEST_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json'
       },
@@ -75,6 +132,20 @@ export const kornixApi = {
     return requestJson<FieldSeasonMapFeatureCollection>(
       `/api/v1/kornix/field-seasons/map?${query.toString()}`
     );
+  },
+
+  async getFieldSeasonCatalog(params: { seasonYear: number }): Promise<FieldSeasonMapFeatureCollection> {
+    if (mockEnabled) {
+      return delay(catalogToMapFeatureCollection(getMockFieldSeasonCatalog()));
+    }
+
+    const query = new URLSearchParams({
+      seasonYear: String(params.seasonYear)
+    });
+    const catalog = await requestJson<FieldSeasonCatalogDto>(
+      `/api/v1/kornix/field-seasons/catalog?${query.toString()}`
+    );
+    return catalogToMapFeatureCollection(catalog);
   },
 
   async getProfileTimeseries(params: {

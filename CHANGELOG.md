@@ -3,6 +3,18 @@
 ## [Unreleased]
 
 ### Changed
+- Обновлён frontend-контракт до API v1.1: добавлены даты backend
+  `serverDate`, `forecastStartDate`, `forecastEndDate`, каталог полей до
+  первого расчёта и поддержка пустого сценария `irrigation_tasks`.
+- Исправлена AWC-семантика: `available_water_content_mm` теперь означает
+  `НВ − ВЗ`, а текущий доступный запас воды хранится отдельно как
+  `current_available_water_mm`.
+- График растений переименовывает `crop_transpiration_daily_mm` в суточную
+  транспирацию культуры, без старой подписи про фактическое суммарное испарение.
+- Синхронный запрос расчёта водного режима получил отдельный timeout 120 секунд
+  с возможностью настройки через `VITE_KORNIX_CALCULATION_TIMEOUT_MS`.
+- CSV-экспорт графика теперь пишет дневное значение
+  `soil_total_capacity_water_mm`, а не общий максимум для оси.
 - Адаптирован frontend KORNIX под контракт API v1.0: групповой `calculationRunId`,
   `current-context`, `calculate`, map и profile-timeseries endpoints.
 - Заменены старые коды метрик на v1.0 `long_name_for_code` и добавлены derived

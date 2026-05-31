@@ -1,5 +1,6 @@
 import type {
   CalculationRunId,
+  FieldSeasonCatalogDto,
   FieldSeasonMapFeatureCollection,
   FieldWaterRegimeStatusCode,
   IrrigationTaskPayloadDto,
@@ -98,21 +99,50 @@ function mockThresholdCoefficients(fc: number, wpc: number) {
 }
 
 export function getMockCurrentContext(): KornixCurrentContextDto {
+  const serverDate = todayIso();
   return {
     organizationCode: 'SP',
     organizationName: 'Спасское',
     seasonYear: 2026,
     calculationWindow: {
       from: '2026-04-01',
-      to: addDaysIso(todayIso(), 7),
+      to: addDaysIso(serverDate, 7),
       timezone: MOSCOW_TIMEZONE
     },
+    serverDate,
+    forecastStartDate: addDaysIso(serverDate, 1),
+    forecastEndDate: addDaysIso(serverDate, 7),
     fieldCount: spasskoeIrrigatedFieldFeatures.length,
     irrigatedFieldCount2026: spasskoeIrrigatedFieldFeatures.length,
     latestCalculationRunId: lastCalculationRunId,
     latestCalculationStatus: 'completed',
     generatedAt: new Date().toISOString(),
     mapBounds: spasskoeMapBounds
+  };
+}
+
+export function getMockFieldSeasonCatalog(): FieldSeasonCatalogDto {
+  return {
+    organizationCode: 'SP',
+    seasonYear: 2026,
+    generatedAt: new Date().toISOString(),
+    fields: buildMockFieldSeasonMapForDay(MOCK_INITIAL_CALCULATION_RUN_ID, todayIso()).features.map((feature) => {
+      const field = feature.properties;
+      return {
+        fieldId: field.fieldId,
+        fieldSeasonId: field.fieldSeasonId,
+        fieldKey: field.fieldKey,
+        fieldName: field.fieldName,
+        areaHa: field.areaHa,
+        cropName: field.cropName,
+        cropSowingDate: field.cropSowingDate,
+        koef_upper_limit: field.koef_upper_limit,
+        koef_optimum: field.koef_optimum,
+        koef_lower_limit: field.koef_lower_limit,
+        latestStatus: 'not_calculated',
+        geometry: feature.geometry
+      };
+    })
   };
 }
 
@@ -207,6 +237,7 @@ export function buildMockCalculateResponse(payload: IrrigationTaskPayloadDto): K
   }
 
   const startedAt = new Date().toISOString();
+  const serverDate = todayIso();
   return {
     organizationCode: 'SP',
     seasonYear: 2026,
@@ -216,9 +247,12 @@ export function buildMockCalculateResponse(payload: IrrigationTaskPayloadDto): K
     reusedPreviousCalculation,
     calculationWindow: {
       from: '2026-04-01',
-      to: addDaysIso(todayIso(), 7),
+      to: addDaysIso(serverDate, 7),
       timezone: MOSCOW_TIMEZONE
     },
+    serverDate,
+    forecastStartDate: addDaysIso(serverDate, 1),
+    forecastEndDate: addDaysIso(serverDate, 7),
     fieldCount: spasskoeIrrigatedFieldFeatures.length,
     irrigatedFieldCount2026: spasskoeIrrigatedFieldFeatures.length,
     timing: {

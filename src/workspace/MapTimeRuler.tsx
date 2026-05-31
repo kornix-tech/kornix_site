@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { todayIso, todayMinus } from './format';
 
 function addDaysIso(day: string, offset: number): string {
   const date = new Date(`${day}T00:00:00`);
@@ -30,16 +29,21 @@ function formatDateLabel(day: string): string {
 
 export function MapTimeRuler({
   day,
+  serverDate,
+  forecastStartDate,
+  forecastEndDate,
   onChange
 }: {
   day: string;
+  serverDate: string;
+  forecastStartDate: string;
+  forecastEndDate: string;
   onChange: (day: string) => void;
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const today = todayIso();
-  const from = todayMinus(29);
-  const forecastStart = addDaysIso(today, 1);
-  const to = addDaysIso(today, 7);
+  const from = addDaysIso(serverDate, -29);
+  const forecastStart = forecastStartDate;
+  const to = forecastEndDate;
   const maxIndex = dayDiff(from, to);
   const selectedIndex = clamp(dayDiff(from, day), 0, maxIndex);
   const selectedDay = addDaysIso(from, selectedIndex);

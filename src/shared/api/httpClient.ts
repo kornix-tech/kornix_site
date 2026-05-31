@@ -14,8 +14,13 @@ export class ApiError extends Error {
 
 export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
 const REQUEST_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = REQUEST_TIMEOUT_MS;
 export const AUTH_REQUIRED_EVENT = 'kornix:auth-required';
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+export type KornixRequestInit = RequestInit & {
+  timeoutMs?: number;
+};
 
 function buildUrl(path: string): string {
   if (!path.startsWith('/')) {
@@ -38,14 +43,15 @@ function csrfToken(): string | null {
   return document.querySelector<HTMLMetaElement>('meta[name="kornix-csrf-token"]')?.content || csrfTokenFromCookie();
 }
 
-export async function requestJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function requestJson<T>(path: string, init: KornixRequestInit = {}): Promise<T> {
+  const { timeoutMs, ...fetchInit } = init;
   const controller = init.signal ? null : new AbortController();
   const timeoutId = controller
-    ? window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    ? window.setTimeout(() => controller.abort(), timeoutMs ?? DEFAULT_TIMEOUT_MS)
     : undefined;
 
-  const method = (init.method ?? 'GET').toUpperCase();
-  const headers = new Headers(init.headers);
+  const method = (fetchInit.method ?? 'GET').toUpperCase();
+  const headers = new Headers(fetchInit.headers);
   headers.set('Accept', headers.get('Accept') ?? 'application/json');
   headers.set('X-Requested-With', headers.get('X-Requested-With') ?? 'XMLHttpRequest');
 
@@ -57,10 +63,10 @@ export async function requestJson<T>(path: string, init: RequestInit = {}): Prom
   let response: Response;
   try {
     response = await fetch(buildUrl(path), {
-      ...init,
+      ...fetchInit,
       // Cookie-based BFF session требует credentials: include. В mock-режиме этот флаг безвреден.
       credentials: 'include',
-      signal: init.signal ?? controller?.signal,
+      signal: fetchInit.signal ?? controller?.signal,
       headers
     });
   } finally {

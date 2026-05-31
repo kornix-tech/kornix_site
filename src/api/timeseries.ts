@@ -123,7 +123,8 @@ export function buildMockProfileTimeseries(params: {
   fields: FieldSeasonMapFeatureCollection;
 }): KornixProfileTimeseriesDto {
   const from = '2026-04-01';
-  const to = addDaysIso(todayIso(), 7);
+  const serverDate = todayIso();
+  const to = addDaysIso(serverDate, 7);
   const days = dateRange(from, to);
   const selected = params.fields.features.filter((feature) =>
     params.fieldSeasonIds.includes(feature.properties.fieldSeasonId)
@@ -235,6 +236,9 @@ export function buildMockProfileTimeseries(params: {
       to,
       timezone: 'Europe/Moscow'
     },
+    serverDate,
+    forecastStartDate: addDaysIso(serverDate, 1),
+    forecastEndDate: addDaysIso(serverDate, 7),
     selectedFieldSeasonIds: seriesFields.map((feature) => feature.properties.fieldSeasonId),
     aggregation,
     metrics,

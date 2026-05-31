@@ -41,9 +41,9 @@ type ProfileRow = {
   temperatureSum: number | null;
   temperatureSumFact: number | null;
   temperatureSumForecast: number | null;
-  actualEvaporationSum: number | null;
-  actualEvaporationSumFact: number | null;
-  actualEvaporationSumForecast: number | null;
+  cropTranspirationDaily: number | null;
+  cropTranspirationDailyFact: number | null;
+  cropTranspirationDailyForecast: number | null;
   availableRange: [number, number] | null;
   availableRangeFact: [number, number] | null;
   availableRangeForecast: [number, number] | null;
@@ -354,7 +354,7 @@ function splitForecastValue<T>(
   forecastStart: string,
   value: T | null
 ): [T | null, T | null] {
-  return [day <= forecastStart ? value : null, day >= forecastStart ? value : null];
+  return [day < forecastStart ? value : null, day >= forecastStart ? value : null];
 }
 
 function weightedCoefficient(
@@ -408,7 +408,7 @@ function buildProfileRows(
     const wind = meanValue(series('wind_daily_mps'), day);
     const potentialEvaporationDaily = scalarValue(series('eto_daily_mm'), day);
     const temperatureSum = scalarValue(series('positive_temperature_sum_from_sowing_c'), day);
-    const actualEvaporationSum = scalarValue(series('crop_transpiration_daily_mm'), day);
+    const cropTranspirationDaily = scalarValue(series('crop_transpiration_daily_mm'), day);
     const totalCapacity = scalarValue(series('soil_total_capacity_water_mm'), day);
     const fieldCapacity = scalarValue(series('soil_field_capacity_water_mm'), day);
     const wiltingPoint = scalarValue(series('soil_wilting_point_capacity_water_mm'), day);
@@ -441,10 +441,10 @@ function buildProfileRows(
       potentialEvaporationDaily
     );
     const [temperatureSumFact, temperatureSumForecast] = splitForecastValue(day, forecastStart, temperatureSum);
-    const [actualEvaporationSumFact, actualEvaporationSumForecast] = splitForecastValue(
+    const [cropTranspirationDailyFact, cropTranspirationDailyForecast] = splitForecastValue(
       day,
       forecastStart,
-      actualEvaporationSum
+      cropTranspirationDaily
     );
     const [availableRangeFact, availableRangeForecast] = splitForecastValue(day, forecastStart, range);
     const [currentWaterFact, currentWaterForecast] = splitForecastValue(day, forecastStart, currentWater);
@@ -474,9 +474,9 @@ function buildProfileRows(
       temperatureSum,
       temperatureSumFact,
       temperatureSumForecast,
-      actualEvaporationSum,
-      actualEvaporationSumFact,
-      actualEvaporationSumForecast,
+      cropTranspirationDaily,
+      cropTranspirationDailyFact,
+      cropTranspirationDailyForecast,
       availableRange: range,
       availableRangeFact,
       availableRangeForecast,
@@ -526,7 +526,7 @@ function waterReserveDomain(rows: ProfileRow[], saturation: number | null): [num
   return [visibleMinimum, visibleMaximum];
 }
 
-function buildProfileCsv(rows: ProfileRow[], saturation: number | null, forecastStart: string): string {
+function buildProfileCsv(rows: ProfileRow[], forecastStart: string): string {
   return buildCsv([
     [
       'day',
@@ -553,8 +553,8 @@ function buildProfileCsv(rows: ProfileRow[], saturation: number | null, forecast
       row.wind,
       row.potentialEvaporationDaily,
       row.temperatureSum,
-      row.actualEvaporationSum,
-      saturation,
+      row.cropTranspirationDaily,
+      row.totalCapacity,
       row.availableLower,
       row.optimumWater,
       row.availableUpper,
@@ -571,6 +571,9 @@ export function WaterRegimeChart({
   fieldSeasonIds,
   from,
   to,
+  serverDate,
+  forecastStartDate,
+  forecastEndDate,
   onFromChange,
   onToChange,
   onCsvChange,
@@ -582,14 +585,15 @@ export function WaterRegimeChart({
   fieldSeasonIds: string[];
   from: string;
   to: string;
+  serverDate: string;
+  forecastStartDate: string;
+  forecastEndDate: string;
   onFromChange: (value: string) => void;
   onToChange: (value: string) => void;
   onCsvChange: (csv: string | null) => void;
   onExportGraphics: () => Promise<void>;
   onExportData: () => void;
 }) {
-  const today = localDateIso(new Date());
-  const forecastStart = addDaysIso(today, 1);
   const profileQuery = useQuery({
     queryKey: ['water-regime-profile', calculationRunId, fieldSeasonIds.join(',')],
     enabled: Boolean(calculationRunId) && fieldSeasonIds.length > 0,
@@ -603,6 +607,8 @@ export function WaterRegimeChart({
 
   const isLoading = profileQuery.isLoading;
   const isError = profileQuery.isError;
+  const forecastStart = profileQuery.data?.forecastStartDate ?? forecastStartDate;
+  const forecastEnd = profileQuery.data?.forecastEndDate ?? forecastEndDate;
 
   useEffect(() => {
     if (!calculationRunId || fieldSeasonIds.length === 0 || isLoading || isError) {
@@ -624,6 +630,8 @@ export function WaterRegimeChart({
           profile={profileQuery.data}
           fields={fields}
           forecastStart={forecastStart}
+          forecastEnd={forecastEnd}
+          serverDate={profileQuery.data.serverDate ?? serverDate}
           from={from}
           selectedCount={fieldSeasonIds.length}
           to={to}
@@ -642,6 +650,8 @@ function ChartBody({
   profile,
   fields,
   forecastStart,
+  forecastEnd,
+  serverDate,
   from,
   selectedCount,
   to,
@@ -654,6 +664,8 @@ function ChartBody({
   profile: KornixProfileTimeseriesDto;
   fields: FieldSeasonMapFeature[];
   forecastStart: string;
+  forecastEnd: string;
+  serverDate: string;
   from: string;
   selectedCount: number;
   to: string;
@@ -675,12 +687,11 @@ function ChartBody({
     const filteredRows = allRows.filter((row) => row.day >= from && row.day <= to);
     return filteredRows.length > 0 ? filteredRows : allRows;
   }, [allRows, from, to]);
-  const today = localDateIso(new Date());
   const firstDay = allRows[0]?.day ?? from;
   const lastDay = allRows.length > 0 ? allRows[allRows.length - 1].day : to;
   const viewFirstDay = rows[0]?.day ?? firstDay;
   const viewLastDay = rows.length > 0 ? rows[rows.length - 1].day : lastDay;
-  const [selectedDay, setSelectedDay] = useState(today);
+  const [selectedDay, setSelectedDay] = useState(serverDate);
   const selectedDayInRange = addDaysIso(
     viewFirstDay,
     clamp(dayDiff(viewFirstDay, selectedDay), 0, dayDiff(viewFirstDay, viewLastDay))
@@ -699,7 +710,7 @@ function ChartBody({
         .filter(Boolean)
         .join(' · ')
     : null;
-  const profileCsv = buildProfileCsv(rows, saturation, forecastStart);
+  const profileCsv = buildProfileCsv(rows, forecastStart);
 
   useEffect(() => {
     onCsvChange(profileCsv);
@@ -762,7 +773,7 @@ function ChartBody({
         </div>
 
         <div className="chart-caption chart-caption-muted">
-          Прогноз: 7 суток с {forecastStart}
+          Прогноз: {forecastStart} — {forecastEnd}
         </div>
 
         <LegendStrip />
@@ -1161,7 +1172,7 @@ function CompositeProfileChart({
               tick={{ fill: '#9a5700', fontSize: 11 }}
             />
             <YAxis
-              yAxisId="actualEvaporation"
+              yAxisId="cropTranspiration"
               orientation="right"
               width={48}
               unit="мм"
@@ -1196,20 +1207,20 @@ function CompositeProfileChart({
               connectNulls={false}
             />
             <Line
-              yAxisId="actualEvaporation"
+              yAxisId="cropTranspiration"
               type="monotone"
-              dataKey="actualEvaporationSumFact"
-              name="Фактическое суммарное испарение, мм"
+              dataKey="cropTranspirationDailyFact"
+              name="Суточная транспирация культуры, мм"
               stroke="#4c956c"
               strokeWidth={2}
               dot={false}
               connectNulls={false}
             />
             <Line
-              yAxisId="actualEvaporation"
+              yAxisId="cropTranspiration"
               type="monotone"
-              dataKey="actualEvaporationSumForecast"
-              name="Фактическое суммарное испарение, мм"
+              dataKey="cropTranspirationDailyForecast"
+              name="Суточная транспирация культуры, мм"
               stroke="#4c956c"
               strokeOpacity={0.34}
               strokeDasharray="5 5"

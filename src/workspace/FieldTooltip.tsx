@@ -36,7 +36,8 @@ export function buildFieldTooltipHtml(field: FieldSeasonMapPropertiesDto): strin
       <div>Полная влагоёмкость: ${formatNumber(field.soil_total_capacity_water_mm)} мм</div>
       <div>НВ: ${formatNumber(field.soil_field_capacity_water_mm)} мм</div>
       <div>ВЗ: ${formatNumber(field.soil_wilting_point_capacity_water_mm)} мм</div>
-      <div>AWC: ${formatNumber(derived.available_water_content_mm)} мм</div>
+      <div>AWC (НВ − ВЗ): ${formatNumber(derived.available_water_content_mm)} мм</div>
+      <div>Текущий доступный запас: ${formatNumber(derived.current_available_water_mm)} мм</div>
       <div>% доступных влагозапасов: ${formatNumber(derived.available_water_fraction_pct, 0)}%</div>
       <div>Верхняя линия: ${formatNumber(thresholds.upper_limit_water_mm)} мм</div>
       <div>Оптимум: ${formatNumber(thresholds.optimum_water_mm)} мм</div>
