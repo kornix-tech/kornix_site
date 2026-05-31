@@ -9,7 +9,10 @@ function csvCell(value: CsvValue): string {
     return '';
   }
 
-  const text = String(value);
+  const rawText = String(value);
+  // CSV открывают в Excel/Sheets, поэтому строки с формульным префиксом
+  // сохраняем как текст: это закрывает CSV formula injection для данных API.
+  const text = /^[=+\-@\t\r]/.test(rawText) ? `'${rawText}` : rawText;
   return /[",\n\r;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
