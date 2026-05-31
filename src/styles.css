@@ -959,6 +959,7 @@ input[type='checkbox'] {
   position: relative;
   min-width: 0;
   min-height: 0;
+  container-type: inline-size;
   display: block;
   padding: 5px 8px 6px;
   border: 1px solid rgb(23 65 38 / 10%);
@@ -1068,16 +1069,44 @@ input[type='checkbox'] {
 }
 
 .chart-time-scale {
-  display: grid;
-  grid-template-columns: auto auto auto auto;
-  gap: 8px;
-  justify-content: space-between;
+  position: relative;
+  height: 14px;
   margin-top: 4px;
   color: var(--color-muted);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   line-height: 1;
+}
+
+.chart-time-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
   white-space: nowrap;
+}
+
+.chart-time-tick:first-child {
+  transform: translateX(0);
+}
+
+.chart-time-tick:last-child {
+  transform: translateX(-100%);
+}
+
+.chart-time-tick-forecast {
+  color: var(--color-orange-600);
+}
+
+@container (max-width: 360px) {
+  .chart-time-tick-secondary {
+    display: none;
+  }
+}
+
+@container (max-width: 240px) {
+  .chart-time-tick-forecast {
+    display: none;
+  }
 }
 
 .chart-side-panel {
@@ -1105,6 +1134,9 @@ input[type='checkbox'] {
 .chart-date-controls input {
   min-width: 0;
   padding: 7px 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .chart-date-separator {

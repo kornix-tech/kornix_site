@@ -208,21 +208,90 @@ function formatDateLabel(day: string): string {
   return `${date}.${month}.${year}`;
 }
 
+function formatDateShortLabel(day: string): string {
+  const [year, month, date] = day.split('-');
+  return `${date}.${month}.${year.slice(-2)}`;
+}
+
+function parseDateShortLabel(value: string): string | null {
+  const match = value.trim().match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, day, month, shortYear] = match;
+  const year = `20${shortYear}`;
+  const iso = `${year}-${month}-${day}`;
+  const parsed = new Date(`${iso}T00:00:00Z`);
+  if (
+    !Number.isFinite(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== Number(year) ||
+    parsed.getUTCMonth() + 1 !== Number(month) ||
+    parsed.getUTCDate() !== Number(day)
+  ) {
+    return null;
+  }
+
+  return iso;
+}
+
+function CompactDateInput({
+  value,
+  ariaLabel,
+  onChange
+}: {
+  value: string;
+  ariaLabel: string;
+  onChange: (day: string) => void;
+}) {
+  const [draft, setDraft] = useState(formatDateShortLabel(value));
+
+  useEffect(() => {
+    setDraft(formatDateShortLabel(value));
+  }, [value]);
+
+  function commit(nextDraft: string) {
+    const parsed = parseDateShortLabel(nextDraft);
+    if (parsed) {
+      onChange(parsed);
+      return;
+    }
+    setDraft(formatDateShortLabel(value));
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      aria-label={ariaLabel}
+      placeholder="ДД.ММ.ГГ"
+      value={draft}
+      onBlur={() => commit(draft)}
+      onChange={(event) => {
+        const nextDraft = event.target.value;
+        setDraft(nextDraft);
+        const parsed = parseDateShortLabel(nextDraft);
+        if (parsed) {
+          onChange(parsed);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          commit(draft);
+        }
+        if (event.key === 'Escape') {
+          setDraft(formatDateShortLabel(value));
+        }
+      }}
+    />
+  );
+}
+
 function findSeries(
   profile: KornixProfileTimeseriesDto,
   code: RequiredBackendMetricLongName
 ): KornixMetricSeriesDto | undefined {
   return profile.metrics.find((series) => series.long_name_for_code === code);
-}
-
-function minCoverage(series: KornixMetricSeriesDto): number | null {
-  const values = series.points
-    .map((point) => (typeof point.coverage === 'number' ? point.coverage : null))
-    .filter((value): value is number => value !== null);
-  if (!values.length) {
-    return null;
-  }
-  return Math.min(...values);
 }
 
 function scalarValue(series: KornixMetricSeriesDto | undefined, day: string): number | null {
@@ -586,16 +655,7 @@ function ChartBody({
     clamp(dayDiff(viewFirstDay, selectedDay), 0, dayDiff(viewFirstDay, viewLastDay))
   );
   const saturation = fullSaturationMm(rows);
-  const coverage = Math.min(
-    ...profile.metrics
-      .map((data) => minCoverage(data))
-      .filter((value): value is number => value !== null)
-  );
-  const showCoverageWarning = Number.isFinite(coverage) && coverage < 0.9;
   const aggregation = profile.aggregation;
-  const warnings = Array.from(
-    new Map(profile.warnings.map((warning) => [warning.code, warning])).values()
-  );
   const profileCsv = buildProfileCsv(rows, saturation, forecastStart);
 
   useEffect(() => {
@@ -631,11 +691,19 @@ function ChartBody({
       <aside className="chart-side-panel">
         <div className="chart-date-controls">
           <label aria-label="Начало видимого периода графика">
-            <input type="date" value={from} onChange={(event) => onFromChange(event.target.value)} />
+            <CompactDateInput
+              value={from}
+              ariaLabel="Начало видимого периода графика"
+              onChange={onFromChange}
+            />
           </label>
           <span className="chart-date-separator" aria-hidden="true">—</span>
           <label aria-label="Конец видимого периода графика">
-            <input type="date" value={to} onChange={(event) => onToChange(event.target.value)} />
+            <CompactDateInput
+              value={to}
+              ariaLabel="Конец видимого периода графика"
+              onChange={onToChange}
+            />
           </label>
         </div>
 
@@ -654,19 +722,6 @@ function ChartBody({
         </div>
 
         <LegendStrip />
-
-        {showCoverageWarning && (
-          <div className="warning-state">
-            Часть точек рассчитана по неполному покрытию. Минимальное покрытие:{' '}
-            {Math.round((coverage ?? 0) * 100)}%.
-          </div>
-        )}
-
-        {warnings.map((warning) => (
-          <div key={warning.code} className="warning-state">
-            {warning.message}
-          </div>
-        ))}
 
         <ExportActions onExportGraphics={onExportGraphics} onExportData={onExportData} dataDisabled={!profileCsv} />
       </aside>
@@ -771,7 +826,24 @@ function ChartTimeZoom({
   const viewLeft = maxIndex === 0 ? 0 : (viewFromIndex / maxIndex) * 100;
   const viewRight = maxIndex === 0 ? 0 : 100 - (viewToIndex / maxIndex) * 100;
   const viewEndLeft = maxIndex === 0 ? 100 : (viewToIndex / maxIndex) * 100;
+  const visibleWindowDays = Math.max(1, viewToIndex - viewFromIndex);
+  const forecastInVisibleWindow = forecastStartIndex >= viewFromIndex && forecastStartIndex <= viewToIndex;
+  const forecastInWindowLeft = ((forecastStartIndex - viewFromIndex) / visibleWindowDays) * 100;
   const minimumWindowDays = Math.min(5, maxIndex);
+  const scaleTicksByDay = [
+    { day: from, left: 0, kind: 'edge' },
+    { day: viewFrom, left: viewLeft, kind: 'secondary' },
+    { day: forecastStart, left: forecastLeft, kind: 'forecast' },
+    { day: viewTo, left: viewEndLeft, kind: 'secondary' },
+    { day: to, left: 100, kind: 'edge' }
+  ].reduce<Map<string, { day: string; left: number; kind: string }>>((ticksByDay, tick) => {
+    const existingTick = ticksByDay.get(tick.day);
+    if (!existingTick || tick.kind === 'edge') {
+      ticksByDay.set(tick.day, tick);
+    }
+    return ticksByDay;
+  }, new Map());
+  const scaleTicks = Array.from(scaleTicksByDay.values()).sort((left, right) => left.left - right.left);
 
   function changeZoomStart(nextIndex: number) {
     const safeIndex = clamp(nextIndex, 0, Math.max(0, viewToIndex - minimumWindowDays));
@@ -804,8 +876,11 @@ function ChartTimeZoom({
         </div>
         <div className="chart-zoom-track">
           <span className="chart-zoom-forecast" style={{ left: `${forecastLeft}%` }} />
-          <span className="chart-zoom-window" style={{ left: `${viewLeft}%`, right: `${viewRight}%` }} />
-          <span className="chart-zoom-boundary" style={{ left: `${forecastLeft}%` }} />
+          <span className="chart-zoom-window" style={{ left: `${viewLeft}%`, right: `${viewRight}%` }}>
+            {forecastInVisibleWindow && (
+              <span className="chart-zoom-boundary" style={{ left: `${forecastInWindowLeft}%` }} />
+            )}
+          </span>
         </div>
         <input
           className="chart-zoom-range chart-zoom-from"
@@ -828,10 +903,15 @@ function ChartTimeZoom({
           onChange={(event) => changeZoomEnd(Number(event.target.value))}
         />
         <div className="chart-time-scale">
-          <span>{formatDateLabel(from)}</span>
-          <span>{formatDateLabel(viewFrom)} — {formatDateLabel(viewTo)}</span>
-          <span>{formatDateLabel(forecastStart)}</span>
-          <span>{formatDateLabel(to)}</span>
+          {scaleTicks.map((tick) => (
+            <span
+              key={`${tick.kind}-${tick.day}`}
+              className={`chart-time-tick chart-time-tick-${tick.kind}`}
+              style={{ left: `${tick.left}%` }}
+            >
+              {formatDateShortLabel(tick.day)}
+            </span>
+          ))}
         </div>
       </div>
     </div>
