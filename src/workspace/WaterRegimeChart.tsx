@@ -110,6 +110,39 @@ function tooltipDateLabel(label: unknown, payload?: ReadonlyArray<{ payload?: Pr
   return payload?.[0]?.payload?.day ?? String(label);
 }
 
+function tooltipValueFormatter(value: unknown, name: unknown): [string, string] {
+  const label = String(name);
+  const numericValue = Array.isArray(value)
+    ? value.filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
+    : typeof value === 'number' && Number.isFinite(value)
+      ? [value]
+      : [];
+
+  if (!numericValue.length) {
+    return ['нет данных', label];
+  }
+
+  if (Array.isArray(value) && label.includes('Доступные влагозапасы')) {
+    const difference = Math.max(0, numericValue[numericValue.length - 1] - numericValue[0]);
+    return [`${Math.round(difference)} мм`, 'Доступные влагозапасы'];
+  }
+
+  if (
+    label.includes('влагозапас') ||
+    label.includes('влагоёмкость') ||
+    label.includes('насыщение') ||
+    label.includes('Оптимум')
+  ) {
+    return [`${Math.round(numericValue[0])} мм`, label];
+  }
+
+  if (label.includes('Сумма температур')) {
+    return [`${Math.round(numericValue[0])} °C`, label];
+  }
+
+  return [`${Number(numericValue[0].toFixed(1))}`, label];
+}
+
 const CHART_TOOLTIP_PROPS = {
   allowEscapeViewBox: { x: true, y: true },
   wrapperStyle: {
@@ -136,7 +169,8 @@ const CHART_TOOLTIP_PROPS = {
     fontSize: 10,
     lineHeight: 1.12
   },
-  labelFormatter: tooltipDateLabel
+  labelFormatter: tooltipDateLabel,
+  formatter: tooltipValueFormatter
 };
 
 function localDateIso(date: Date): string {
