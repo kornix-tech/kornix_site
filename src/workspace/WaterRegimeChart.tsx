@@ -623,7 +623,6 @@ function ChartBody({
           viewFrom={viewFirstDay}
           viewTo={viewLastDay}
           forecastStart={forecastStart}
-          day={selectedDayInRange}
           onFromChange={onFromChange}
           onToChange={onToChange}
           onChange={setSelectedDay}
@@ -631,12 +630,11 @@ function ChartBody({
       </div>
       <aside className="chart-side-panel">
         <div className="chart-date-controls">
-          <label>
-            C
+          <label aria-label="Начало видимого периода графика">
             <input type="date" value={from} onChange={(event) => onFromChange(event.target.value)} />
           </label>
-          <label>
-            По
+          <span className="chart-date-separator" aria-hidden="true">—</span>
+          <label aria-label="Конец видимого периода графика">
             <input type="date" value={to} onChange={(event) => onToChange(event.target.value)} />
           </label>
         </div>
@@ -747,7 +745,6 @@ function handleZoneKey(event: KeyboardEvent<HTMLElement>, action: () => void) {
 }
 
 function ChartTimeZoom({
-  day,
   from,
   to,
   viewFrom,
@@ -757,7 +754,6 @@ function ChartTimeZoom({
   onToChange,
   onChange
 }: {
-  day: string;
   from: string;
   to: string;
   viewFrom: string;
@@ -767,101 +763,50 @@ function ChartTimeZoom({
   onToChange: (day: string) => void;
   onChange: (day: string) => void;
 }) {
-  const [isPlaying, setIsPlaying] = useState(false);
   const maxIndex = Math.max(0, dayDiff(from, to));
-  const selectedIndex = clamp(dayDiff(from, day), 0, maxIndex);
-  const selectedDay = addDaysIso(from, selectedIndex);
   const viewFromIndex = clamp(dayDiff(from, viewFrom), 0, maxIndex);
   const viewToIndex = clamp(dayDiff(from, viewTo), viewFromIndex, maxIndex);
   const forecastStartIndex = clamp(dayDiff(from, forecastStart), 0, maxIndex);
   const forecastLeft = maxIndex === 0 ? 100 : (forecastStartIndex / maxIndex) * 100;
   const viewLeft = maxIndex === 0 ? 0 : (viewFromIndex / maxIndex) * 100;
   const viewRight = maxIndex === 0 ? 0 : 100 - (viewToIndex / maxIndex) * 100;
-  const thumbLeft = maxIndex === 0 ? 0 : (selectedIndex / maxIndex) * 100;
-  const isForecast = selectedDay >= forecastStart;
+  const viewEndLeft = maxIndex === 0 ? 100 : (viewToIndex / maxIndex) * 100;
   const minimumWindowDays = Math.min(5, maxIndex);
 
-  function pauseAnimation() {
-    setIsPlaying(false);
-  }
-
-  function changeBy(offset: number) {
-    pauseAnimation();
-    onChange(addDaysIso(from, clamp(selectedIndex + offset, 0, maxIndex)));
-  }
-
   function changeZoomStart(nextIndex: number) {
-    pauseAnimation();
     const safeIndex = clamp(nextIndex, 0, Math.max(0, viewToIndex - minimumWindowDays));
-    onFromChange(addDaysIso(from, safeIndex));
+    const nextDay = addDaysIso(from, safeIndex);
+    onFromChange(nextDay);
+    onChange(nextDay);
   }
 
   function changeZoomEnd(nextIndex: number) {
-    pauseAnimation();
     const safeIndex = clamp(nextIndex, Math.min(maxIndex, viewFromIndex + minimumWindowDays), maxIndex);
-    onToChange(addDaysIso(from, safeIndex));
+    const nextDay = addDaysIso(from, safeIndex);
+    onToChange(nextDay);
+    onChange(nextDay);
   }
-
-  useEffect(() => {
-    if (!isPlaying) {
-      return undefined;
-    }
-
-    const timer = window.setInterval(() => {
-      const nextIndex = selectedIndex >= maxIndex ? 0 : selectedIndex + 1;
-      onChange(addDaysIso(from, nextIndex));
-    }, 900);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [from, isPlaying, maxIndex, onChange, selectedIndex]);
 
   return (
     <div className="chart-time-zoom">
-      <button
-        type="button"
-        className="chart-time-play"
-        aria-label={isPlaying ? 'Остановить анимацию дат графика' : 'Запустить анимацию дат графика'}
-        onClick={() => setIsPlaying((value) => !value)}
-      >
-        {isPlaying ? 'Ⅱ' : '▶'}
-      </button>
-      <button type="button" aria-label="Предыдущий день графика" onClick={() => changeBy(-1)}>
-        ‹
-      </button>
       <div className="chart-zoom-track-wrap">
         <div
-          className="chart-time-label"
-          role="button"
-          tabIndex={0}
-          aria-label="Ползунок даты графика"
-          style={{ left: `${thumbLeft}%` }}
-          onKeyDown={pauseAnimation}
-          onPointerDown={pauseAnimation}
+          className="chart-zoom-edge-label chart-zoom-edge-label-start"
+          style={{ left: `${viewLeft}%` }}
         >
-          {formatDateLabel(selectedDay)}
-          {isForecast && <span>прогноз</span>}
+          {formatDateLabel(viewFrom)}
+        </div>
+        <div
+          className="chart-zoom-edge-label chart-zoom-edge-label-end"
+          style={{ left: `${viewEndLeft}%` }}
+        >
+          {formatDateLabel(viewTo)}
         </div>
         <div className="chart-zoom-track">
           <span className="chart-zoom-forecast" style={{ left: `${forecastLeft}%` }} />
           <span className="chart-zoom-window" style={{ left: `${viewLeft}%`, right: `${viewRight}%` }} />
           <span className="chart-zoom-boundary" style={{ left: `${forecastLeft}%` }} />
         </div>
-        <input
-          className="chart-time-range"
-          aria-label="Дата отображения графика"
-          type="range"
-          min={0}
-          max={maxIndex}
-          step={1}
-          value={selectedIndex}
-          onChange={(event) => {
-            pauseAnimation();
-            onChange(addDaysIso(from, Number(event.target.value)));
-          }}
-          onPointerDown={pauseAnimation}
-        />
         <input
           className="chart-zoom-range chart-zoom-from"
           aria-label="Начало видимого периода графика"
@@ -871,7 +816,6 @@ function ChartTimeZoom({
           step={1}
           value={viewFromIndex}
           onChange={(event) => changeZoomStart(Number(event.target.value))}
-          onPointerDown={pauseAnimation}
         />
         <input
           className="chart-zoom-range chart-zoom-to"
@@ -882,7 +826,6 @@ function ChartTimeZoom({
           step={1}
           value={viewToIndex}
           onChange={(event) => changeZoomEnd(Number(event.target.value))}
-          onPointerDown={pauseAnimation}
         />
         <div className="chart-time-scale">
           <span>{formatDateLabel(from)}</span>
@@ -891,9 +834,6 @@ function ChartTimeZoom({
           <span>{formatDateLabel(to)}</span>
         </div>
       </div>
-      <button type="button" aria-label="Следующий день графика" onClick={() => changeBy(1)}>
-        ›
-      </button>
     </div>
   );
 }
