@@ -25,6 +25,7 @@ import { buildCsv } from './exportUtils';
 
 type ProfileRow = {
   day: string;
+  xIndex: number;
   temperature: number | null;
   temperatureFact: number | null;
   temperatureForecast: number | null;
@@ -105,6 +106,10 @@ const BOTTOM_CHART_MARGIN = {
   bottom: 0
 };
 
+function tooltipDateLabel(label: unknown, payload?: ReadonlyArray<{ payload?: ProfileRow }>): string {
+  return payload?.[0]?.payload?.day ?? String(label);
+}
+
 const CHART_TOOLTIP_PROPS = {
   allowEscapeViewBox: { x: true, y: true },
   wrapperStyle: {
@@ -130,7 +135,8 @@ const CHART_TOOLTIP_PROPS = {
     padding: 0,
     fontSize: 10,
     lineHeight: 1.12
-  }
+  },
+  labelFormatter: tooltipDateLabel
 };
 
 function localDateIso(date: Date): string {
@@ -254,7 +260,7 @@ function buildProfileRows(
   ).sort();
   const series = (code: RequiredBackendMetricLongName) => findSeries(profile, code);
 
-  return days.map((day) => {
+  return days.map((day, xIndex) => {
     const temperature = meanValue(series('air_temperature_daily_c'), day);
     const humidity = meanValue(series('relative_humidity_daily_pct'), day);
     const wind = meanValue(series('wind_daily_mps'), day);
@@ -310,6 +316,7 @@ function buildProfileRows(
 
     return {
       day,
+      xIndex,
       temperature,
       temperatureFact,
       temperatureForecast,
@@ -535,10 +542,15 @@ function ChartBody({
     return filteredRows.length > 0 ? filteredRows : allRows;
   }, [allRows, from, to]);
   const today = localDateIso(new Date());
-  const firstDay = rows[0]?.day ?? from;
-  const lastDay = rows.length > 0 ? rows[rows.length - 1].day : to;
+  const firstDay = allRows[0]?.day ?? from;
+  const lastDay = allRows.length > 0 ? allRows[allRows.length - 1].day : to;
+  const viewFirstDay = rows[0]?.day ?? firstDay;
+  const viewLastDay = rows.length > 0 ? rows[rows.length - 1].day : lastDay;
   const [selectedDay, setSelectedDay] = useState(today);
-  const selectedDayInRange = addDaysIso(firstDay, clamp(dayDiff(firstDay, selectedDay), 0, dayDiff(firstDay, lastDay)));
+  const selectedDayInRange = addDaysIso(
+    viewFirstDay,
+    clamp(dayDiff(viewFirstDay, selectedDay), 0, dayDiff(viewFirstDay, viewLastDay))
+  );
   const saturation = fullSaturationMm(rows);
   const coverage = Math.min(
     ...profile.metrics
@@ -558,9 +570,9 @@ function ChartBody({
 
   useEffect(() => {
     setSelectedDay((current) =>
-      addDaysIso(firstDay, clamp(dayDiff(firstDay, current), 0, dayDiff(firstDay, lastDay)))
+      addDaysIso(viewFirstDay, clamp(dayDiff(viewFirstDay, current), 0, dayDiff(viewFirstDay, viewLastDay)))
     );
-  }, [firstDay, lastDay]);
+  }, [viewFirstDay, viewLastDay]);
 
   return (
     <div className="chart-workbench">
@@ -571,11 +583,15 @@ function ChartBody({
           forecastStart={forecastStart}
           selectedDay={selectedDayInRange}
         />
-        <ChartTimeRuler
+        <ChartTimeZoom
           from={firstDay}
           to={lastDay}
+          viewFrom={viewFirstDay}
+          viewTo={viewLastDay}
           forecastStart={forecastStart}
           day={selectedDayInRange}
+          onFromChange={onFromChange}
+          onToChange={onToChange}
           onChange={setSelectedDay}
         />
       </div>
@@ -643,18 +659,18 @@ function LegendStrip() {
 }
 
 function ForecastBoundary({
-  forecastStart,
+  forecastX,
   label,
   yAxisId
 }: {
-  forecastStart: string;
+  forecastX: number;
   label?: boolean;
   yAxisId?: string;
 }) {
   return (
     <ReferenceLine
       yAxisId={yAxisId}
-      x={forecastStart}
+      x={forecastX}
       stroke="#d95f0b"
       strokeDasharray="4 4"
       strokeWidth={1.5}
@@ -663,11 +679,11 @@ function ForecastBoundary({
   );
 }
 
-function SelectedDayMarker({ day, yAxisId }: { day: string; yAxisId?: string }) {
+function SelectedDayMarker({ selectedX, yAxisId }: { selectedX: number; yAxisId?: string }) {
   return (
     <ReferenceLine
       yAxisId={yAxisId}
-      x={day}
+      x={selectedX}
       stroke="#174126"
       strokeDasharray="2 4"
       strokeOpacity={0.72}
@@ -696,27 +712,40 @@ function handleZoneKey(event: KeyboardEvent<HTMLElement>, action: () => void) {
   }
 }
 
-function ChartTimeRuler({
+function ChartTimeZoom({
   day,
   from,
   to,
+  viewFrom,
+  viewTo,
   forecastStart,
+  onFromChange,
+  onToChange,
   onChange
 }: {
   day: string;
   from: string;
   to: string;
+  viewFrom: string;
+  viewTo: string;
   forecastStart: string;
+  onFromChange: (day: string) => void;
+  onToChange: (day: string) => void;
   onChange: (day: string) => void;
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const maxIndex = Math.max(0, dayDiff(from, to));
   const selectedIndex = clamp(dayDiff(from, day), 0, maxIndex);
   const selectedDay = addDaysIso(from, selectedIndex);
+  const viewFromIndex = clamp(dayDiff(from, viewFrom), 0, maxIndex);
+  const viewToIndex = clamp(dayDiff(from, viewTo), viewFromIndex, maxIndex);
   const forecastStartIndex = clamp(dayDiff(from, forecastStart), 0, maxIndex);
   const forecastLeft = maxIndex === 0 ? 100 : (forecastStartIndex / maxIndex) * 100;
+  const viewLeft = maxIndex === 0 ? 0 : (viewFromIndex / maxIndex) * 100;
+  const viewRight = maxIndex === 0 ? 0 : 100 - (viewToIndex / maxIndex) * 100;
   const thumbLeft = maxIndex === 0 ? 0 : (selectedIndex / maxIndex) * 100;
   const isForecast = selectedDay >= forecastStart;
+  const minimumWindowDays = Math.min(5, maxIndex);
 
   function pauseAnimation() {
     setIsPlaying(false);
@@ -725,6 +754,18 @@ function ChartTimeRuler({
   function changeBy(offset: number) {
     pauseAnimation();
     onChange(addDaysIso(from, clamp(selectedIndex + offset, 0, maxIndex)));
+  }
+
+  function changeZoomStart(nextIndex: number) {
+    pauseAnimation();
+    const safeIndex = clamp(nextIndex, 0, Math.max(0, viewToIndex - minimumWindowDays));
+    onFromChange(addDaysIso(from, safeIndex));
+  }
+
+  function changeZoomEnd(nextIndex: number) {
+    pauseAnimation();
+    const safeIndex = clamp(nextIndex, Math.min(maxIndex, viewFromIndex + minimumWindowDays), maxIndex);
+    onToChange(addDaysIso(from, safeIndex));
   }
 
   useEffect(() => {
@@ -743,10 +784,10 @@ function ChartTimeRuler({
   }, [from, isPlaying, maxIndex, onChange, selectedIndex]);
 
   return (
-    <div className="map-time-ruler chart-time-ruler">
+    <div className="chart-time-zoom">
       <button
         type="button"
-        className="map-time-play"
+        className="chart-time-play"
         aria-label={isPlaying ? 'Остановить анимацию дат графика' : 'Запустить анимацию дат графика'}
         onClick={() => setIsPlaying((value) => !value)}
       >
@@ -755,9 +796,9 @@ function ChartTimeRuler({
       <button type="button" aria-label="Предыдущий день графика" onClick={() => changeBy(-1)}>
         ‹
       </button>
-      <div className="map-time-track-wrap">
+      <div className="chart-zoom-track-wrap">
         <div
-          className="map-time-label"
+          className="chart-time-label"
           role="button"
           tabIndex={0}
           aria-label="Ползунок даты графика"
@@ -768,11 +809,13 @@ function ChartTimeRuler({
           {formatDateLabel(selectedDay)}
           {isForecast && <span>прогноз</span>}
         </div>
-        <div className="map-time-track">
-          <span className="map-time-forecast" style={{ left: `${forecastLeft}%` }} />
-          <span className="map-time-boundary" style={{ left: `${forecastLeft}%` }} />
+        <div className="chart-zoom-track">
+          <span className="chart-zoom-forecast" style={{ left: `${forecastLeft}%` }} />
+          <span className="chart-zoom-window" style={{ left: `${viewLeft}%`, right: `${viewRight}%` }} />
+          <span className="chart-zoom-boundary" style={{ left: `${forecastLeft}%` }} />
         </div>
         <input
+          className="chart-time-range"
           aria-label="Дата отображения графика"
           type="range"
           min={0}
@@ -785,8 +828,31 @@ function ChartTimeRuler({
           }}
           onPointerDown={pauseAnimation}
         />
-        <div className="map-time-scale">
+        <input
+          className="chart-zoom-range chart-zoom-from"
+          aria-label="Начало видимого периода графика"
+          type="range"
+          min={0}
+          max={maxIndex}
+          step={1}
+          value={viewFromIndex}
+          onChange={(event) => changeZoomStart(Number(event.target.value))}
+          onPointerDown={pauseAnimation}
+        />
+        <input
+          className="chart-zoom-range chart-zoom-to"
+          aria-label="Конец видимого периода графика"
+          type="range"
+          min={0}
+          max={maxIndex}
+          step={1}
+          value={viewToIndex}
+          onChange={(event) => changeZoomEnd(Number(event.target.value))}
+          onPointerDown={pauseAnimation}
+        />
+        <div className="chart-time-scale">
           <span>{formatDateLabel(from)}</span>
+          <span>{formatDateLabel(viewFrom)} — {formatDateLabel(viewTo)}</span>
           <span>{formatDateLabel(forecastStart)}</span>
           <span>{formatDateLabel(to)}</span>
         </div>
@@ -810,6 +876,11 @@ function CompositeProfileChart({
   selectedDay: string;
 }) {
   const waterDomain = waterReserveDomain(rows, saturation);
+  const firstX = rows[0]?.xIndex ?? 0;
+  const lastX = rows[rows.length - 1]?.xIndex ?? firstX;
+  const xDomain: [number, number] = [firstX, lastX <= firstX ? firstX + 1 : lastX];
+  const forecastX = rows.find((row) => row.day >= forecastStart)?.xIndex ?? lastX;
+  const selectedX = rows.find((row) => row.day === selectedDay)?.xIndex ?? firstX;
   const [focusedZone, setFocusedZone] = useState<ChartZoneId | null>(null);
 
   function toggleZone(zone: ChartZoneId) {
@@ -842,7 +913,7 @@ function CompositeProfileChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} syncId="water-profile" margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="day" hide />
+            <XAxis dataKey="xIndex" type="number" domain={xDomain} hide />
             <YAxis
               yAxisId="temperature"
               width={LEFT_AXIS_WIDTH}
@@ -879,8 +950,8 @@ function CompositeProfileChart({
               tick={{ fill: '#8f4e18', fontSize: 11 }}
             />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
-            <ForecastBoundary forecastStart={forecastStart} label yAxisId="temperature" />
-            <SelectedDayMarker day={selectedDay} yAxisId="temperature" />
+            <ForecastBoundary forecastX={forecastX} label yAxisId="temperature" />
+            <SelectedDayMarker selectedX={selectedX} yAxisId="temperature" />
             <Line
               yAxisId="temperature"
               type="monotone"
@@ -988,7 +1059,7 @@ function CompositeProfileChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} syncId="water-profile" margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="day" hide />
+            <XAxis dataKey="xIndex" type="number" domain={xDomain} hide />
             <YAxis
               yAxisId="temperatureSum"
               width={LEFT_AXIS_WIDTH}
@@ -1008,8 +1079,8 @@ function CompositeProfileChart({
             />
             <RightAxisReserve yAxisId="plantRightReserveA" width={RIGHT_AXIS_TOTAL_WIDTH - 48} />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
-            <ForecastBoundary forecastStart={forecastStart} yAxisId="temperatureSum" />
-            <SelectedDayMarker day={selectedDay} yAxisId="temperatureSum" />
+            <ForecastBoundary forecastX={forecastX} yAxisId="temperatureSum" />
+            <SelectedDayMarker selectedX={selectedX} yAxisId="temperatureSum" />
             <Line
               yAxisId="temperatureSum"
               type="monotone"
@@ -1071,7 +1142,7 @@ function CompositeProfileChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} syncId="water-profile" margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="day" hide />
+            <XAxis dataKey="xIndex" type="number" domain={xDomain} hide />
             <YAxis
               width={LEFT_AXIS_WIDTH}
               unit="мм"
@@ -1098,8 +1169,8 @@ function CompositeProfileChart({
             />
             <RightAxisReserve yAxisId="waterEvaporationReserve" width={RIGHT_AXIS_EVAPORATION_WIDTH} />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
-            <ForecastBoundary forecastStart={forecastStart} />
-            <SelectedDayMarker day={selectedDay} />
+            <ForecastBoundary forecastX={forecastX} />
+            <SelectedDayMarker selectedX={selectedX} />
             {saturation !== null && (
               <ReferenceLine
                 y={saturation}
@@ -1187,7 +1258,9 @@ function CompositeProfileChart({
           <ComposedChart data={rows} syncId="water-profile" margin={BOTTOM_CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
-              dataKey="day"
+              dataKey="xIndex"
+              type="number"
+              domain={xDomain}
               hide
             />
             <YAxis
@@ -1215,8 +1288,8 @@ function CompositeProfileChart({
             />
             <RightAxisReserve yAxisId="precipitationEvaporationReserve" width={RIGHT_AXIS_EVAPORATION_WIDTH} />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
-            <ForecastBoundary forecastStart={forecastStart} />
-            <SelectedDayMarker day={selectedDay} />
+            <ForecastBoundary forecastX={forecastX} />
+            <SelectedDayMarker selectedX={selectedX} />
             <Bar
               dataKey="precipitationFact"
               name="Осадки, мм"
