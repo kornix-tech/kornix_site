@@ -6,6 +6,7 @@ import type {
   FieldSeasonMapPropertiesDto,
   FieldWaterRegimeStatusCode
 } from '../types/kornix';
+import { deriveWaterMetrics } from '../features/water-regime/derivedWaterMetrics';
 import { buildFieldTooltipHtml } from './FieldTooltip';
 
 export type MapDisplayMode = 'status' | 'water_percent' | 'precipitation' | 'irrigation' | 'temperature_sum';
@@ -25,7 +26,7 @@ function styleForStatus(status: FieldWaterRegimeStatusCode): L.PathOptions {
     case 'critical':
       return { ...base, color: '#9f1d20', fillColor: '#e53935' };
     case 'not_calculated':
-    case 'readiness_blocked':
+    case 'calculation_failed':
       return { ...base, color: '#5f6368', fillColor: '#b0b4b8', dashArray: '4 4' };
     case 'no_data':
     default:
@@ -129,25 +130,37 @@ function styleForMetric(
   }
 
   if (mode === 'water_percent') {
-    const ratio = clamp((field.currentWaterPercent ?? 0) / 100);
+    const waterFraction = deriveWaterMetrics(field).available_water_fraction_pct;
+    if (waterFraction === null) {
+      return styleForStatus('no_data');
+    }
+    const ratio = clamp(waterFraction / 100);
     const fillColor = threePointGradient('#d95745', '#f0c84b', '#2f8f46', ratio);
     return { ...base, color: '#2d5a2f', fillColor };
   }
 
   if (mode === 'precipitation') {
-    const fillColor = mixColor('#eaf8ff', '#0878be', ratioInRange(field.precipitationMm, ranges.precipitation));
+    const fillColor = mixColor(
+      '#eaf8ff',
+      '#0878be',
+      ratioInRange(field.precipitation_effective_daily_mm, ranges.precipitation)
+    );
     return { ...base, color: '#176f9f', fillColor };
   }
 
   if (mode === 'irrigation') {
-    const fillColor = mixColor('#edf4ff', '#174ea6', ratioInRange(field.actualIrrigationMm, ranges.irrigation));
+    const fillColor = mixColor(
+      '#edf4ff',
+      '#174ea6',
+      ratioInRange(field.irrigation_effective_daily_mm, ranges.irrigation)
+    );
     return { ...base, color: '#174ea6', fillColor };
   }
 
   const fillColor = mixColor(
     '#fff3df',
     '#d95f0b',
-    ratioInRange(field.temperatureSumFromSowingC, ranges.temperature_sum)
+    ratioInRange(field.positive_temperature_sum_from_sowing_c, ranges.temperature_sum)
   );
   return { ...base, color: '#b44e08', fillColor };
 }
@@ -230,10 +243,10 @@ export function FieldMap({
     }
 
     const ranges = {
-      water_percent: valueRange(fields, (field) => field.currentWaterPercent),
-      precipitation: valueRange(fields, (field) => field.precipitationMm),
-      irrigation: valueRange(fields, (field) => field.actualIrrigationMm),
-      temperature_sum: valueRange(fields, (field) => field.temperatureSumFromSowingC)
+      water_percent: valueRange(fields, (field) => deriveWaterMetrics(field).available_water_fraction_pct),
+      precipitation: valueRange(fields, (field) => field.precipitation_effective_daily_mm),
+      irrigation: valueRange(fields, (field) => field.irrigation_effective_daily_mm),
+      temperature_sum: valueRange(fields, (field) => field.positive_temperature_sum_from_sowing_c)
     };
 
     const layer = L.geoJSON(fields, {

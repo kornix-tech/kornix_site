@@ -1,14 +1,16 @@
-import { todayIso, todayMinus } from './format';
+import { todayIso, todayMinus, todayPlus } from './format';
 
 export type WorkspaceTab = 'map' | 'chart' | 'irrigation';
 
 const MAX_URL_FIELD_IDS = 120;
 const FIELD_SEASON_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,96}$/;
+const CALCULATION_RUN_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,160}$/;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export type WorkspaceUrlState = {
   tab: WorkspaceTab;
   seasonYear: number;
+  calculationRunId: string | null;
   mapDay: string;
   fieldSeasonIds: string[];
   fieldsExplicitlyCleared: boolean;
@@ -20,11 +22,12 @@ export type WorkspaceUrlState = {
 export const DEFAULT_WORKSPACE_STATE: WorkspaceUrlState = {
   tab: 'map',
   seasonYear: 2026,
+  calculationRunId: null,
   mapDay: todayIso(),
   fieldSeasonIds: [],
   fieldsExplicitlyCleared: false,
   from: todayMinus(29),
-  to: todayIso(),
+  to: todayPlus(7),
   aggregation: 'area_weighted_mean'
 };
 
@@ -91,6 +94,7 @@ export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/
     DEFAULT_WORKSPACE_STATE.mapDay
   );
   const fieldsParam = searchParams.get('fields') ?? searchParams.get('fieldSeasonIds') ?? '';
+  const calculationRunIdParam = searchParams.get('calculationRunId');
   const fieldsExplicitlyCleared = fieldsParam === 'none';
   const fieldSeasonIds = fieldsExplicitlyCleared ? [] : parseFieldSeasonIds(fieldsParam);
   const from = normalizedDate(searchParams.get('from'), DEFAULT_WORKSPACE_STATE.from);
@@ -100,6 +104,10 @@ export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/
   return {
     tab,
     seasonYear: Number.isFinite(seasonYearRaw) && seasonYearRaw > 2000 ? seasonYearRaw : 2026,
+    calculationRunId:
+      calculationRunIdParam && CALCULATION_RUN_ID_PATTERN.test(calculationRunIdParam)
+        ? calculationRunIdParam
+        : null,
     mapDay: tab === 'map' ? parsedMapDay : DEFAULT_WORKSPACE_STATE.mapDay,
     fieldSeasonIds,
     fieldsExplicitlyCleared,
@@ -113,6 +121,9 @@ export function serializeWorkspaceState(state: WorkspaceUrlState): URLSearchPara
   const params = new URLSearchParams();
   if (state.seasonYear !== DEFAULT_WORKSPACE_STATE.seasonYear) {
     params.set('season', String(state.seasonYear));
+  }
+  if (state.calculationRunId) {
+    params.set('calculationRunId', state.calculationRunId);
   }
   if (state.tab === 'map' && state.mapDay !== DEFAULT_WORKSPACE_STATE.mapDay) {
     params.set('day', state.mapDay);

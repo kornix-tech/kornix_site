@@ -1,19 +1,26 @@
 import type { AuthUser } from '../features/auth/types';
 
+export type CalculationRunId = string;
+
 export type FieldWaterRegimeStatusCode =
   | 'ok'
   | 'warning'
   | 'critical'
   | 'no_data'
   | 'not_calculated'
-  | 'readiness_blocked';
+  | 'calculation_failed';
 
 export type FieldDataQualityDto = {
   forcingComplete: boolean;
   calculationAvailable: boolean;
-  hasRequiredWeather: boolean;
   hasActiveMapping: boolean;
   messages: string[];
+};
+
+export type CalculationWindowDto = {
+  from: '2026-04-01' | string;
+  to: string;
+  timezone: 'Europe/Moscow';
 };
 
 export type FieldSeasonMapPropertiesDto = {
@@ -21,22 +28,24 @@ export type FieldSeasonMapPropertiesDto = {
   fieldSeasonId: string;
   fieldKey: string;
   fieldName: string;
-  organizationId: string;
-  seasonYear: number;
   areaHa: number;
   cropName: string | null;
-  calculationReady: boolean;
+  cropSowingDate: string | null;
   latestStatus: FieldWaterRegimeStatusCode;
-  latestWaterRegimeDay: string | null;
-  currentWaterPercent: number | null;
-  currentWaterMm: number | null;
-  availableWaterMm: number | null;
-  waterDemandMm: number | null;
-  precipitationMm: number | null;
-  actualIrrigationMm: number | null;
-  recommendedIrrigationMm: number | null;
-  sowingDate?: string | null;
-  temperatureSumFromSowingC?: number | null;
+  day: string;
+  soil_total_capacity_water_mm: number | null;
+  soil_field_capacity_water_mm: number | null;
+  soil_wilting_point_capacity_water_mm: number | null;
+  soil_water_content_mm: number | null;
+  koef_upper_limit: number | null;
+  koef_optimum: number | null;
+  koef_lower_limit: number | null;
+  precipitation_effective_daily_mm: number | null;
+  irrigation_effective_daily_mm: number | null;
+  positive_temperature_sum_from_sowing_c: number | null;
+  crop_transpiration_daily_mm: number | null;
+  recommended_irrigation_date: string | null;
+  recommended_irrigation_mm: number | null;
   dataQuality: FieldDataQualityDto;
 };
 
@@ -48,30 +57,34 @@ export type FieldSeasonMapFeature = GeoJSON.Feature<
 export type FieldSeasonMapFeatureCollection = GeoJSON.FeatureCollection<
   GeoJSON.Polygon | GeoJSON.MultiPolygon,
   FieldSeasonMapPropertiesDto
->;
+> & {
+  generatedAt: string;
+  organizationCode: 'SP';
+  seasonYear: 2026;
+  calculationRunId: CalculationRunId;
+  day: string;
+};
 
-export type KornixMetricCode =
-  | 'available_water_range_mm'
-  | 'available_water_mm'
-  | 'current_water_mm'
-  | 'current_water_percent'
-  | 'water_demand_mm'
-  | 'temperature_daily_c'
-  | 'temperature_sum_from_sowing_c'
-  | 'relative_humidity_mean_pct'
-  | 'wind_speed_2m_mean_mps'
-  | 'potential_evapotranspiration_daily_mm'
-  | 'actual_evapotranspiration_sum_mm'
-  | 'precipitation_mm'
-  | 'actual_irrigation_mm'
-  | 'effective_irrigation_mm'
-  | 'recommended_irrigation_mm';
+export type RequiredBackendMetricLongName =
+  | 'air_temperature_daily_c'
+  | 'relative_humidity_daily_pct'
+  | 'wind_daily_mps'
+  | 'eto_daily_mm'
+  | 'shortwave_radiation_daily_mj_m2'
+  | 'soil_total_capacity_water_mm'
+  | 'soil_field_capacity_water_mm'
+  | 'soil_wilting_point_capacity_water_mm'
+  | 'soil_water_content_mm'
+  | 'positive_temperature_sum_from_sowing_c'
+  | 'crop_transpiration_daily_mm'
+  | 'precipitation_effective_daily_mm'
+  | 'irrigation_effective_daily_mm';
 
-export type MetricValueKind = 'scalar' | 'range' | 'min_mean_max';
-export type MetricChartKind = 'line' | 'bar' | 'composed';
+export type MetricValueKind = 'scalar' | 'min_mean_max' | 'mean_max_gust';
+export type MetricChartKind = 'line' | 'bar';
 
 export type KornixMetricDefinition = {
-  code: KornixMetricCode;
+  long_name_for_code: RequiredBackendMetricLongName;
   label: string;
   unit: string;
   valueKind: MetricValueKind;
@@ -84,101 +97,117 @@ export type KornixMetricDefinition = {
 export type CurrentUserDto = AuthUser;
 
 export type KornixCurrentContextDto = {
-  organizationId: string;
+  organizationCode: 'SP';
   organizationName: string;
-  seasonYear: number;
+  seasonYear: 2026;
+  calculationWindow: CalculationWindowDto;
   fieldCount: number;
-  calculationReadyFieldCount: number;
+  irrigatedFieldCount2026: number;
+  latestCalculationRunId: CalculationRunId | null;
+  latestCalculationStatus: 'not_calculated' | 'completed' | 'failed' | 'in_progress';
+  generatedAt: string;
   mapBounds: null | {
     minLng: number;
     minLat: number;
     maxLng: number;
     maxLat: number;
   };
-  readiness: {
-    status: 'ready' | 'not_ready' | 'partial' | 'unknown';
-    code: string;
-    expectedFields?: number;
-    actualReadyFields?: number;
-    blockers: Array<{
-      severity: 'P0' | 'P1' | 'P2';
-      code: string;
-      message: string;
-    }>;
-  };
 };
 
-export type TimeseriesBaseDto = {
-  metric: KornixMetricCode;
+export type MetricPointBase = {
+  day: string;
+  coverage?: number;
+  contributingAreaHa?: number;
+  totalAreaHa?: number;
+};
+
+export type ScalarMetricSeriesDto = {
+  long_name_for_code: RequiredBackendMetricLongName;
   label: string;
   unit: string;
-  from: string;
-  to: string;
+  valueKind: 'scalar';
+  chartKind: 'line' | 'bar';
+  points: Array<MetricPointBase & { value: number | null }>;
+};
+
+export type MinMeanMaxMetricSeriesDto = {
+  long_name_for_code: 'air_temperature_daily_c' | 'relative_humidity_daily_pct';
+  label: string;
+  unit: '°C' | '%';
+  valueKind: 'min_mean_max';
+  chartKind: 'line';
+  points: Array<MetricPointBase & { min: number | null; mean: number | null; max: number | null }>;
+};
+
+export type WindMetricSeriesDto = {
+  long_name_for_code: 'wind_daily_mps';
+  label: string;
+  unit: 'м/с';
+  valueKind: 'mean_max_gust';
+  chartKind: 'line';
+  points: Array<MetricPointBase & { mean: number | null; maxGust: number | null }>;
+};
+
+export type KornixMetricSeriesDto =
+  | ScalarMetricSeriesDto
+  | MinMeanMaxMetricSeriesDto
+  | WindMetricSeriesDto;
+
+export type IrrigationRecommendationDto = {
+  fieldSeasonId: string;
+  recommended_irrigation_date: string | null;
+  recommended_irrigation_mm: number | null;
+  recommended_irrigation_reason_code?: string | null;
+  recommended_irrigation_priority?: 'ok' | 'warning' | 'critical' | null;
+  recommended_irrigation_confidence?: number | null;
+};
+
+export type KornixProfileTimeseriesDto = {
+  organizationCode: 'SP';
+  seasonYear: 2026;
+  calculationRunId: CalculationRunId;
+  window: CalculationWindowDto;
+  selectedFieldSeasonIds: string[];
   aggregation: null | {
     mode: 'area_weighted_mean';
-    selectedFieldSeasonIds: string[];
     selectedFieldCount: number;
     totalAreaHa: number;
   };
+  metrics: KornixMetricSeriesDto[];
+  recommendations: IrrigationRecommendationDto[];
   warnings: Array<{ code: string; message: string }>;
 };
 
-export type ScalarTimeseriesDto = TimeseriesBaseDto & {
-  valueKind: 'scalar';
-  points: Array<{
-    day: string;
-    value: number | null;
-    coverage?: number;
-    contributingAreaHa?: number;
-    totalAreaHa?: number;
-  }>;
+export type IrrigationTaskDto = {
+  fieldSeasonId: string;
+  irrigationDate: string;
+  irrigationTaskMm: number;
 };
 
-export type RangeTimeseriesDto = TimeseriesBaseDto & {
-  valueKind: 'range';
-  points: Array<{
-    day: string;
-    lower: number | null;
-    upper: number | null;
-    coverage?: number;
-    contributingAreaHa?: number;
-    totalAreaHa?: number;
-  }>;
-};
-
-export type MinMeanMaxTimeseriesDto = TimeseriesBaseDto & {
-  valueKind: 'min_mean_max';
-  points: Array<{
-    day: string;
-    min: number | null;
-    mean: number | null;
-    max: number | null;
-    coverage?: number;
-    contributingAreaHa?: number;
-    totalAreaHa?: number;
-  }>;
-};
-
-export type WaterRegimeTimeseriesDto =
-  | ScalarTimeseriesDto
-  | RangeTimeseriesDto
-  | MinMeanMaxTimeseriesDto;
-
-export type SaveIrrigationEventsRequest = {
-  seasonYear: number;
+export type IrrigationTaskPayloadDto = {
   generatedAt: string;
-  forecastStart: string;
-  events: Array<{
-    fieldSeasonId: string;
-    day: string;
-    irrigationMm: number;
-    periodKind: 'fact' | 'plan';
-  }>;
+  irrigation_tasks: IrrigationTaskDto[];
 };
 
-export type SaveIrrigationEventsResponse = {
-  accepted: boolean;
-  acceptedEventCount: number;
-  recalculationQueued: boolean;
-  requestId?: string;
+export type KornixCalculateRequest = {
+  seasonYear: 2026;
+  irrigationScenario: IrrigationTaskPayloadDto;
+};
+
+export type KornixCalculateResponse = {
+  organizationCode: 'SP';
+  seasonYear: 2026;
+  calculationRunId: CalculationRunId;
+  calculationStatus: 'completed' | 'reused_existing' | 'failed';
+  irrigationScenarioHash: string;
+  reusedPreviousCalculation: boolean;
+  calculationWindow: CalculationWindowDto;
+  fieldCount: number;
+  irrigatedFieldCount2026: number;
+  timing: {
+    startedAt: string;
+    finishedAt: string | null;
+    durationMs: number | null;
+  };
+  warnings: Array<{ code: string; message: string }>;
 };

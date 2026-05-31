@@ -1,140 +1,140 @@
-import type { KornixMetricCode, KornixMetricDefinition } from '../types/kornix';
+import type { KornixMetricDefinition, RequiredBackendMetricLongName } from '../types/kornix';
 
 export const KORNIX_METRICS: KornixMetricDefinition[] = [
   {
-    code: 'available_water_range_mm',
-    label: 'Диапазон доступных влагозапасов',
-    unit: 'мм',
-    valueKind: 'range',
-    chartKind: 'composed',
-    group: 'water_balance',
-    isDefaultVisible: true,
-    isEnabled: true
-  },
-  {
-    code: 'current_water_percent',
-    label: '% доступных влагозапасов',
-    unit: '%',
-    valueKind: 'scalar',
-    chartKind: 'line',
-    group: 'water_balance',
-    isDefaultVisible: true,
-    isEnabled: true
-  },
-  {
-    code: 'current_water_mm',
-    label: 'Текущие влагозапасы',
-    unit: 'мм',
-    valueKind: 'scalar',
-    chartKind: 'line',
-    group: 'water_balance',
-    isDefaultVisible: false,
-    isEnabled: true
-  },
-  {
-    code: 'water_demand_mm',
-    label: 'Потребность во влаге',
-    unit: 'мм',
-    valueKind: 'scalar',
-    chartKind: 'line',
-    group: 'water_balance',
-    isDefaultVisible: false,
-    isEnabled: true
-  },
-  {
-    code: 'temperature_daily_c',
-    label: 'Температура за сутки',
+    long_name_for_code: 'air_temperature_daily_c',
+    label: 'Температура воздуха',
     unit: '°C',
     valueKind: 'min_mean_max',
     chartKind: 'line',
     group: 'weather',
+    isDefaultVisible: true,
+    isEnabled: true
+  },
+  {
+    long_name_for_code: 'relative_humidity_daily_pct',
+    label: 'Относительная влажность',
+    unit: '%',
+    valueKind: 'min_mean_max',
+    chartKind: 'line',
+    group: 'weather',
+    isDefaultVisible: true,
+    isEnabled: true
+  },
+  {
+    long_name_for_code: 'wind_daily_mps',
+    label: 'Ветер',
+    unit: 'м/с',
+    valueKind: 'mean_max_gust',
+    chartKind: 'line',
+    group: 'weather',
+    isDefaultVisible: true,
+    isEnabled: true
+  },
+  {
+    long_name_for_code: 'eto_daily_mm',
+    label: 'ETo',
+    unit: 'мм/сутки',
+    valueKind: 'scalar',
+    chartKind: 'line',
+    group: 'weather',
+    isDefaultVisible: true,
+    isEnabled: true
+  },
+  {
+    long_name_for_code: 'shortwave_radiation_daily_mj_m2',
+    label: 'Солнечная радиация',
+    unit: 'МДж/м²/сутки',
+    valueKind: 'scalar',
+    chartKind: 'line',
+    group: 'weather',
     isDefaultVisible: false,
     isEnabled: true
   },
   {
-    code: 'potential_evapotranspiration_daily_mm',
-    label: 'Суточная потенциальная испаряемость',
+    long_name_for_code: 'soil_total_capacity_water_mm',
+    label: 'Полная влагоёмкость',
     unit: 'мм',
     valueKind: 'scalar',
     chartKind: 'line',
-    group: 'weather',
-    isDefaultVisible: false,
+    group: 'water_balance',
+    isDefaultVisible: true,
     isEnabled: true
   },
   {
-    code: 'relative_humidity_mean_pct',
-    label: 'Влажность воздуха',
-    unit: '%',
+    long_name_for_code: 'soil_field_capacity_water_mm',
+    label: 'НВ',
+    unit: 'мм',
     valueKind: 'scalar',
     chartKind: 'line',
-    group: 'weather',
-    isDefaultVisible: false,
+    group: 'water_balance',
+    isDefaultVisible: true,
     isEnabled: true
   },
   {
-    code: 'wind_speed_2m_mean_mps',
-    label: 'Скорость ветра',
-    unit: 'м/с',
+    long_name_for_code: 'soil_wilting_point_capacity_water_mm',
+    label: 'ВЗ',
+    unit: 'мм',
     valueKind: 'scalar',
     chartKind: 'line',
-    group: 'weather',
-    isDefaultVisible: false,
+    group: 'water_balance',
+    isDefaultVisible: true,
     isEnabled: true
   },
   {
-    code: 'temperature_sum_from_sowing_c',
-    label: 'Сумма температур от даты сева',
+    long_name_for_code: 'soil_water_content_mm',
+    label: 'Влагозапасы почвы',
+    unit: 'мм',
+    valueKind: 'scalar',
+    chartKind: 'line',
+    group: 'water_balance',
+    isDefaultVisible: true,
+    isEnabled: true
+  },
+  {
+    long_name_for_code: 'positive_temperature_sum_from_sowing_c',
+    label: 'Сумма положительных температур',
     unit: '°C',
     valueKind: 'scalar',
     chartKind: 'line',
     group: 'plant',
-    isDefaultVisible: false,
+    isDefaultVisible: true,
     isEnabled: true
   },
   {
-    code: 'actual_evapotranspiration_sum_mm',
-    label: 'Фактическое суммарное испарение',
-    unit: 'мм',
+    long_name_for_code: 'crop_transpiration_daily_mm',
+    label: 'Транспирация культуры',
+    unit: 'мм/сутки',
     valueKind: 'scalar',
     chartKind: 'line',
     group: 'plant',
-    isDefaultVisible: false,
+    isDefaultVisible: true,
     isEnabled: true
   },
   {
-    code: 'precipitation_mm',
-    label: 'Осадки',
-    unit: 'мм',
+    long_name_for_code: 'precipitation_effective_daily_mm',
+    label: 'Эффективные осадки',
+    unit: 'мм/сутки',
     valueKind: 'scalar',
     chartKind: 'bar',
     group: 'weather',
-    isDefaultVisible: false,
+    isDefaultVisible: true,
     isEnabled: true
   },
   {
-    code: 'actual_irrigation_mm',
-    label: 'Фактический полив',
-    unit: 'мм',
+    long_name_for_code: 'irrigation_effective_daily_mm',
+    label: 'Эффективный полив',
+    unit: 'мм/сутки',
     valueKind: 'scalar',
     chartKind: 'bar',
     group: 'irrigation',
-    isDefaultVisible: false,
-    isEnabled: true
-  },
-  {
-    code: 'recommended_irrigation_mm',
-    label: 'Рекомендованный полив',
-    unit: 'мм',
-    valueKind: 'scalar',
-    chartKind: 'bar',
-    group: 'irrigation',
-    isDefaultVisible: false,
+    isDefaultVisible: true,
     isEnabled: true
   }
 ];
 
-export function getMetricDefinition(code: KornixMetricCode): KornixMetricDefinition {
-  const definition = KORNIX_METRICS.find((metric) => metric.code === code);
+export function getMetricDefinition(code: RequiredBackendMetricLongName): KornixMetricDefinition {
+  const definition = KORNIX_METRICS.find((metric) => metric.long_name_for_code === code);
   if (!definition) {
     throw new Error(`Unknown KORNIX metric: ${code}`);
   }

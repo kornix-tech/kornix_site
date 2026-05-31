@@ -6,7 +6,7 @@ const statusLabels: Record<FieldWaterRegimeStatusCode, string> = {
   critical: 'Состояние поля: критическое',
   no_data: 'Состояние поля: нет данных',
   not_calculated: 'Состояние поля: нет расчёта',
-  readiness_blocked: 'Состояние поля: расчёт заблокирован'
+  calculation_failed: 'Состояние поля: ошибка расчёта'
 };
 
 export function fieldStatusLabel(status: FieldWaterRegimeStatusCode): string {

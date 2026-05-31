@@ -119,8 +119,9 @@ GET  /api/v1/me
 GET  /api/v1/auth/login?returnTo=/map
 POST /api/v1/auth/logout
 GET  /api/v1/kornix/current-context
-GET  /api/v1/kornix/field-seasons/map?seasonYear=2026
-GET  /api/v1/kornix/water-regime/timeseries?fieldSeasonIds=...&metric=...&from=...&to=...&aggregation=area_weighted_mean
+POST /api/v1/kornix/water-regime/calculate
+GET  /api/v1/kornix/field-seasons/map?calculationRunId=...&day=YYYY-MM-DD
+GET  /api/v1/kornix/water-regime/profile-timeseries?calculationRunId=...&fieldSeasonIds=...&aggregation=area_weighted_mean
 ```
 
 Проверка `/api/v1/me` для будущего backend:
@@ -144,12 +145,14 @@ cookie.
 
 ## API checklist
 
-Актуальные требования к KORNIX system API находятся в
+Актуальный frontend-контракт API v1.0 находится в
+[`docs/kornix-frontend-api-v1.md`](docs/kornix-frontend-api-v1.md).
+Он фиксирует tenant-scoped BFF workflow, групповой `calculationRunId`, отправку
+только `irrigation_tasks`, v1.0 `long_name_for_code`, правило `null != 0` и
+разделение рекомендаций от задач полива.
+
+Исторические требования к KORNIX system API сохранены в
 [`docs/kornix-system-api-requirements-v0.2.md`](docs/kornix-system-api-requirements-v0.2.md).
-Документ фиксирует endpoint'ы, DTO, метрики карты и графиков, прогнозный
-период, правила агрегации, export-контракты, readiness/error states,
-security/CORS/CSRF требования и acceptance-сценарии для подключения реального
-DB-first backend.
 
 Исторический frontend-driven чек-лист v0.1 сохранен здесь:
 [`docs/kornix-frontend-api-checklist-v0.1.md`](docs/kornix-frontend-api-checklist-v0.1.md).

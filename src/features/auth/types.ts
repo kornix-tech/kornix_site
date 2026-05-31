@@ -4,9 +4,8 @@ export type AuthUser = {
   id: string;
   displayName: string;
   email?: string;
-  organizationId: string;
-  organizationName?: string;
-  farmId?: string;
+  organizationCode: 'SP';
+  organizationName: string;
   roles: AuthRole[];
 };
 

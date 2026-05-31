@@ -1,5 +1,5 @@
-import { useEffect, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { useQueries } from '@tanstack/react-query';
+import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   Area,
@@ -13,21 +13,15 @@ import {
   YAxis
 } from 'recharts';
 import { kornixApi } from '../api/kornixApi';
-import type { WaterRegimeTimeseriesDto } from '../types/kornix';
+import type {
+  FieldSeasonMapFeature,
+  KornixMetricSeriesDto,
+  KornixProfileTimeseriesDto,
+  RequiredBackendMetricLongName
+} from '../types/kornix';
+import { deriveWaterMetrics, deriveWaterThresholds } from '../features/water-regime/derivedWaterMetrics';
 import { ExportActions } from './ExportActions';
 import { buildCsv } from './exportUtils';
-
-type ProfileMetricCode =
-  | 'temperature_daily_c'
-  | 'temperature_sum_from_sowing_c'
-  | 'relative_humidity_mean_pct'
-  | 'wind_speed_2m_mean_mps'
-  | 'potential_evapotranspiration_daily_mm'
-  | 'actual_evapotranspiration_sum_mm'
-  | 'available_water_range_mm'
-  | 'current_water_mm'
-  | 'precipitation_mm'
-  | 'actual_irrigation_mm';
 
 type ProfileRow = {
   day: string;
@@ -54,6 +48,10 @@ type ProfileRow = {
   availableRangeForecast: [number, number] | null;
   availableLower: number | null;
   availableUpper: number | null;
+  totalCapacity: number | null;
+  optimumWater: number | null;
+  optimumWaterFact: number | null;
+  optimumWaterForecast: number | null;
   currentWater: number | null;
   currentWaterFact: number | null;
   currentWaterForecast: number | null;
@@ -67,31 +65,25 @@ type ProfileRow = {
 
 type ChartZoneId = 'weather' | 'plant' | 'water' | 'precipitation';
 
-const PROFILE_METRICS: ProfileMetricCode[] = [
-  'temperature_daily_c',
-  'relative_humidity_mean_pct',
-  'wind_speed_2m_mean_mps',
-  'potential_evapotranspiration_daily_mm',
-  'temperature_sum_from_sowing_c',
-  'actual_evapotranspiration_sum_mm',
-  'available_water_range_mm',
-  'current_water_mm',
-  'precipitation_mm',
-  'actual_irrigation_mm'
-];
+type ThresholdCoefficients = {
+  upper: number | null;
+  optimum: number | null;
+  lower: number | null;
+};
 
 const LEGEND_ITEMS = [
   { label: 'Температура воздуха', color: '#d85b2a', kind: 'line' },
   { label: 'Влажность воздуха', color: '#2a9d8f', kind: 'line' },
   { label: 'Скорость ветра', color: '#7b61ff', kind: 'dash' },
-  { label: 'Суточная испаряемость', color: '#a75515', kind: 'dash' },
+  { label: 'ETo', color: '#a75515', kind: 'dash' },
+  { label: 'Солнечная радиация', color: '#c28b00', kind: 'dash' },
   { label: 'Сумма температур', color: '#f08c00', kind: 'line' },
-  { label: 'Фактическое испарение', color: '#4c956c', kind: 'line' },
-  { label: 'Полное насыщение почвы', color: '#123b73', kind: 'dash' },
-  { label: 'Доступные влагозапасы', color: '#91c86a', kind: 'area' },
-  { label: 'Текущие влагозапасы', color: '#1f7a3a', kind: 'line' },
-  { label: 'Осадки', color: '#68c5f4', kind: 'bar' },
-  { label: 'Поливы', color: '#2f6fd6', kind: 'bar' }
+  { label: 'Транспирация культуры', color: '#4c956c', kind: 'line' },
+  { label: 'Полная влагоёмкость', color: '#123b73', kind: 'dash' },
+  { label: 'Диапазон управления', color: '#91c86a', kind: 'area' },
+  { label: 'Влагозапасы почвы', color: '#1f7a3a', kind: 'line' },
+  { label: 'Эффективные осадки', color: '#68c5f4', kind: 'bar' },
+  { label: 'Эффективный полив', color: '#2f6fd6', kind: 'bar' }
 ];
 
 const CHART_MARGIN = {
@@ -176,8 +168,15 @@ function formatDateLabel(day: string): string {
   return `${date}.${month}.${year}`;
 }
 
-function minCoverage(data: WaterRegimeTimeseriesDto): number | null {
-  const values = data.points
+function findSeries(
+  profile: KornixProfileTimeseriesDto,
+  code: RequiredBackendMetricLongName
+): KornixMetricSeriesDto | undefined {
+  return profile.metrics.find((series) => series.long_name_for_code === code);
+}
+
+function minCoverage(series: KornixMetricSeriesDto): number | null {
+  const values = series.points
     .map((point) => (typeof point.coverage === 'number' ? point.coverage : null))
     .filter((value): value is number => value !== null);
   if (!values.length) {
@@ -186,33 +185,20 @@ function minCoverage(data: WaterRegimeTimeseriesDto): number | null {
   return Math.min(...values);
 }
 
-function scalarValue(data: WaterRegimeTimeseriesDto | undefined, day: string): number | null {
-  if (!data || data.valueKind !== 'scalar') {
+function scalarValue(series: KornixMetricSeriesDto | undefined, day: string): number | null {
+  if (!series || series.valueKind !== 'scalar') {
     return null;
   }
 
-  return data.points.find((point) => point.day === day)?.value ?? null;
+  return series.points.find((point) => point.day === day)?.value ?? null;
 }
 
-function temperatureMean(data: WaterRegimeTimeseriesDto | undefined, day: string): number | null {
-  if (!data || data.valueKind !== 'min_mean_max') {
+function meanValue(series: KornixMetricSeriesDto | undefined, day: string): number | null {
+  if (!series || (series.valueKind !== 'min_mean_max' && series.valueKind !== 'mean_max_gust')) {
     return null;
   }
 
-  return data.points.find((point) => point.day === day)?.mean ?? null;
-}
-
-function availableRange(data: WaterRegimeTimeseriesDto | undefined, day: string): [number, number] | null {
-  if (!data || data.valueKind !== 'range') {
-    return null;
-  }
-
-  const point = data.points.find((item) => item.day === day);
-  if (point?.lower === null || point?.upper === null || point?.lower === undefined || point?.upper === undefined) {
-    return null;
-  }
-
-  return [point.lower, point.upper];
+  return series.points.find((point) => point.day === day)?.mean ?? null;
 }
 
 function splitForecastValue<T>(
@@ -223,25 +209,81 @@ function splitForecastValue<T>(
   return [day <= forecastStart ? value : null, day >= forecastStart ? value : null];
 }
 
+function weightedCoefficient(
+  fields: FieldSeasonMapFeature[],
+  fieldSeasonIds: string[],
+  key: 'koef_upper_limit' | 'koef_optimum' | 'koef_lower_limit'
+): number | null {
+  const allowedIds = new Set(fieldSeasonIds);
+  const weightedValues = fields
+    .filter((field) => allowedIds.has(field.properties.fieldSeasonId))
+    .map((field) => ({
+      value: field.properties[key],
+      areaHa: field.properties.areaHa
+    }))
+    .filter((entry): entry is { value: number; areaHa: number } =>
+      typeof entry.value === 'number' && Number.isFinite(entry.value) && entry.areaHa > 0
+    );
+
+  const totalAreaHa = weightedValues.reduce((sum, entry) => sum + entry.areaHa, 0);
+  if (totalAreaHa <= 0) {
+    return null;
+  }
+
+  return weightedValues.reduce((sum, entry) => sum + entry.value * entry.areaHa, 0) / totalAreaHa;
+}
+
+function buildThresholdCoefficients(
+  fields: FieldSeasonMapFeature[],
+  fieldSeasonIds: string[]
+): ThresholdCoefficients {
+  return {
+    upper: weightedCoefficient(fields, fieldSeasonIds, 'koef_upper_limit'),
+    optimum: weightedCoefficient(fields, fieldSeasonIds, 'koef_optimum'),
+    lower: weightedCoefficient(fields, fieldSeasonIds, 'koef_lower_limit')
+  };
+}
+
 function buildProfileRows(
-  dataByMetric: Partial<Record<ProfileMetricCode, WaterRegimeTimeseriesDto>>,
-  forecastStart: string
+  profile: KornixProfileTimeseriesDto,
+  forecastStart: string,
+  thresholdCoefficients: ThresholdCoefficients
 ): ProfileRow[] {
   const days = Array.from(
-    new Set(PROFILE_METRICS.flatMap((metric) => dataByMetric[metric]?.points.map((point) => point.day) ?? []))
+    new Set(profile.metrics.flatMap((metric) => metric.points.map((point) => point.day)))
   ).sort();
+  const series = (code: RequiredBackendMetricLongName) => findSeries(profile, code);
 
   return days.map((day) => {
-    const range = availableRange(dataByMetric.available_water_range_mm, day);
-    const temperature = temperatureMean(dataByMetric.temperature_daily_c, day);
-    const humidity = scalarValue(dataByMetric.relative_humidity_mean_pct, day);
-    const wind = scalarValue(dataByMetric.wind_speed_2m_mean_mps, day);
-    const potentialEvaporationDaily = scalarValue(dataByMetric.potential_evapotranspiration_daily_mm, day);
-    const temperatureSum = scalarValue(dataByMetric.temperature_sum_from_sowing_c, day);
-    const actualEvaporationSum = scalarValue(dataByMetric.actual_evapotranspiration_sum_mm, day);
-    const currentWater = scalarValue(dataByMetric.current_water_mm, day);
-    const precipitation = scalarValue(dataByMetric.precipitation_mm, day);
-    const irrigation = scalarValue(dataByMetric.actual_irrigation_mm, day);
+    const temperature = meanValue(series('air_temperature_daily_c'), day);
+    const humidity = meanValue(series('relative_humidity_daily_pct'), day);
+    const wind = meanValue(series('wind_daily_mps'), day);
+    const potentialEvaporationDaily = scalarValue(series('eto_daily_mm'), day);
+    const temperatureSum = scalarValue(series('positive_temperature_sum_from_sowing_c'), day);
+    const actualEvaporationSum = scalarValue(series('crop_transpiration_daily_mm'), day);
+    const totalCapacity = scalarValue(series('soil_total_capacity_water_mm'), day);
+    const fieldCapacity = scalarValue(series('soil_field_capacity_water_mm'), day);
+    const wiltingPoint = scalarValue(series('soil_wilting_point_capacity_water_mm'), day);
+    const currentWater = scalarValue(series('soil_water_content_mm'), day);
+    const derived = deriveWaterMetrics({
+      soil_field_capacity_water_mm: fieldCapacity,
+      soil_wilting_point_capacity_water_mm: wiltingPoint,
+      soil_water_content_mm: currentWater
+    });
+    const thresholds = deriveWaterThresholds({
+      soil_field_capacity_water_mm: fieldCapacity,
+      koef_upper_limit: thresholdCoefficients.upper,
+      koef_optimum: thresholdCoefficients.optimum,
+      koef_lower_limit: thresholdCoefficients.lower
+    });
+    const range: [number, number] | null =
+      thresholds.lower_limit_water_mm !== null && thresholds.upper_limit_water_mm !== null
+        ? [thresholds.lower_limit_water_mm, thresholds.upper_limit_water_mm]
+        : derived.available_water_content_mm !== null && wiltingPoint !== null
+          ? [wiltingPoint, wiltingPoint + derived.available_water_content_mm]
+          : null;
+    const precipitation = scalarValue(series('precipitation_effective_daily_mm'), day);
+    const irrigation = scalarValue(series('irrigation_effective_daily_mm'), day);
     const [temperatureFact, temperatureForecast] = splitForecastValue(day, forecastStart, temperature);
     const [humidityFact, humidityForecast] = splitForecastValue(day, forecastStart, humidity);
     const [windFact, windForecast] = splitForecastValue(day, forecastStart, wind);
@@ -258,6 +300,11 @@ function buildProfileRows(
     );
     const [availableRangeFact, availableRangeForecast] = splitForecastValue(day, forecastStart, range);
     const [currentWaterFact, currentWaterForecast] = splitForecastValue(day, forecastStart, currentWater);
+    const [optimumWaterFact, optimumWaterForecast] = splitForecastValue(
+      day,
+      forecastStart,
+      thresholds.optimum_water_mm
+    );
     const [precipitationFact, precipitationForecast] = splitForecastValue(day, forecastStart, precipitation);
     const [irrigationFact, irrigationForecast] = splitForecastValue(day, forecastStart, irrigation);
 
@@ -286,6 +333,10 @@ function buildProfileRows(
       availableRangeForecast,
       availableLower: range?.[0] ?? null,
       availableUpper: range?.[1] ?? null,
+      totalCapacity,
+      optimumWater: thresholds.optimum_water_mm,
+      optimumWaterFact,
+      optimumWaterForecast,
       currentWater,
       currentWaterFact,
       currentWaterForecast,
@@ -300,16 +351,15 @@ function buildProfileRows(
 }
 
 function fullSaturationMm(rows: ProfileRow[]): number | null {
-  const upperValues = rows
-    .map((row) => row.availableUpper)
+  const totalCapacityValues = rows
+    .map((row) => row.totalCapacity)
     .filter((value): value is number => typeof value === 'number');
 
-  if (!upperValues.length) {
+  if (!totalCapacityValues.length) {
     return null;
   }
 
-  // Верхняя граница полного насыщения пока выводится как инженерная оценка над диапазоном доступной влаги.
-  return Math.ceil(Math.max(...upperValues) * 1.18);
+  return Math.ceil(Math.max(...totalCapacityValues));
 }
 
 function waterReserveDomain(rows: ProfileRow[], saturation: number | null): [number, number | string] {
@@ -332,18 +382,19 @@ function buildProfileCsv(rows: ProfileRow[], saturation: number | null, forecast
     [
       'day',
       'period',
-      'temperature_air_c',
-      'relative_humidity_pct',
-      'wind_speed_mps',
-      'potential_evapotranspiration_daily_mm',
-      'temperature_sum_from_sowing_c',
-      'actual_evapotranspiration_sum_mm',
-      'full_saturation_mm',
+      'air_temperature_daily_c',
+      'relative_humidity_daily_pct',
+      'wind_daily_mps',
+      'eto_daily_mm',
+      'positive_temperature_sum_from_sowing_c',
+      'crop_transpiration_daily_mm',
+      'soil_total_capacity_water_mm',
       'available_water_lower_mm',
+      'optimum_water_mm',
       'available_water_upper_mm',
-      'current_water_mm',
-      'precipitation_mm',
-      'actual_irrigation_mm'
+      'soil_water_content_mm',
+      'precipitation_effective_daily_mm',
+      'irrigation_effective_daily_mm'
     ],
     ...rows.map((row) => [
       row.day,
@@ -356,6 +407,7 @@ function buildProfileCsv(rows: ProfileRow[], saturation: number | null, forecast
       row.actualEvaporationSum,
       saturation,
       row.availableLower,
+      row.optimumWater,
       row.availableUpper,
       row.currentWater,
       row.precipitation,
@@ -365,6 +417,8 @@ function buildProfileCsv(rows: ProfileRow[], saturation: number | null, forecast
 }
 
 export function WaterRegimeChart({
+  calculationRunId,
+  fields,
   fieldSeasonIds,
   selectionLabel,
   from,
@@ -375,6 +429,8 @@ export function WaterRegimeChart({
   onExportGraphics,
   onExportData
 }: {
+  calculationRunId: string | null;
+  fields: FieldSeasonMapFeature[];
   fieldSeasonIds: string[];
   selectionLabel: string;
   from: string;
@@ -387,39 +443,25 @@ export function WaterRegimeChart({
 }) {
   const today = localDateIso(new Date());
   const forecastStart = addDaysIso(today, 1);
-  const forecastTo = maxDateIso(to, addDaysIso(today, 7));
-  const queries = useQueries({
-    queries: PROFILE_METRICS.map((profileMetric) => ({
-      queryKey: ['water-regime-profile', fieldSeasonIds.join(','), profileMetric, from, forecastTo],
-      enabled: fieldSeasonIds.length > 0,
-      queryFn: () =>
-        kornixApi.getWaterRegimeTimeseries({
-          fieldSeasonIds,
-          metric: profileMetric,
-          from,
-          to: forecastTo,
-          aggregation: 'area_weighted_mean'
-        })
-    }))
+  const profileQuery = useQuery({
+    queryKey: ['water-regime-profile', calculationRunId, fieldSeasonIds.join(',')],
+    enabled: Boolean(calculationRunId) && fieldSeasonIds.length > 0,
+    queryFn: () =>
+      kornixApi.getProfileTimeseries({
+        calculationRunId: calculationRunId ?? '',
+        fieldSeasonIds,
+        aggregation: fieldSeasonIds.length > 1 ? 'area_weighted_mean' : undefined
+      })
   });
 
-  const isLoading = queries.some((query) => query.isLoading);
-  const isError = queries.some((query) => query.isError);
-  const dataByMetric = PROFILE_METRICS.reduce<Partial<Record<ProfileMetricCode, WaterRegimeTimeseriesDto>>>(
-    (result, profileMetric, index) => {
-      if (queries[index].data) {
-        result[profileMetric] = queries[index].data;
-      }
-      return result;
-    },
-    {}
-  );
+  const isLoading = profileQuery.isLoading;
+  const isError = profileQuery.isError;
 
   useEffect(() => {
-    if (fieldSeasonIds.length === 0 || isLoading || isError) {
+    if (!calculationRunId || fieldSeasonIds.length === 0 || isLoading || isError) {
       onCsvChange(null);
     }
-  }, [fieldSeasonIds.length, isError, isLoading, onCsvChange]);
+  }, [calculationRunId, fieldSeasonIds.length, isError, isLoading, onCsvChange]);
 
   return (
     <section className="chart-panel">
@@ -432,12 +474,14 @@ export function WaterRegimeChart({
       {fieldSeasonIds.length === 0 && (
         <div className="empty-state">Выберите одно или несколько полей слева.</div>
       )}
+      {!calculationRunId && <div className="empty-state">Нет расчёта. Утвердите поливы.</div>}
 
       {isLoading && <div className="empty-state">Загрузка графика…</div>}
       {isError && <div className="error-state">Не удалось загрузить временной ряд.</div>}
-      {fieldSeasonIds.length > 0 && !isLoading && !isError && (
+      {calculationRunId && fieldSeasonIds.length > 0 && !isLoading && !isError && profileQuery.data && (
         <ChartBody
-          dataByMetric={dataByMetric}
+          profile={profileQuery.data}
+          fields={fields}
           forecastStart={forecastStart}
           from={from}
           selectedCount={fieldSeasonIds.length}
@@ -454,7 +498,8 @@ export function WaterRegimeChart({
 }
 
 function ChartBody({
-  dataByMetric,
+  profile,
+  fields,
   forecastStart,
   from,
   selectedCount,
@@ -465,7 +510,8 @@ function ChartBody({
   onExportGraphics,
   onExportData
 }: {
-  dataByMetric: Partial<Record<ProfileMetricCode, WaterRegimeTimeseriesDto>>;
+  profile: KornixProfileTimeseriesDto;
+  fields: FieldSeasonMapFeature[];
   forecastStart: string;
   from: string;
   selectedCount: number;
@@ -476,7 +522,18 @@ function ChartBody({
   onExportGraphics: () => Promise<void>;
   onExportData: () => void;
 }) {
-  const rows = buildProfileRows(dataByMetric, forecastStart);
+  const thresholdCoefficients = useMemo(
+    () => buildThresholdCoefficients(fields, profile.selectedFieldSeasonIds),
+    [fields, profile.selectedFieldSeasonIds]
+  );
+  const allRows = useMemo(
+    () => buildProfileRows(profile, forecastStart, thresholdCoefficients),
+    [forecastStart, profile, thresholdCoefficients]
+  );
+  const rows = useMemo(() => {
+    const filteredRows = allRows.filter((row) => row.day >= from && row.day <= to);
+    return filteredRows.length > 0 ? filteredRows : allRows;
+  }, [allRows, from, to]);
   const today = localDateIso(new Date());
   const firstDay = rows[0]?.day ?? from;
   const lastDay = rows.length > 0 ? rows[rows.length - 1].day : to;
@@ -484,16 +541,14 @@ function ChartBody({
   const selectedDayInRange = addDaysIso(firstDay, clamp(dayDiff(firstDay, selectedDay), 0, dayDiff(firstDay, lastDay)));
   const saturation = fullSaturationMm(rows);
   const coverage = Math.min(
-    ...Object.values(dataByMetric)
-      .map((data) => (data ? minCoverage(data) : null))
+    ...profile.metrics
+      .map((data) => minCoverage(data))
       .filter((value): value is number => value !== null)
   );
-  const showCoverageWarning = coverage !== null && coverage < 0.9;
-  const aggregation = dataByMetric.current_water_mm?.aggregation ?? dataByMetric.available_water_range_mm?.aggregation;
+  const showCoverageWarning = Number.isFinite(coverage) && coverage < 0.9;
+  const aggregation = profile.aggregation;
   const warnings = Array.from(
-    new Map(
-      Object.values(dataByMetric).flatMap((data) => data?.warnings.map((warning) => [warning.code, warning]) ?? [])
-    ).values()
+    new Map(profile.warnings.map((warning) => [warning.code, warning])).values()
   );
   const profileCsv = buildProfileCsv(rows, saturation, forecastStart);
 
@@ -1090,6 +1145,27 @@ function CompositeProfileChart({
               strokeOpacity={0.34}
               strokeWidth={3}
               strokeDasharray="5 5"
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="optimumWaterFact"
+              name="Оптимум влагозапасов, мм"
+              stroke="#5f8f2f"
+              strokeDasharray="7 4"
+              strokeWidth={1.6}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="optimumWaterForecast"
+              name="Оптимум влагозапасов, мм"
+              stroke="#5f8f2f"
+              strokeOpacity={0.28}
+              strokeDasharray="4 6"
+              strokeWidth={1.6}
               dot={false}
               connectNulls={false}
             />

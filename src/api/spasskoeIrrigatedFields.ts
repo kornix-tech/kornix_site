@@ -1,4 +1,36 @@
-import type { FieldSeasonMapFeatureCollection } from '../types/kornix';
+type LegacySpasskoeFieldProperties = {
+  fieldId: string;
+  fieldSeasonId: string;
+  fieldKey: string;
+  fieldName: string;
+  seasonYear: number;
+  areaHa: number;
+  cropName: string | null;
+  calculationReady: boolean;
+  latestStatus: string;
+  latestWaterRegimeDay: string | null;
+  currentWaterPercent: number | null;
+  currentWaterMm: number | null;
+  availableWaterMm: number | null;
+  waterDemandMm: number | null;
+  precipitationMm: number | null;
+  actualIrrigationMm: number | null;
+  recommendedIrrigationMm: number | null;
+  sowingDate?: string | null;
+  temperatureSumFromSowingC?: number | null;
+  dataQuality: {
+    forcingComplete: boolean;
+    calculationAvailable: boolean;
+    hasRequiredWeather?: boolean;
+    hasActiveMapping: boolean;
+    messages: string[];
+  };
+};
+
+export type LegacySpasskoeFieldFeature = GeoJSON.Feature<
+  GeoJSON.Polygon | GeoJSON.MultiPolygon,
+  LegacySpasskoeFieldProperties
+>;
 
 export const spasskoeMapBounds = {
   "minLng": 38.3164177,
@@ -7,7 +39,7 @@ export const spasskoeMapBounds = {
   "maxLat": 54.1729178
 };
 
-export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['features'] = [
+export const spasskoeIrrigatedFieldFeatures: LegacySpasskoeFieldFeature[] = [
   {
     "type": "Feature",
     "geometry": {
@@ -314,7 +346,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_18",
       "fieldKey": "4.6",
       "fieldName": "Поле 4.6",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 83.08,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -647,7 +678,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_19",
       "fieldKey": "4.3",
       "fieldName": "Поле 4.3",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 25.14,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -872,7 +902,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_22",
       "fieldKey": "4.1",
       "fieldName": "Поле 4.1",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 54.01,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -1313,7 +1342,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_28",
       "fieldKey": "7.13",
       "fieldName": "Поле 7.13",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 28.65,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -1766,7 +1794,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_29",
       "fieldKey": "7.14",
       "fieldName": "Поле 7.14",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 38.0,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -2195,7 +2222,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_34",
       "fieldKey": "7.18",
       "fieldName": "Поле 7.18",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 34.3,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -2468,7 +2494,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_35",
       "fieldKey": "7.17",
       "fieldName": "Поле 7.17",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 56.5,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -2861,7 +2886,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_36",
       "fieldKey": "7.8",
       "fieldName": "Поле 7.8",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 62.5,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -3338,7 +3362,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_38",
       "fieldKey": "7.12",
       "fieldName": "Поле 7.12",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 42.5,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -3807,7 +3830,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_41",
       "fieldKey": "7.10",
       "fieldName": "Поле 7.10",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 38.58,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -4260,7 +4282,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_45",
       "fieldKey": "7.9",
       "fieldName": "Поле 7.9",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 45.6,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -4737,7 +4758,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_51",
       "fieldKey": "7.3",
       "fieldName": "Поле 7.3",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 77.0,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -5018,7 +5038,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_56",
       "fieldKey": "7.5",
       "fieldName": "Поле 7.5",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 61.53,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -5475,7 +5494,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_60",
       "fieldKey": "7.11",
       "fieldName": "Поле 7.11",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 42.54,
       "cropName": "Картофель Гала РС-2 26г.",
@@ -5832,7 +5850,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_108",
       "fieldKey": "6.1",
       "fieldName": "Поле 6.1",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 84.57,
       "cropName": "Картофель ВР 808 РС-1 26г.",
@@ -6105,7 +6122,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_111",
       "fieldKey": "6.2",
       "fieldName": "Поле 6.2",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 74.5,
       "cropName": "Картофель ВР 808 РС-1 26г.",
@@ -6534,7 +6550,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_117",
       "fieldKey": "6.3",
       "fieldName": "Поле 6.3",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 127.0,
       "cropName": "Картофель И новатор РС-1 26г.",
@@ -6807,7 +6822,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_118",
       "fieldKey": "6.4",
       "fieldName": "Поле 6.4",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 42.0,
       "cropName": "Картофель Инноватор РС-1 26г.",
@@ -7076,7 +7090,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_119",
       "fieldKey": "6.5",
       "fieldName": "Поле 6.5",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 24.0,
       "cropName": "Картофель Инноватор РС-1 26г.",
@@ -7353,7 +7366,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_124",
       "fieldKey": "6.6",
       "fieldName": "Поле 6.6",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 65.0,
       "cropName": "Картофель Инноватор РС-1 26г.",
@@ -7622,7 +7634,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_125",
       "fieldKey": "6.7",
       "fieldName": "Поле 6.7",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 102.59,
       "cropName": "Картофель Инноватор РС-1 26г.",
@@ -8047,7 +8058,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_140",
       "fieldKey": "4.8; 4.8/1",
       "fieldName": "Поле 4.8; 4.8/1",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 75.93,
       "cropName": "Картофель 26г.; Картофель Инноватор РС-1 26г.",
@@ -8504,7 +8514,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_144",
       "fieldKey": "4.11",
       "fieldName": "Поле 4.11",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 94.26,
       "cropName": "Картофель Инноватор РС-1 26г.",
@@ -8945,7 +8954,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_150",
       "fieldKey": "4.15",
       "fieldName": "Поле 4.15",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 115.84,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -9374,7 +9382,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_151",
       "fieldKey": "4.16",
       "fieldName": "Поле 4.16",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 162.23,
       "cropName": "Картофель 26г.",
@@ -9779,7 +9786,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_157",
       "fieldKey": "2.1",
       "fieldName": "Поле 2.1",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 94.46,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -10184,7 +10190,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_160",
       "fieldKey": "3.4",
       "fieldName": "Поле 3.4",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 70.5,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -10593,7 +10598,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_161",
       "fieldKey": "1.5",
       "fieldName": "Поле 1.5",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 27.87,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -11066,7 +11070,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_163",
       "fieldKey": "1.6",
       "fieldName": "Поле 1.6",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 92.55,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -11519,7 +11522,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_165",
       "fieldKey": "1.3",
       "fieldName": "Поле 1.3",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 141.5,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -11956,7 +11958,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_169",
       "fieldKey": "1.11",
       "fieldName": "Поле 1.11",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 56.45,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -12397,7 +12398,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_172",
       "fieldKey": "2.6",
       "fieldName": "Поле 2.6",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 64.56,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -12826,7 +12826,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_174",
       "fieldKey": "2.7",
       "fieldName": "Поле 2.7",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 29.58,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -13247,7 +13246,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_176",
       "fieldKey": "3.1",
       "fieldName": "Поле 3.1",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 29.9,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -13684,7 +13682,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_178",
       "fieldKey": "1.1",
       "fieldName": "Поле 1.1",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 79.0,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -14113,7 +14110,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_179",
       "fieldKey": "2.5",
       "fieldName": "Поле 2.5",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 26.9,
       "cropName": "Картофель Прайм РС-1 26г.",
@@ -14530,7 +14526,6 @@ export const spasskoeIrrigatedFieldFeatures: FieldSeasonMapFeatureCollection['fe
       "fieldSeasonId": "fs_sp_2026_181",
       "fieldKey": "3.5",
       "fieldName": "Поле 3.5",
-      "organizationId": "org_demo",
       "seasonYear": 2026,
       "areaHa": 23.29,
       "cropName": "Картофель Прайм РС-1 26г.",

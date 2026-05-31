@@ -1,9 +1,20 @@
 import type {
+  CalculationRunId,
   FieldSeasonMapFeatureCollection,
   FieldWaterRegimeStatusCode,
+  IrrigationTaskPayloadDto,
+  KornixCalculateResponse,
   KornixCurrentContextDto
 } from '../types/kornix';
+import { deriveWaterMetrics } from '../features/water-regime/derivedWaterMetrics';
 import { spasskoeIrrigatedFieldFeatures, spasskoeMapBounds } from './spasskoeIrrigatedFields';
+
+export const MOCK_SEASON_YEAR = 2026;
+export const MOCK_INITIAL_CALCULATION_RUN_ID = 'mock-sp-2026-initial';
+const MOSCOW_TIMEZONE = 'Europe/Moscow';
+
+let lastScenarioHash = '';
+let lastCalculationRunId: CalculationRunId = MOCK_INITIAL_CALCULATION_RUN_ID;
 
 function dayIndex(day?: string): number {
   const value = day ? Date.parse(`${day}T00:00:00Z`) : Date.now();
@@ -11,6 +22,21 @@ function dayIndex(day?: string): number {
     return 0;
   }
   return Math.floor(value / 86_400_000);
+}
+
+function todayIso(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: MOSCOW_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+}
+
+function addDaysIso(day: string, offset: number): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offset);
+  return date.toISOString().slice(0, 10);
 }
 
 function hashString(value: string): number {
@@ -29,7 +55,22 @@ function round1(value: number): number {
   return Number(value.toFixed(1));
 }
 
-function statusFromWaterPercent(value: number | null): FieldWaterRegimeStatusCode {
+function round3(value: number): number {
+  return Number(value.toFixed(3));
+}
+
+function isoDateFromLegacy(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const parts = value.split('.');
+  if (parts.length !== 3) {
+    return value;
+  }
+  return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+}
+
+function statusFromAvailableWaterFraction(value: number | null): FieldWaterRegimeStatusCode {
   if (value === null) {
     return 'no_data';
   }
@@ -42,66 +83,152 @@ function statusFromWaterPercent(value: number | null): FieldWaterRegimeStatusCod
   return 'ok';
 }
 
-export const mockCurrentContext: KornixCurrentContextDto = {
-  organizationId: 'org_demo',
-  organizationName: 'Спасское',
-  seasonYear: 2026,
-  fieldCount: spasskoeIrrigatedFieldFeatures.length,
-  calculationReadyFieldCount: spasskoeIrrigatedFieldFeatures.length,
-  mapBounds: spasskoeMapBounds,
-  readiness: {
-    status: 'ready',
-    code: 'KML_IRRIGATED_2026',
-    expectedFields: spasskoeIrrigatedFieldFeatures.length,
-    actualReadyFields: spasskoeIrrigatedFieldFeatures.length,
-    blockers: [
-      {
-        severity: 'P2',
-        code: 'KML_SOURCE',
-        message: 'Mock-карта использует поля из СП_.kml с признаком полива в 2026 году.'
-      }
-    ]
-  }
-};
+function mockThresholdCoefficients(fc: number, wpc: number) {
+  const totalAvailableWater = fc - wpc;
+  const thresholdDepletionFraction = 0.45;
+  const targetDepletionFraction = 0.25;
+  const lowerAbsMm = wpc + (1 - thresholdDepletionFraction) * totalAvailableWater;
+  const optimumAbsMm = wpc + (1 - targetDepletionFraction) * totalAvailableWater;
 
-export const mockFieldSeasonMap: FieldSeasonMapFeatureCollection = {
-  type: 'FeatureCollection',
-  features: spasskoeIrrigatedFieldFeatures
-};
+  return {
+    koef_upper_limit: 1,
+    koef_optimum: round3(optimumAbsMm / fc),
+    koef_lower_limit: round3(lowerAbsMm / fc)
+  };
+}
 
-export function buildMockFieldSeasonMapForDay(day?: string): FieldSeasonMapFeatureCollection {
+export function getMockCurrentContext(): KornixCurrentContextDto {
+  return {
+    organizationCode: 'SP',
+    organizationName: 'Спасское',
+    seasonYear: 2026,
+    calculationWindow: {
+      from: '2026-04-01',
+      to: addDaysIso(todayIso(), 7),
+      timezone: MOSCOW_TIMEZONE
+    },
+    fieldCount: spasskoeIrrigatedFieldFeatures.length,
+    irrigatedFieldCount2026: spasskoeIrrigatedFieldFeatures.length,
+    latestCalculationRunId: lastCalculationRunId,
+    latestCalculationStatus: 'completed',
+    generatedAt: new Date().toISOString(),
+    mapBounds: spasskoeMapBounds
+  };
+}
+
+export function buildMockFieldSeasonMapForDay(
+  calculationRunId = lastCalculationRunId,
+  day = todayIso()
+): FieldSeasonMapFeatureCollection {
   const index = dayIndex(day);
 
   return {
     type: 'FeatureCollection',
-    features: spasskoeIrrigatedFieldFeatures.map((feature) => {
+    generatedAt: new Date().toISOString(),
+    organizationCode: 'SP',
+    seasonYear: 2026,
+    calculationRunId,
+    day,
+    features: spasskoeIrrigatedFieldFeatures.map((feature, featureIndex) => {
       const field = feature.properties;
-      const seed = hashString(field.fieldSeasonId);
-      const baseWaterPercent = field.currentWaterPercent ?? 55;
-      const currentWaterPercent = Math.max(8, Math.min(96, baseWaterPercent + wave(index, seed, 12)));
-      const currentWaterMm = Math.max(0, (field.currentWaterMm ?? 65) + wave(index, seed + 17, 10));
-      const precipitationMm = (index + seed) % 6 === 0 ? Math.max(0, 2 + wave(index, seed + 29, 4)) : 0;
-      const actualIrrigationMm = (index + seed) % 11 === 0 ? 12 : 0;
-      const temperatureSumFromSowingC =
-        typeof field.temperatureSumFromSowingC === 'number'
-          ? field.temperatureSumFromSowingC + Math.max(0, index - dayIndex('2026-05-31')) * 12
-          : null;
+      const seed = hashString(`${calculationRunId}:${field.fieldSeasonId}`);
+      const fc = Math.max(70, field.availableWaterMm ?? 110);
+      const wpc = Math.max(20, fc * 0.28);
+      const tc = fc * 1.18;
+      const swcBase = wpc + ((field.currentWaterPercent ?? 55) / 100) * (fc - wpc);
+      const swc = Math.max(wpc * 0.75, Math.min(tc, swcBase + wave(index, seed, 10)));
+      const thresholdCoefficients = mockThresholdCoefficients(fc, wpc);
+      const derived = deriveWaterMetrics({
+        soil_field_capacity_water_mm: fc,
+        soil_wilting_point_capacity_water_mm: wpc,
+        soil_water_content_mm: swc
+      });
+      const precipitation = (index + seed) % 6 === 0 ? Math.max(0, 2 + wave(index, seed + 29, 4)) : 0;
+      const irrigation = (index + seed) % 11 === 0 ? 10 + (seed % 8) : 0;
+      const recommendationNeeded = (derived.available_water_fraction_pct ?? 100) < 48 || featureIndex % 9 === 0;
 
       return {
-        ...feature,
+        type: feature.type,
+        geometry: feature.geometry,
         properties: {
-          ...field,
-          latestWaterRegimeDay: day ?? field.latestWaterRegimeDay,
-          currentWaterPercent: round1(currentWaterPercent),
-          currentWaterMm: round1(currentWaterMm),
-          availableWaterMm: round1(Math.max(currentWaterMm + 18, field.availableWaterMm ?? currentWaterMm + 18)),
-          precipitationMm: round1(precipitationMm),
-          actualIrrigationMm: round1(actualIrrigationMm),
-          latestStatus: statusFromWaterPercent(currentWaterPercent),
-          temperatureSumFromSowingC:
-            temperatureSumFromSowingC === null ? null : round1(temperatureSumFromSowingC)
+          fieldId: field.fieldId,
+          fieldSeasonId: field.fieldSeasonId,
+          fieldKey: field.fieldKey,
+          fieldName: field.fieldName,
+          areaHa: field.areaHa,
+          cropName: field.cropName,
+          cropSowingDate: isoDateFromLegacy(field.sowingDate),
+          latestStatus: statusFromAvailableWaterFraction(derived.available_water_fraction_pct),
+          day,
+          soil_total_capacity_water_mm: round1(tc),
+          soil_field_capacity_water_mm: round1(fc),
+          soil_wilting_point_capacity_water_mm: round1(wpc),
+          soil_water_content_mm: featureIndex % 17 === 0 ? null : round1(swc),
+          ...thresholdCoefficients,
+          precipitation_effective_daily_mm: round1(precipitation),
+          irrigation_effective_daily_mm: round1(irrigation),
+          positive_temperature_sum_from_sowing_c:
+            typeof field.temperatureSumFromSowingC === 'number'
+              ? round1(field.temperatureSumFromSowingC + Math.max(0, index - dayIndex('2026-05-31')) * 12)
+              : null,
+          crop_transpiration_daily_mm: round1(Math.max(0, 3.2 + wave(index, seed + 41, 1.2))),
+          recommended_irrigation_date: recommendationNeeded ? addDaysIso(todayIso(), 3) : null,
+          recommended_irrigation_mm: recommendationNeeded ? 22 : null,
+          dataQuality: {
+            forcingComplete: featureIndex % 13 !== 0,
+            calculationAvailable: featureIndex % 19 !== 0,
+            hasActiveMapping: field.dataQuality.hasActiveMapping,
+            messages: field.dataQuality.messages
+          }
         }
       };
     })
+  };
+}
+
+export function canonicalScenarioHash(payload: IrrigationTaskPayloadDto): string {
+  const canonical = JSON.stringify(
+    [...payload.irrigation_tasks]
+      .sort((left, right) =>
+        left.fieldSeasonId.localeCompare(right.fieldSeasonId) ||
+        left.irrigationDate.localeCompare(right.irrigationDate) ||
+        left.irrigationTaskMm - right.irrigationTaskMm
+      )
+  );
+  return `mock-${hashString(canonical).toString(16)}`;
+}
+
+export function buildMockCalculateResponse(payload: IrrigationTaskPayloadDto): KornixCalculateResponse {
+  const hash = canonicalScenarioHash(payload);
+  const reusedPreviousCalculation = hash === lastScenarioHash;
+  if (!reusedPreviousCalculation) {
+    lastScenarioHash = hash;
+    lastCalculationRunId = `mock-sp-2026-${hash.slice(5)}-${Date.now().toString(36)}`;
+  }
+
+  const startedAt = new Date().toISOString();
+  return {
+    organizationCode: 'SP',
+    seasonYear: 2026,
+    calculationRunId: lastCalculationRunId,
+    calculationStatus: reusedPreviousCalculation ? 'reused_existing' : 'completed',
+    irrigationScenarioHash: hash,
+    reusedPreviousCalculation,
+    calculationWindow: {
+      from: '2026-04-01',
+      to: addDaysIso(todayIso(), 7),
+      timezone: MOSCOW_TIMEZONE
+    },
+    fieldCount: spasskoeIrrigatedFieldFeatures.length,
+    irrigatedFieldCount2026: spasskoeIrrigatedFieldFeatures.length,
+    timing: {
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      durationMs: reusedPreviousCalculation ? 40 : 820
+    },
+    warnings:
+      payload.irrigation_tasks.length === 0
+        ? [{ code: 'EMPTY_IRRIGATION_TASK', message: 'Расчёт выполнен без пользовательских поливов.' }]
+        : []
   };
 }

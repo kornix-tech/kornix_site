@@ -820,7 +820,7 @@ input[type='checkbox'] {
 
 .field-status-no_data,
 .field-status-not_calculated,
-.field-status-readiness_blocked {
+.field-status-calculation_failed {
   background: #f0f3ef !important;
   border-color: rgb(80 97 116 / 20%) !important;
 }
@@ -876,7 +876,7 @@ input[type='checkbox'] {
 
 .status-no_data,
 .status-not_calculated,
-.status-readiness_blocked,
+.status-calculation_failed,
 .readiness-unknown {
   background: #eef2ed;
   color: #506174;
@@ -1268,6 +1268,38 @@ input[type='checkbox'] {
 
 .irrigation-approval-error {
   color: #8e1b1e !important;
+}
+
+.irrigation-calculation-status {
+  color: #1f5f35 !important;
+}
+
+.irrigation-calculation-progress {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(95 143 47 / 14%);
+}
+
+.irrigation-calculation-progress span {
+  position: absolute;
+  inset-block: 0;
+  left: -35%;
+  width: 35%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgb(95 143 47 / 18%), #5f8f2f, rgb(95 143 47 / 18%));
+  animation: irrigation-progress 1.2s ease-in-out infinite;
+}
+
+@keyframes irrigation-progress {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(390%);
+  }
 }
 
 .irrigation-toolbar span {

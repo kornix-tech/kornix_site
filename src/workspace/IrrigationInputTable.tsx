@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { kornixApi } from '../api/kornixApi';
-import type { FieldSeasonMapFeature, FieldSeasonMapFeatureCollection } from '../types/kornix';
+import type {
+  FieldSeasonMapFeature,
+  FieldSeasonMapFeatureCollection,
+  IrrigationTaskPayloadDto
+} from '../types/kornix';
 import { compareFieldKeys } from './FieldSelectorPanel';
 import { fieldStatusClassName, fieldStatusLabel } from './fieldStatusPresentation';
 import { formatArea, todayIso } from './format';
@@ -273,51 +277,42 @@ function useApprovedIrrigationSignature(seasonYear: number) {
   return [approvedSignature, approve] as const;
 }
 
-function buildIrrigationApprovalRequest(
+function buildIrrigationTaskPayload(
   values: IrrigationValues,
-  seasonYear: number,
-  forecastStart: string,
   editableEnd: string
-) {
-  const events = Object.entries(values)
+): IrrigationTaskPayloadDto {
+  const irrigationTasks = Object.entries(values)
     .map(([key, value]) => {
       const parsedKey = splitValueKey(key);
-      const irrigationMm = Number(value);
-      if (!parsedKey || parsedKey.day > editableEnd || !Number.isFinite(irrigationMm) || irrigationMm <= 0) {
+      const irrigationTaskMm = Number(value);
+      if (!parsedKey || parsedKey.day > editableEnd || !Number.isFinite(irrigationTaskMm) || irrigationTaskMm <= 0) {
         return null;
       }
 
       return {
         fieldSeasonId: parsedKey.fieldSeasonId,
-        day: parsedKey.day,
-        irrigationMm,
-        periodKind: parsedKey.day >= forecastStart ? ('plan' as const) : ('fact' as const)
+        irrigationDate: parsedKey.day,
+        irrigationTaskMm
       };
     })
-    .filter((event): event is NonNullable<typeof event> => event !== null)
+    .filter((task): task is NonNullable<typeof task> => task !== null)
     .sort((left, right) =>
-      left.fieldSeasonId.localeCompare(right.fieldSeasonId) || left.day.localeCompare(right.day)
+      left.fieldSeasonId.localeCompare(right.fieldSeasonId) || left.irrigationDate.localeCompare(right.irrigationDate)
     );
 
   return {
-    seasonYear,
     generatedAt: new Date().toISOString(),
-    forecastStart,
-    events
+    irrigation_tasks: irrigationTasks
   };
 }
 
 function irrigationApprovalSignature(
   values: IrrigationValues,
-  seasonYear: number,
-  forecastStart: string,
   editableEnd: string
 ): string {
-  const request = buildIrrigationApprovalRequest(values, seasonYear, forecastStart, editableEnd);
+  const payload = buildIrrigationTaskPayload(values, editableEnd);
   return JSON.stringify({
-    seasonYear: request.seasonYear,
-    forecastStart: request.forecastStart,
-    events: request.events
+    irrigation_tasks: payload.irrigation_tasks
   });
 }
 
@@ -329,10 +324,12 @@ function sortedFields(fields: FieldSeasonMapFeatureCollection): FieldSeasonMapFe
 
 export function IrrigationInputTable({
   fields,
-  seasonYear
+  seasonYear,
+  onCalculationComplete
 }: {
   fields: FieldSeasonMapFeatureCollection;
   seasonYear: number;
+  onCalculationComplete: (calculationRunId: string) => void;
 }) {
   const today = todayIso();
   const forecastStart = addDaysIso(today, 1);
@@ -362,28 +359,45 @@ export function IrrigationInputTable({
   const [approvedSignature, approveSignature] = useApprovedIrrigationSignature(seasonYear);
   const [isSavingApproval, setIsSavingApproval] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
-  const approvalRequest = useMemo(
-    () => buildIrrigationApprovalRequest(values, seasonYear, forecastStart, editableEnd),
-    [editableEnd, forecastStart, seasonYear, values]
+  const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);
+  const [elapsedCalculationSeconds, setElapsedCalculationSeconds] = useState(0);
+  const irrigationTaskPayload = useMemo(
+    () => buildIrrigationTaskPayload(values, editableEnd),
+    [editableEnd, values]
   );
   const approvalSignature = useMemo(
-    () => irrigationApprovalSignature(values, seasonYear, forecastStart, editableEnd),
-    [editableEnd, forecastStart, seasonYear, values]
+    () => irrigationApprovalSignature(values, editableEnd),
+    [editableEnd, values]
   );
   const approvalState: ApprovalState =
-    approvalRequest.events.length === 0
+    irrigationTaskPayload.irrigation_tasks.length === 0
       ? 'empty'
       : isSavingApproval
         ? 'saving'
         : approvalError
           ? 'error'
           : approvedSignature === approvalSignature
-            ? 'approved'
-            : 'dirty';
-  const actualIrrigationCount = approvalRequest.events.filter((event) => event.day <= today).length;
-  const plannedIrrigationCount = approvalRequest.events.filter(
-    (event) => event.day >= forecastStart && event.day <= forecastEnd
+          ? 'approved'
+          : 'dirty';
+  const actualIrrigationCount = irrigationTaskPayload.irrigation_tasks.filter(
+    (task) => task.irrigationDate <= today
   ).length;
+  const plannedIrrigationCount = irrigationTaskPayload.irrigation_tasks.filter(
+    (task) => task.irrigationDate >= forecastStart && task.irrigationDate <= forecastEnd
+  ).length;
+
+  useEffect(() => {
+    if (!isSavingApproval || calculationStartedAt === null) {
+      setElapsedCalculationSeconds(0);
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setElapsedCalculationSeconds(Math.max(0, Math.round((Date.now() - calculationStartedAt) / 1000)));
+    }, 500);
+
+    return () => window.clearInterval(timer);
+  }, [calculationStartedAt, isSavingApproval]);
 
   useEffect(() => {
     const fieldIds = new Set(tableFields.map((feature) => feature.properties.fieldSeasonId));
@@ -422,19 +436,22 @@ export function IrrigationInputTable({
   }, [today, days.length]);
 
   async function approveIrrigationEvents() {
-    if (approvalRequest.events.length === 0 || isSavingApproval) {
+    if (irrigationTaskPayload.irrigation_tasks.length === 0 || isSavingApproval) {
       return;
     }
 
     setIsSavingApproval(true);
+    setCalculationStartedAt(Date.now());
     setApprovalError(null);
     try {
-      await kornixApi.saveIrrigationEvents(approvalRequest);
+      const response = await kornixApi.calculateWaterRegime(irrigationTaskPayload);
       approveSignature(approvalSignature);
+      onCalculationComplete(response.calculationRunId);
     } catch (error) {
-      setApprovalError(error instanceof Error ? error.message : 'Не удалось утвердить поливы.');
+      setApprovalError(error instanceof Error ? error.message : 'Не удалось рассчитать водный режим.');
     } finally {
       setIsSavingApproval(false);
+      setCalculationStartedAt(null);
     }
   }
 
@@ -461,6 +478,11 @@ export function IrrigationInputTable({
               до {formatDayShort(today)} - {actualIrrigationCount} поливов, план на 7 дней -{' '}
               {plannedIrrigationCount} поливов
             </span>
+            {isSavingApproval && (
+              <span className="irrigation-calculation-status">
+                KORNIX рассчитывает водный режим · {elapsedCalculationSeconds} с
+              </span>
+            )}
             {approvalError && <span className="irrigation-approval-error">{approvalError}</span>}
           </div>
           <button
@@ -473,6 +495,12 @@ export function IrrigationInputTable({
           </button>
         </div>
       </div>
+
+      {isSavingApproval && (
+        <div className="irrigation-calculation-progress" role="progressbar" aria-label="Расчёт водного режима">
+          <span />
+        </div>
+      )}
 
       <div className="irrigation-table-scroll" ref={tableScrollRef}>
         <table className="irrigation-table">

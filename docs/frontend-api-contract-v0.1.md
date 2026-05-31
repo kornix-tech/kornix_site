@@ -145,3 +145,7 @@ type TimeseriesDto = {
   points: Array<Record<string, string | number | null>>;
 };
 ```
+# Deprecated
+
+Этот документ оставлен как исторический снимок v0.1. Для интеграции API использовать
+актуальный контракт [kornix-frontend-api-v1.md](./kornix-frontend-api-v1.md).

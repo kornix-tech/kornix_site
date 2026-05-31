@@ -8,8 +8,8 @@ type LegendItem = {
 const displayOptions: Array<{ value: MapDisplayMode; label: string }> = [
   { value: 'status', label: 'Сводная метрика' },
   { value: 'water_percent', label: 'Доля продуктивных влагозапасов' },
-  { value: 'precipitation', label: 'Сумма выпавших осадков' },
-  { value: 'irrigation', label: 'Сумма поливов' },
+  { value: 'precipitation', label: 'Эффективные осадки' },
+  { value: 'irrigation', label: 'Эффективный полив' },
   { value: 'temperature_sum', label: 'Сумма температур от даты сева' }
 ];
 

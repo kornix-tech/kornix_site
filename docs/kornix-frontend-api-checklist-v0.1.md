@@ -847,3 +847,7 @@ Definition of DONE for backend integration:
 - all acceptance scenarios pass against real backend;
 - no frontend secret is required;
 - backend returns readiness and data-quality states instead of using generic empty results for domain blockers.
+# Deprecated
+
+Этот чек-лист оставлен как исторический снимок v0.1. Для интеграции API использовать
+актуальный контракт [kornix-frontend-api-v1.md](./kornix-frontend-api-v1.md).

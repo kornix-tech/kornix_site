@@ -6,7 +6,7 @@ const labels: Record<FieldWaterRegimeStatusCode, string> = {
   critical: 'критично',
   no_data: 'нет данных',
   not_calculated: 'нет расчёта',
-  readiness_blocked: 'readiness blocked'
+  calculation_failed: 'ошибка расчёта'
 };
 
 export function StatusBadge({ status }: { status: FieldWaterRegimeStatusCode }) {

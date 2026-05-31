@@ -4,11 +4,10 @@ const MOCK_SESSION_KEY = 'kornix.mock.authenticated';
 
 export const mockAuthUser: AuthUser = {
   id: 'mock-user-1',
-  displayName: 'Demo User',
-  email: 'demo@kornix.local',
-  organizationId: 'org-demo',
-  organizationName: 'KORNIX Demo Farm',
-  farmId: 'farm-demo',
+  displayName: 'СП оператор',
+  email: 'operator@sp.kornix.local',
+  organizationCode: 'SP',
+  organizationName: 'Спасское',
   roles: ['admin']
 };
 

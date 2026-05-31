@@ -983,3 +983,7 @@ MVP API is done when:
 ### v0.1
 
 - Initial frontend-driven API checklist.
+# Deprecated
+
+Этот документ оставлен как исторический снимок v0.2. Для интеграции сайта KORNIX
+использовать актуальный frontend-контракт [kornix-frontend-api-v1.md](./kornix-frontend-api-v1.md).

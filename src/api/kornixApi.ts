@@ -1,18 +1,24 @@
 import { KORNIX_METRICS } from '../config/metrics';
-import type {
-  CurrentUserDto,
-  FieldSeasonMapFeatureCollection,
-  KornixCurrentContextDto,
-  KornixMetricCode,
-  SaveIrrigationEventsRequest,
-  SaveIrrigationEventsResponse,
-  WaterRegimeTimeseriesDto
-} from '../types/kornix';
+import { isMockRuntimeAllowed } from '../config/runtimeSafety';
 import { mockAuthUser } from '../features/auth/mockAuthClient';
 import { requestJson } from '../shared/api/httpClient';
-import { buildMockFieldSeasonMapForDay, mockCurrentContext } from './mockData';
-import { buildMockTimeseries } from './timeseries';
-import { isMockRuntimeAllowed } from '../config/runtimeSafety';
+import type {
+  CalculationRunId,
+  CurrentUserDto,
+  FieldSeasonMapFeatureCollection,
+  IrrigationTaskPayloadDto,
+  KornixCalculateRequest,
+  KornixCalculateResponse,
+  KornixCurrentContextDto,
+  KornixProfileTimeseriesDto
+} from '../types/kornix';
+import {
+  buildMockCalculateResponse,
+  buildMockFieldSeasonMapForDay,
+  getMockCurrentContext,
+  MOCK_INITIAL_CALCULATION_RUN_ID
+} from './mockData';
+import { buildMockProfileTimeseries } from './timeseries';
 
 const mockEnabled = import.meta.env.VITE_ENABLE_MOCK_API === 'true' && isMockRuntimeAllowed();
 
@@ -30,69 +36,73 @@ export const kornixApi = {
 
   async getCurrentContext(): Promise<KornixCurrentContextDto> {
     if (mockEnabled) {
-      return delay(mockCurrentContext);
+      return delay(getMockCurrentContext());
     }
     return requestJson<KornixCurrentContextDto>('/api/v1/kornix/current-context');
   },
 
-  async getFieldSeasonMap(seasonYear: number, day?: string): Promise<FieldSeasonMapFeatureCollection> {
+  async calculateWaterRegime(irrigationScenario: IrrigationTaskPayloadDto): Promise<KornixCalculateResponse> {
+    const request: KornixCalculateRequest = {
+      seasonYear: 2026,
+      irrigationScenario
+    };
+
     if (mockEnabled) {
-      return delay(buildMockFieldSeasonMapForDay(day));
-    }
-    const query = new URLSearchParams({ seasonYear: String(seasonYear) });
-    if (day) {
-      query.set('day', day);
-    }
-    return requestJson<FieldSeasonMapFeatureCollection>(
-      `/api/v1/kornix/field-seasons/map?${query.toString()}`
-    );
-  },
-
-  async getWaterRegimeTimeseries(params: {
-    fieldSeasonIds: string[];
-    metric: KornixMetricCode;
-    from: string;
-    to: string;
-    aggregation: 'area_weighted_mean';
-  }): Promise<WaterRegimeTimeseriesDto> {
-    if (mockEnabled) {
-      return delay(
-        buildMockTimeseries({
-          ...params,
-          fields: buildMockFieldSeasonMapForDay()
-        })
-      );
+      return delay(buildMockCalculateResponse(irrigationScenario), 900);
     }
 
-    const query = new URLSearchParams({
-      fieldSeasonIds: params.fieldSeasonIds.join(','),
-      metric: params.metric,
-      from: params.from,
-      to: params.to,
-      aggregation: params.aggregation
-    });
-    return requestJson<WaterRegimeTimeseriesDto>(
-      `/api/v1/kornix/water-regime/timeseries?${query.toString()}`
-    );
-  },
-
-  async saveIrrigationEvents(request: SaveIrrigationEventsRequest): Promise<SaveIrrigationEventsResponse> {
-    if (mockEnabled) {
-      return delay({
-        accepted: true,
-        acceptedEventCount: request.events.length,
-        recalculationQueued: request.events.length > 0,
-        requestId: `mock-irrigation-${Date.now()}`
-      });
-    }
-
-    return requestJson<SaveIrrigationEventsResponse>('/api/v1/kornix/irrigation-events', {
-      method: 'PUT',
+    return requestJson<KornixCalculateResponse>('/api/v1/kornix/water-regime/calculate', {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(request)
     });
+  },
+
+  async getFieldSeasonMap(params: {
+    calculationRunId: CalculationRunId;
+    day: string;
+  }): Promise<FieldSeasonMapFeatureCollection> {
+    if (mockEnabled) {
+      return delay(buildMockFieldSeasonMapForDay(params.calculationRunId || MOCK_INITIAL_CALCULATION_RUN_ID, params.day));
+    }
+
+    const query = new URLSearchParams({
+      calculationRunId: params.calculationRunId,
+      day: params.day
+    });
+    return requestJson<FieldSeasonMapFeatureCollection>(
+      `/api/v1/kornix/field-seasons/map?${query.toString()}`
+    );
+  },
+
+  async getProfileTimeseries(params: {
+    calculationRunId: CalculationRunId;
+    fieldSeasonIds: string[];
+    aggregation?: 'area_weighted_mean';
+  }): Promise<KornixProfileTimeseriesDto> {
+    if (mockEnabled) {
+      const fields = buildMockFieldSeasonMapForDay(params.calculationRunId);
+      return delay(
+        buildMockProfileTimeseries({
+          calculationRunId: params.calculationRunId,
+          fieldSeasonIds: params.fieldSeasonIds,
+          fields
+        })
+      );
+    }
+
+    const query = new URLSearchParams({
+      calculationRunId: params.calculationRunId,
+      fieldSeasonIds: params.fieldSeasonIds.join(',')
+    });
+    if (params.fieldSeasonIds.length > 1) {
+      query.set('aggregation', params.aggregation ?? 'area_weighted_mean');
+    }
+    return requestJson<KornixProfileTimeseriesDto>(
+      `/api/v1/kornix/water-regime/profile-timeseries?${query.toString()}`
+    );
   },
 
   metrics: KORNIX_METRICS
