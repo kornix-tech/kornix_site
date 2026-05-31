@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -213,6 +213,37 @@ function formatDateShortLabel(day: string): string {
   return `${date}.${month}.${year.slice(-2)}`;
 }
 
+function monthLabel(day: string): string {
+  const [year, month] = day.split('-');
+  return `${month}.${year}`;
+}
+
+function monthStartIso(day: string): string {
+  return `${day.slice(0, 7)}-01`;
+}
+
+function shiftMonthIso(day: string, offset: number): string {
+  const date = new Date(`${monthStartIso(day)}T00:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() + offset);
+  return localDateIso(date);
+}
+
+function daysInMonth(day: string): string[] {
+  const cursor = new Date(`${monthStartIso(day)}T00:00:00Z`);
+  const month = cursor.getUTCMonth();
+  const days: string[] = [];
+  while (cursor.getUTCMonth() === month) {
+    days.push(localDateIso(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return days;
+}
+
+function mondayOffset(day: string): number {
+  const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
+  return weekday === 0 ? 6 : weekday - 1;
+}
+
 function CompactDateInput({
   value,
   ariaLabel,
@@ -222,15 +253,73 @@ function CompactDateInput({
   ariaLabel: string;
   onChange: (day: string) => void;
 }) {
+  const wrapperRef = useRef<HTMLSpanElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState(monthStartIso(value));
+  const monthDays = useMemo(() => daysInMonth(visibleMonth), [visibleMonth]);
+  const leadingEmptyDays = mondayOffset(monthDays[0] ?? visibleMonth);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setVisibleMonth(monthStartIso(value));
+    }
+  }, [isOpen, value]);
+
   return (
-    <span className="compact-date-picker">
-      <span aria-hidden="true">{formatDateShortLabel(value)}</span>
-      <input
-        type="date"
+    <span
+      ref={wrapperRef}
+      className="compact-date-picker-wrap"
+      onBlur={(event) => {
+        if (!wrapperRef.current?.contains(event.relatedTarget)) {
+          setIsOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="compact-date-picker"
         aria-label={ariaLabel}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span aria-hidden="true">{formatDateShortLabel(value)}</span>
+      </button>
+      {isOpen && (
+        <div className="compact-calendar" role="dialog" aria-label={ariaLabel}>
+          <div className="compact-calendar-header">
+            <button type="button" onClick={() => setVisibleMonth((month) => shiftMonthIso(month, -1))}>
+              ‹
+            </button>
+            <strong>{monthLabel(visibleMonth)}</strong>
+            <button type="button" onClick={() => setVisibleMonth((month) => shiftMonthIso(month, 1))}>
+              ›
+            </button>
+          </div>
+          <div className="compact-calendar-grid compact-calendar-weekdays" aria-hidden="true">
+            {['П', 'В', 'С', 'Ч', 'П', 'С', 'В'].map((dayName, index) => (
+              <span key={`${dayName}-${index}`}>{dayName}</span>
+            ))}
+          </div>
+          <div className="compact-calendar-grid">
+            {Array.from({ length: leadingEmptyDays }, (_, index) => (
+              <span key={`empty-${index}`} />
+            ))}
+            {monthDays.map((day) => (
+              <button
+                key={day}
+                type="button"
+                className={day === value ? 'compact-calendar-selected' : ''}
+                onClick={() => {
+                  onChange(day);
+                  setIsOpen(false);
+                }}
+              >
+                {day.slice(-2)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </span>
   );
 }

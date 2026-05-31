@@ -1131,20 +1131,33 @@ input[type='checkbox'] {
   font-weight: 800;
 }
 
-.compact-date-picker {
+.compact-date-picker-wrap {
   position: relative;
   min-width: 0;
+  display: block;
+}
+
+.compact-date-picker {
+  position: relative;
+  width: 100%;
   height: 34px;
   display: grid;
   place-items: center;
   padding: 0 24px 0 8px;
   overflow: hidden;
+  appearance: none;
   border: 1px solid rgb(23 65 38 / 14%);
   border-radius: 7px;
   background: #fff;
   color: #1a2e1e;
   font-size: 12px;
   font-weight: 900;
+  cursor: pointer;
+}
+
+.compact-date-picker:focus-visible {
+  outline: 2px solid rgb(224 106 20 / 22%);
+  border-color: var(--color-orange-500);
 }
 
 .compact-date-picker::after {
@@ -1159,14 +1172,77 @@ input[type='checkbox'] {
   opacity: 0.78;
 }
 
-.compact-date-picker input {
+.compact-calendar {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: 188px;
+  padding: 8px;
+  border: 1px solid rgb(23 65 38 / 16%);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgb(14 44 27 / 18%);
+}
+
+.compact-calendar-header {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.compact-calendar-header strong {
+  color: var(--color-green-900);
+  font-size: 12px;
+  text-align: center;
+}
+
+.compact-calendar-header button,
+.compact-calendar-grid button {
+  min-height: 0;
   padding: 0;
-  opacity: 0;
-  cursor: pointer;
+  border-radius: 6px;
+}
+
+.compact-calendar-header button {
+  height: 26px;
+}
+
+.compact-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.compact-calendar-weekdays {
+  margin-bottom: 4px;
+  color: var(--color-muted);
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.compact-calendar-grid button {
+  height: 22px;
+  color: #1a2e1e;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgb(248 251 244 / 92%);
+  border: 1px solid rgb(23 65 38 / 10%);
+}
+
+.compact-calendar-grid button:hover,
+.compact-calendar-grid button:focus-visible {
+  border-color: var(--color-orange-500);
+  background: rgb(255 245 232 / 95%);
+}
+
+.compact-calendar-grid .compact-calendar-selected {
+  color: #fff;
+  border-color: var(--color-green-700);
+  background: var(--color-green-700);
 }
 
 .chart-date-separator {
