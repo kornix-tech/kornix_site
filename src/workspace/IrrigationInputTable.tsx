@@ -361,6 +361,7 @@ export function IrrigationInputTable({
   const [approvalError, setApprovalError] = useState<string | null>(null);
   const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);
   const [elapsedCalculationSeconds, setElapsedCalculationSeconds] = useState(0);
+  const [isLegendVisible, setIsLegendVisible] = useState(true);
   const irrigationTaskPayload = useMemo(
     () => buildIrrigationTaskPayload(values, editableEnd),
     [editableEnd, values]
@@ -417,22 +418,31 @@ export function IrrigationInputTable({
     if (!scrollContainer) {
       return;
     }
+    const tableScrollContainer = scrollContainer;
 
-    const frame = window.requestAnimationFrame(() => {
-      const todayCell = scrollContainer.querySelector<HTMLElement>(`[data-irrigation-day="${today}"]`);
-      const fieldHead = scrollContainer.querySelector<HTMLElement>('.irrigation-field-head');
+    function centerTodayColumn() {
+      const todayCell = tableScrollContainer.querySelector<HTMLElement>(`[data-irrigation-day="${today}"]`);
+      const fieldHead = tableScrollContainer.querySelector<HTMLElement>('.irrigation-field-head');
       if (!todayCell) {
         return;
       }
 
       const stickyFieldWidth = fieldHead?.offsetWidth ?? 0;
-      const calendarViewportWidth = Math.max(0, scrollContainer.clientWidth - stickyFieldWidth);
+      const calendarViewportWidth = Math.max(0, tableScrollContainer.clientWidth - stickyFieldWidth);
       const targetScrollLeft =
         todayCell.offsetLeft - stickyFieldWidth - calendarViewportWidth / 2 + todayCell.offsetWidth / 2;
-      scrollContainer.scrollLeft = Math.max(0, targetScrollLeft);
-    });
+      tableScrollContainer.scrollLeft = Math.max(0, targetScrollLeft);
+    }
 
-    return () => window.cancelAnimationFrame(frame);
+    const frame = window.requestAnimationFrame(centerTodayColumn);
+    // Таблица широкая, sticky-колонки и шрифты могут уточнять размеры после первого кадра.
+    // Повторяем центрирование короткой серией, чтобы вход на вкладку стабильно показывал текущий день.
+    const retryTimers = [120, 500].map((delayMs) => window.setTimeout(centerTodayColumn, delayMs));
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      retryTimers.forEach((timer) => window.clearTimeout(timer));
+    };
   }, [today, days.length]);
 
   async function approveIrrigationEvents() {
@@ -464,13 +474,21 @@ export function IrrigationInputTable({
     <section className="irrigation-panel">
       <div className="irrigation-toolbar">
         <div className="irrigation-legend">
-          <div className="irrigation-step-legend" aria-label="Легенда глубины полива">
-            {IRRIGATION_STEP_LEGEND.map((item) => (
-              <span key={`${item.className}-${item.label}`} className={item.className}>
-                {item.label}
-              </span>
-            ))}
-          </div>
+          <input
+            type="checkbox"
+            aria-label="Показать легенду поливов"
+            checked={isLegendVisible}
+            onChange={(event) => setIsLegendVisible(event.target.checked)}
+          />
+          {isLegendVisible && (
+            <div className="irrigation-step-legend" aria-label="Легенда глубины полива">
+              {IRRIGATION_STEP_LEGEND.map((item) => (
+                <span key={`${item.className}-${item.label}`} className={item.className}>
+                  {item.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="irrigation-toolbar-main">
           <div className="irrigation-approval-summary">
@@ -540,7 +558,8 @@ export function IrrigationInputTable({
                     day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
                     isWeekStart(day) ? 'irrigation-week-start' : '',
                     day > editableEnd ? 'irrigation-locked-day-head' : '',
-                    day === forecastStart ? 'irrigation-forecast-start' : ''
+                    day === forecastStart ? 'irrigation-forecast-start' : '',
+                    day === today ? 'irrigation-today' : ''
                   ]
                     .filter(Boolean)
                     .join(' ')}
@@ -581,7 +600,8 @@ export function IrrigationInputTable({
                           !isLockedDay && isAlertIrrigationValue(value) ? 'irrigation-alert-cell' : '',
                           !isLockedDay ? depthClassName : '',
                           day >= forecastStart ? 'irrigation-plan-cell' : 'irrigation-fact-cell',
-                          day === forecastStart ? 'irrigation-forecast-start' : ''
+                          day === forecastStart ? 'irrigation-forecast-start' : '',
+                          day === today ? 'irrigation-today' : ''
                         ]
                           .filter(Boolean)
                           .join(' ')}

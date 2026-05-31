@@ -55,7 +55,6 @@ export function MapDisplayPanel({
   return (
     <aside className="map-help">
       <h2>Карта</h2>
-      <p>Подпись в центре полигона показывает название поля.</p>
 
       <fieldset className="map-mode-group">
         <legend>Отображение</legend>

@@ -247,10 +247,12 @@ function mondayOffset(day: string): number {
 function CompactDateInput({
   value,
   ariaLabel,
+  align = 'start',
   onChange
 }: {
   value: string;
   ariaLabel: string;
+  align?: 'start' | 'end';
   onChange: (day: string) => void;
 }) {
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
@@ -268,7 +270,7 @@ function CompactDateInput({
   return (
     <span
       ref={wrapperRef}
-      className="compact-date-picker-wrap"
+      className={`compact-date-picker-wrap compact-date-picker-${align}`}
       onBlur={(event) => {
         if (!wrapperRef.current?.contains(event.relatedTarget)) {
           setIsOpen(false);
@@ -743,6 +745,7 @@ function ChartBody({
             <CompactDateInput
               value={to}
               ariaLabel="Конец видимого периода графика"
+              align="end"
               onChange={onToChange}
             />
           </label>

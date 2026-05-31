@@ -532,6 +532,7 @@ button:active {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .field-selector {
@@ -574,7 +575,7 @@ button:active {
 .map-mode-group {
   display: grid;
   gap: 8px;
-  margin: 16px 0;
+  margin: 12px 0;
   padding: 0;
   border: 0;
 }
@@ -609,8 +610,8 @@ button:active {
 
 .map-legend {
   display: grid;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .map-legend h3 {
@@ -1185,6 +1186,11 @@ input[type='checkbox'] {
   box-shadow: 0 16px 34px rgb(14 44 27 / 18%);
 }
 
+.compact-date-picker-end .compact-calendar {
+  right: 0;
+  left: auto;
+}
+
 .compact-calendar-header {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 28px;
@@ -1547,8 +1553,16 @@ input[type='checkbox'] {
 .irrigation-legend {
   width: min(448px, 46vw);
   display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
   gap: 6px;
+  align-items: center;
   align-self: center;
+}
+
+.irrigation-legend > input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
 }
 
 .irrigation-step-legend {
@@ -1771,6 +1785,15 @@ input[type='checkbox'] {
   border-left: 2px solid rgb(217 95 11 / 54%) !important;
 }
 
+.irrigation-today {
+  box-shadow: inset 0 0 0 2px rgb(23 65 38 / 34%);
+}
+
+.irrigation-day-head.irrigation-today {
+  color: var(--color-green-900) !important;
+  background: #dcefc8 !important;
+}
+
 .irrigation-input-control {
   height: 100%;
   display: grid;
@@ -1924,7 +1947,8 @@ input[type='checkbox'] {
   }
 
   .map-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(160px, 26vw);
+    gap: 8px;
   }
 
   .chart-layout {
@@ -1933,8 +1957,43 @@ input[type='checkbox'] {
   }
 
   .map-container {
-    height: min(60dvh, 520px);
-    min-height: 320px;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .map-main {
+    min-height: 0;
+  }
+
+  .map-help {
+    padding: 10px;
+  }
+
+  .map-help h2 {
+    font-size: 18px;
+  }
+
+  .map-mode-group {
+    gap: 5px;
+    margin: 8px 0;
+  }
+
+  .map-mode-option {
+    gap: 5px;
+    padding: 5px;
+    font-size: 11px;
+  }
+
+  .map-legend h3 {
+    font-size: 13px;
+  }
+
+  .map-legend-list {
+    gap: 5px;
+  }
+
+  .map-legend-item {
+    font-size: 11px;
   }
 
   .field-list {
