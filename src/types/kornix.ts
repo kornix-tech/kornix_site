@@ -126,13 +126,7 @@ export type KornixFrontendMode = 'current_editable' | 'stale_read_only' | 'not_r
 
 export type KornixSubmitBlockedReason =
   | null
-  | 'DATA_REFRESH_IN_PROGRESS'
-  | 'CURRENT_OPERATIONAL_NOT_PUBLISHED'
-  | 'DATA_COMPLETENESS_FAILED'
-  | 'CALCULATION_QUEUED'
-  | 'CALCULATION_RUNNING'
-  | 'CALCULATION_FAILED'
-  | 'DAILY_UPDATE_DEGRADED';
+  | string;
 
 export type KornixManagedScopeDto = {
   dateFrom: string;
@@ -147,6 +141,14 @@ export type KornixMethodDto = {
   version: string;
   isDefault: boolean;
   isRequired: boolean;
+  isCandidate?: boolean;
+  methodFamily?: string | null;
+};
+
+export type KornixMethodsResponseDto = {
+  defaultMethodCode: string;
+  operationalMethodSetCode: string;
+  methods: KornixMethodDto[];
 };
 
 export type KornixReadinessSummaryDto = {
@@ -158,7 +160,7 @@ export type KornixReadinessSummaryDto = {
   nextRetryAt?: string | null;
   strictFullWeatherPass?: boolean;
   operationalRequiredPass?: boolean;
-  warnings?: Array<{ code: string; message: string }>;
+  warnings?: Array<{ code: string; message: string; details?: unknown }>;
 };
 
 export type KornixCurrentContextDto = {
@@ -286,6 +288,21 @@ export type KornixApprovalClientDiffDto = {
   added: unknown[];
   updated: unknown[];
   deleted: unknown[];
+};
+
+export type KornixCurrentIrrigationLayerDto = {
+  organizationCode: string;
+  seasonYear: number;
+  managedScope: KornixManagedScopeDto;
+  irrigationLayer: Array<
+    KornixApprovalIrrigationCellDto & {
+      sourceLedgerEventId?: string | null;
+      approvedAt?: string | null;
+      zone?: 'historical_actual' | 'forecast_planned';
+    }
+  >;
+  projectionHash: string;
+  generatedAt: string;
 };
 
 export type KornixApprovalRequestDto = {

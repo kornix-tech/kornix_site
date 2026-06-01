@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { kornixApi } from '../api/kornixApi';
 import { ApiError } from '../shared/api/httpClient';
 import type {
@@ -8,6 +9,7 @@ import type {
   KornixApprovalIrrigationCellDto,
   KornixApprovalRequestDto,
   KornixApprovalStatusDto,
+  KornixCurrentIrrigationLayerDto,
   KornixCurrentContextDto
 } from '../types/kornix';
 import { compareFieldKeys } from './FieldSelectorPanel';
@@ -165,6 +167,10 @@ function normalizeStoredIrrigationValues(values: IrrigationValues): IrrigationVa
   );
 }
 
+function currentValuesHasEntries(values: IrrigationValues): boolean {
+  return Object.keys(values).length > 0;
+}
+
 function irrigationDepthClassName(value: string): string {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 4 || parsed > HIGH_ALERT_IRRIGATION_MM) {
@@ -208,11 +214,15 @@ function nextSteppedValue(currentValue: string, direction: 1 | -1): string {
 function usePersistentIrrigationValues(seasonYear: number, storageScope: string) {
   const storageKey = `kornix-irrigation-input:${storageScope}:${seasonYear}`;
 
-  const persistValues = useCallback((nextValues: IrrigationValues) => {
+  const persistValues = useCallback((nextValues: IrrigationValues, shouldPersist = true) => {
     try {
-      window.localStorage.setItem(storageKey, JSON.stringify(nextValues));
+      if (shouldPersist) {
+        window.localStorage.setItem(storageKey, JSON.stringify(nextValues));
+      } else {
+        window.localStorage.removeItem(storageKey);
+      }
     } catch {
-      // Сохранение в localStorage вспомогательное: ввод должен работать даже при запрете storage.
+      // Локальный draft вспомогательный: backend projection остаётся источником истины.
     }
   }, [storageKey]);
 
@@ -258,40 +268,33 @@ function usePersistentIrrigationValues(seasonYear: number, storageScope: string)
     });
   }, [persistValues]);
 
-  return [values, updateValue, pruneValues] as const;
-}
+  const replaceValues = useCallback((nextValues: IrrigationValues, shouldPersist = true) => {
+    const normalizedValues = normalizeStoredIrrigationValues(nextValues);
+    setValues(normalizedValues);
+    persistValues(normalizedValues, shouldPersist);
+  }, [persistValues]);
 
-function useApprovedIrrigationSignature(seasonYear: number, storageScope: string) {
-  const storageKey = `kornix-irrigation-approved:${storageScope}:${seasonYear}`;
-  const [approvedSignature, setApprovedSignature] = useState<string>(() => {
-    if (typeof window === 'undefined') {
-      return '';
-    }
-
-    return window.localStorage.getItem(storageKey) ?? '';
-  });
-
-  function approve(signature: string) {
-    setApprovedSignature(signature);
-    try {
-      window.localStorage.setItem(storageKey, signature);
-    } catch {
-      // Утверждение остается в текущей сессии даже если browser storage недоступен.
-    }
-  }
-
-  return [approvedSignature, approve] as const;
+  return [values, updateValue, pruneValues, replaceValues] as const;
 }
 
 function buildIrrigationLayer(
   values: IrrigationValues,
-  editableEnd: string
+  managedScope: KornixCurrentContextDto['managedScope'] | null
 ): KornixApprovalIrrigationCellDto[] {
+  const allowedFieldSeasonIds = new Set(managedScope?.fieldSeasonIds ?? []);
   return Object.entries(values)
     .map(([key, value]) => {
       const parsedKey = splitValueKey(key);
       const irrigationMm = Number(value);
-      if (!parsedKey || parsedKey.day > editableEnd || !Number.isFinite(irrigationMm) || irrigationMm <= 0) {
+      if (
+        !parsedKey ||
+        !managedScope ||
+        parsedKey.day < managedScope.dateFrom ||
+        parsedKey.day > managedScope.dateTo ||
+        !allowedFieldSeasonIds.has(parsedKey.fieldSeasonId) ||
+        !Number.isFinite(irrigationMm) ||
+        irrigationMm <= 0
+      ) {
         return null;
       }
 
@@ -309,35 +312,13 @@ function buildIrrigationLayer(
 
 function irrigationApprovalSignature(
   values: IrrigationValues,
-  editableEnd: string
+  managedScope: KornixCurrentContextDto['managedScope'] | null
 ): string {
-  return JSON.stringify(buildIrrigationLayer(values, editableEnd));
+  return JSON.stringify(buildIrrigationLayer(values, managedScope));
 }
 
 function cellIdentity(cell: KornixApprovalIrrigationCellDto): string {
   return `${cell.fieldSeasonId}:${cell.irrigationDate}`;
-}
-
-function safeParseApprovedLayer(signature: string): KornixApprovalIrrigationCellDto[] {
-  try {
-    const parsed = JSON.parse(signature) as unknown;
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (cell): cell is KornixApprovalIrrigationCellDto =>
-        typeof cell === 'object' &&
-        cell !== null &&
-        typeof (cell as KornixApprovalIrrigationCellDto).fieldSeasonId === 'string' &&
-        typeof (cell as KornixApprovalIrrigationCellDto).irrigationDate === 'string' &&
-        typeof (cell as KornixApprovalIrrigationCellDto).irrigationMm === 'number' &&
-        Number.isFinite((cell as KornixApprovalIrrigationCellDto).irrigationMm) &&
-        (cell as KornixApprovalIrrigationCellDto).irrigationMm > 0
-    );
-  } catch {
-    return [];
-  }
 }
 
 function buildClientDiff(
@@ -357,6 +338,52 @@ function buildClientDiff(
   };
 }
 
+function layerToValues(layer: KornixApprovalIrrigationCellDto[]): IrrigationValues {
+  return Object.fromEntries(
+    layer
+      .filter((cell) => Number.isFinite(cell.irrigationMm) && cell.irrigationMm > 0)
+      .map((cell) => [valueKey(cell.fieldSeasonId, cell.irrigationDate), String(cell.irrigationMm)])
+  );
+}
+
+function layerSignature(layer: KornixApprovalIrrigationCellDto[]): string {
+  return JSON.stringify(
+    [...layer]
+      .filter((cell) => Number.isFinite(cell.irrigationMm) && cell.irrigationMm > 0)
+      .sort((left, right) =>
+        left.fieldSeasonId.localeCompare(right.fieldSeasonId) ||
+        left.irrigationDate.localeCompare(right.irrigationDate)
+      )
+      .map((cell) => ({
+        fieldSeasonId: cell.fieldSeasonId,
+        irrigationDate: cell.irrigationDate,
+        irrigationMm: cell.irrigationMm
+      }))
+  );
+}
+
+function findOutOfManagedScopeValues(
+  values: IrrigationValues,
+  managedScope: KornixCurrentContextDto['managedScope'] | null
+): string[] {
+  if (!managedScope) {
+    return Object.keys(values);
+  }
+
+  const allowedFieldSeasonIds = new Set(managedScope.fieldSeasonIds);
+  return Object.entries(values)
+    .filter(([, value]) => normalizeIrrigationInput(value) !== '')
+    .map(([key]) => splitValueKey(key))
+    .filter(
+      (parsedKey): parsedKey is { fieldSeasonId: string; day: string } =>
+        parsedKey !== null &&
+        (parsedKey.day < managedScope.dateFrom ||
+          parsedKey.day > managedScope.dateTo ||
+          !allowedFieldSeasonIds.has(parsedKey.fieldSeasonId))
+    )
+    .map((parsedKey) => `${parsedKey.fieldSeasonId} ${parsedKey.day}`);
+}
+
 function calculationErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     const requestId = error.requestId ? ` · ${error.requestId}` : '';
@@ -364,6 +391,15 @@ function calculationErrorMessage(error: unknown): string {
   }
 
   return error instanceof Error ? error.message : 'Не удалось рассчитать водный режим.';
+}
+
+function queryErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    const requestId = error.requestId ? ` · ${error.requestId}` : '';
+    return `${error.code}: ${error.message}${requestId}`;
+  }
+
+  return fallback;
 }
 
 function sortedFields(fields: FieldSeasonMapFeatureCollection): FieldSeasonMapFeature[] {
@@ -402,7 +438,12 @@ export function IrrigationInputTable({
   const currentWeekEnd = addDaysIso(currentWeekStart, 6);
   const firstDay = `${seasonYear}-04-01`;
   const lastDay = `${seasonYear}-08-31`;
-  const editableEnd = forecastEnd < firstDay ? firstDay : forecastEnd;
+  const editableStart = context?.managedScope.dateFrom ?? firstDay;
+  const editableEnd = context?.managedScope.dateTo ?? (forecastEnd < firstDay ? firstDay : forecastEnd);
+  const managedFieldSeasonIds = useMemo(
+    () => new Set(context?.managedScope.fieldSeasonIds ?? []),
+    [context?.managedScope.fieldSeasonIds]
+  );
   const days = useMemo(() => enumerateDays(firstDay, lastDay), [firstDay, lastDay]);
   const monthGroups = useMemo(
     () => groupDates(days, (day) => day.slice(0, 7), monthName),
@@ -419,34 +460,50 @@ export function IrrigationInputTable({
   );
   const tableFields = useMemo(() => sortedFields(fields), [fields]);
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
-  const [values, updateValue, pruneValues] = usePersistentIrrigationValues(seasonYear, storageScope);
-  const [approvedSignature, approveSignature] = useApprovedIrrigationSignature(seasonYear, storageScope);
+  const hydratedProjectionHashRef = useRef<string | null>(null);
+  const [values, updateValue, pruneValues, replaceValues] = usePersistentIrrigationValues(seasonYear, storageScope);
   const [isSavingApproval, setIsSavingApproval] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
   const [calculationWarnings, setCalculationWarnings] = useState<CalculationWarning[]>([]);
   const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);
   const [elapsedCalculationSeconds, setElapsedCalculationSeconds] = useState(0);
   const [isLegendVisible, setIsLegendVisible] = useState(true);
+  const activeLayerQuery = useQuery({
+    queryKey: ['current-irrigation-layer', seasonYear, context?.managedScope.scopeVersion],
+    enabled: Boolean(context),
+    queryFn: () => kornixApi.getCurrentIrrigationLayerV2(),
+    retry: 1
+  });
+  const backendIrrigationLayer = useMemo(
+    () => activeLayerQuery.data?.irrigationLayer ?? [],
+    [activeLayerQuery.data?.irrigationLayer]
+  );
+  const backendProjectionSignature = useMemo(
+    () => layerSignature(backendIrrigationLayer),
+    [backendIrrigationLayer]
+  );
   const irrigationLayer = useMemo(
-    () => buildIrrigationLayer(values, editableEnd),
-    [editableEnd, values]
+    () => buildIrrigationLayer(values, context?.managedScope ?? null),
+    [context?.managedScope, values]
   );
   const approvalSignature = useMemo(
-    () => irrigationApprovalSignature(values, editableEnd),
-    [editableEnd, values]
+    () => irrigationApprovalSignature(values, context?.managedScope ?? null),
+    [context?.managedScope, values]
   );
   const approvalState: ApprovalState =
     isSavingApproval
       ? 'saving'
       : approvalError
         ? 'error'
-        : approvedSignature === approvalSignature
+        : backendProjectionSignature === approvalSignature
           ? 'approved'
           : irrigationLayer.length === 0
             ? 'empty'
             : 'dirty';
   const isSubmitBlocked =
     !context ||
+    activeLayerQuery.isLoading ||
+    activeLayerQuery.isError ||
     context.frontendMode !== 'current_editable' ||
     !context.submitAllowed ||
     !baseCalculationRunId ||
@@ -454,6 +511,7 @@ export function IrrigationInputTable({
     isSavingApproval;
   const isInputReadOnly = context?.frontendMode === 'stale_read_only' || context?.frontendMode === 'not_ready';
   const blockedReason =
+    (activeLayerQuery.isError ? queryErrorMessage(activeLayerQuery.error, 'Не удалось загрузить активный слой поливов.') : null) ??
     context?.submitBlockedReason ??
     (!baseCalculationRunId
       ? 'Нет опубликованного расчёта для baseCalculationRunId.'
@@ -487,11 +545,21 @@ export function IrrigationInputTable({
       return (
         parsedKey !== null &&
         fieldIds.has(parsedKey.fieldSeasonId) &&
-        parsedKey.day >= firstDay &&
+        managedFieldSeasonIds.has(parsedKey.fieldSeasonId) &&
+        parsedKey.day >= editableStart &&
         parsedKey.day <= editableEnd
       );
     });
-  }, [editableEnd, firstDay, pruneValues, tableFields]);
+  }, [editableEnd, editableStart, managedFieldSeasonIds, pruneValues, tableFields]);
+
+  useEffect(() => {
+    if (!activeLayerQuery.data || hydratedProjectionHashRef.current === activeLayerQuery.data.projectionHash) {
+      return;
+    }
+
+    hydratedProjectionHashRef.current = activeLayerQuery.data.projectionHash;
+    replaceValues((currentValuesHasEntries(values) ? values : layerToValues(activeLayerQuery.data.irrigationLayer)), true);
+  }, [activeLayerQuery.data, replaceValues, values]);
 
   useEffect(() => {
     const scrollContainer = tableScrollRef.current;
@@ -531,19 +599,29 @@ export function IrrigationInputTable({
       return;
     }
 
+    const outOfScopeValues = findOutOfManagedScopeValues(values, context.managedScope);
+    if (outOfScopeValues.length > 0) {
+      setApprovalError(`Есть значения вне managedScope: ${outOfScopeValues.slice(0, 3).join(', ')}`);
+      return;
+    }
+
+    if (!irrigationLayer.every((cell) => cell.irrigationMm > 0)) {
+      setApprovalError('Полив должен быть положительным числом больше 0 мм.');
+      return;
+    }
+
     setIsSavingApproval(true);
     setCalculationStartedAt(Date.now());
     setApprovalError(null);
     setCalculationWarnings([]);
     try {
-      const approvedLayer = safeParseApprovedLayer(approvedSignature);
       const request: KornixApprovalRequestDto = {
         seasonYear,
         baseCalculationRunId,
         approvalClientGeneratedAt: new Date().toISOString(),
         managedScope: context.managedScope,
         irrigationLayer,
-        clientDiff: buildClientDiff(approvedLayer, irrigationLayer)
+        clientDiff: buildClientDiff(backendIrrigationLayer, irrigationLayer)
       };
       const response = await kornixApi.submitWaterRegimeApprovalV2(request);
       setCalculationWarnings(response.warnings ?? []);
@@ -562,7 +640,8 @@ export function IrrigationInputTable({
         const status = await pollApprovalUntilFinal(response.approvalBatchId, response.pollAfterMs);
         setCalculationWarnings((current) => [...current, ...(status.warnings ?? [])]);
         if (status.approvalStatus === 'applied' && status.resultAvailable && status.calculationRunId) {
-          approveSignature(approvalSignature);
+          replaceValues(layerToValues(irrigationLayer), false);
+          void activeLayerQuery.refetch();
           onCalculationComplete(status.calculationRunId);
           return;
         }
@@ -575,7 +654,8 @@ export function IrrigationInputTable({
         throw new Error(`Утверждение завершилось статусом ${status.approvalStatus}.`);
       }
 
-      approveSignature(approvalSignature);
+      replaceValues(layerToValues(irrigationLayer), false);
+      void activeLayerQuery.refetch();
       if (response.calculationRunId) {
         onCalculationComplete(response.calculationRunId);
       }
@@ -636,6 +716,12 @@ export function IrrigationInputTable({
               до {formatDayShort(today)} - {actualIrrigationCount} поливов, план на 7 дней -{' '}
               {plannedIrrigationCount} поливов
             </span>
+            <span>
+              редактируемый диапазон {formatDayShort(editableStart)} - {formatDayShort(editableEnd)}
+            </span>
+            {activeLayerQuery.isLoading && (
+              <span className="irrigation-calculation-status">загружаем активный слой поливов</span>
+            )}
             {isSavingApproval && (
               <span className="irrigation-calculation-status">
                 KORNIX рассчитывает водный режим · {elapsedCalculationSeconds} с
@@ -658,6 +744,12 @@ export function IrrigationInputTable({
       {isSavingApproval && (
         <div className="irrigation-calculation-progress" role="progressbar" aria-label="Расчёт водного режима">
           <span />
+        </div>
+      )}
+
+      {activeLayerQuery.isError && (
+        <div className="error-state">
+          {queryErrorMessage(activeLayerQuery.error, 'Не удалось загрузить активный слой поливов.')}
         </div>
       )}
 
@@ -708,7 +800,7 @@ export function IrrigationInputTable({
                     day >= currentWeekStart && day <= currentWeekEnd ? 'irrigation-current-week' : '',
                     day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
                     isWeekStart(day) ? 'irrigation-week-start' : '',
-                    day > editableEnd ? 'irrigation-locked-day-head' : '',
+                    day < editableStart || day > editableEnd ? 'irrigation-locked-day-head' : '',
                     day === forecastStart ? 'irrigation-forecast-start' : '',
                     day === today ? 'irrigation-today' : ''
                   ]
@@ -736,7 +828,8 @@ export function IrrigationInputTable({
                   </th>
                   {days.map((day) => {
                     const key = valueKey(field.fieldSeasonId, day);
-                    const isLockedDay = day > editableEnd;
+                    const isLockedDay =
+                      day < editableStart || day > editableEnd || !managedFieldSeasonIds.has(field.fieldSeasonId);
                     const value = isLockedDay ? '' : (values[key] ?? '');
                     const depthClassName = irrigationDepthClassName(value);
                     return (

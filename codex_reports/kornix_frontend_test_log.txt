@@ -1,6 +1,6 @@
 $ npm ci --no-audit --no-fund
 
-added 122 packages in 11s
+added 122 packages in 9s
 npm notice
 npm notice New major version of npm available! 10.8.2 -> 11.16.0
 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
@@ -35,16 +35,16 @@ computing gzip size...
 dist/index.html                                 0.73 kB │ gzip:   0.34 kB
 dist/assets/vendor-map-CIGW-MKW.css            15.61 kB │ gzip:   6.46 kB
 dist/assets/index-CmChda7t.css                 34.11 kB │ gzip:   7.43 kB
-dist/assets/FieldMap-CKHR1_b8.js                6.71 kB │ gzip:   2.91 kB
-dist/assets/IrrigationInputTable-CjP-dozc.js   12.81 kB │ gzip:   4.95 kB
+dist/assets/FieldMap-C0Qf4vaS.js                6.71 kB │ gzip:   2.91 kB
 dist/assets/index-VDAUHfGj.js                  13.00 kB │ gzip:   5.19 kB
-dist/assets/WaterRegimeChart-BEexR5V5.js       24.41 kB │ gzip:   7.12 kB
+dist/assets/IrrigationInputTable-BYon9NXR.js   14.96 kB │ gzip:   5.55 kB
+dist/assets/WaterRegimeChart-CE7NRcEG.js       24.41 kB │ gzip:   7.12 kB
 dist/assets/vendor-query-B7GAe2XU.js           33.63 kB │ gzip:  10.13 kB
 dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
-dist/assets/index-Icw6vYHT.js                 153.93 kB │ gzip:  45.19 kB
+dist/assets/index-BtBAgsyr.js                 154.82 kB │ gzip:  45.46 kB
 dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
 dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
-✓ built in 4.90s
+✓ built in 5.53s
 npm notice
 npm notice New major version of npm available! 10.8.2 -> 11.16.0
 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
@@ -84,13 +84,16 @@ computing gzip size...
 dist/index.html                                 0.73 kB │ gzip:   0.34 kB
 dist/assets/vendor-map-CIGW-MKW.css            15.61 kB │ gzip:   6.46 kB
 dist/assets/index-CmChda7t.css                 34.11 kB │ gzip:   7.43 kB
-dist/assets/FieldMap-CKHR1_b8.js                6.71 kB │ gzip:   2.91 kB
-dist/assets/IrrigationInputTable-CjP-dozc.js   12.81 kB │ gzip:   4.95 kB
+dist/assets/FieldMap-C0Qf4vaS.js                6.71 kB │ gzip:   2.91 kB
 dist/assets/index-VDAUHfGj.js                  13.00 kB │ gzip:   5.19 kB
-dist/assets/WaterRegimeChart-BEexR5V5.js       24.41 kB │ gzip:   7.12 kB
+dist/assets/IrrigationInputTable-BYon9NXR.js   14.96 kB │ gzip:   5.55 kB
+dist/assets/WaterRegimeChart-CE7NRcEG.js       24.41 kB │ gzip:   7.12 kB
 dist/assets/vendor-query-B7GAe2XU.js           33.63 kB │ gzip:  10.13 kB
 dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
-dist/assets/index-Icw6vYHT.js                 153.93 kB │ gzip:  45.19 kB
+dist/assets/index-BtBAgsyr.js                 154.82 kB │ gzip:  45.46 kB
 dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
 dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
-✓ built in 4.65s
+✓ built in 4.58s
+
+$ npm test
+NOT RUN: package.json has no test script.

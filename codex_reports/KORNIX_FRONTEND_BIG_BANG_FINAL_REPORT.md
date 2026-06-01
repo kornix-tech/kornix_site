@@ -2,81 +2,71 @@
 
 ## Итог
 
-Статус: NOT_READY_BIG_BANG_FRONTEND_GAP
+Статус: NOT_READY_API_V2_FRONTEND_STUB_STITCHING_GAP
 
 ## Краткое резюме
 
-Frontend-код переведён на пользовательский контракт `/api/v2/kornix`: auth endpoints сохранены на `/api/v1`, рабочий KORNIX flow больше не использует legacy `/api/v1/kornix`, добавлены method selector, current-context v2 state, approval workflow, no-zero policy и contract-check в validate. Финальный READY не заявлен, потому что live/browser smoke против backend API недоступен: `127.0.0.1:8000` не принимает соединение.
+Frontend подготовлен к API v2 stitching на stub-расчётах: KORNIX-запросы идут на `/api/v2/kornix`, auth остаётся на `/api/v1`, таблица поливов загружает backend active projection из `/api/v2/kornix/irrigation-layer/current`, editable scope ограничен backend `managedScope`, а `clientDiff` считается от backend projection. Статус не READY, потому что backend stub API на `127.0.0.1:8000` недоступен и визуальная проверка stub transition `1.0 -> 2.0` не выполнена.
 
 ## Git
 
 Branch: main
-Commit: 099630d Prepare frontend for KORNIX API v2
+Commit: bb74ba0 Add frontend big bang final reports
 Dirty status: yes
-Untracked files: codex_reports/
-Remote pushed: yes for commit 099630d; report files are currently local/uncommitted
+Untracked files: none
+Remote pushed: no for current working tree
 
 ## Изменённые файлы
 
-Последний pushed frontend commit изменил:
-
 ```text
-Changed files in HEAD commit:
-commit 099630df2473ebf4ad1d61f289f1cef4306da53a
-subject Prepare frontend for KORNIX API v2
-
-.env.integration.example
+Changed files in working tree against HEAD:
 CHANGELOG.md
 README.md
-docker-compose.dev.yml
+codex_reports/kornix_frontend_changed_files.txt
+codex_reports/kornix_frontend_git_status.txt
+codex_reports/kornix_frontend_test_log.txt
 scripts/check-frontend-contract.sh
-scripts/validate.sh
 src/api/kornixApi.ts
 src/api/mockData.ts
-src/styles.css
 src/types/kornix.ts
 src/workspace/IrrigationInputTable.tsx
-src/workspace/WaterRegimeChart.tsx
-src/workspace/WorkspacePage.tsx
-src/workspace/workspaceUrlState.ts
 ```
-
-Дополнительно созданы локальные report files в `codex_reports/`.
 
 ## API migration
 
 - `/api/v1/me` сохранён для BFF/session auth.
 - `/api/v1/auth/*` сохранены для CSRF, login/logout и session flow.
-- Пользовательские KORNIX calculation calls переведены на `/api/v2/kornix/*`.
-- Старый `/api/v1/kornix/water-regime/calculate` flow удалён из production workspace и блокируется `scripts/check-frontend-contract.sh`.
+- Пользовательские KORNIX calls используют `/api/v2/kornix/*`.
+- Старый `/api/v1/kornix/water-regime/calculate` не используется и блокируется contract-check.
+- `/api/admin/v1` и `/admin` отсутствуют в пользовательском `src`.
 
 ## Current context v2
 
-Workspace использует `currentAppliedCalculationRunId` как основной отображаемый run. `currentOperationalBaseCalculationRunId` остаётся справочным полем из context. UI учитывает `frontendMode`, `submitAllowed`, `submitBlockedReason`, `readinessSummary`, backend-issued `managedScope`, `availableMethods` и `defaultMethodCode`.
+Workspace использует `currentAppliedCalculationRunId` как отображаемый run, читает `currentOperationalBaseCalculationRunId` только как справочное поле и учитывает `frontendMode`, `submitAllowed`, `submitBlockedReason`, `readinessSummary`, backend-issued `managedScope`, `availableMethods`, `defaultMethodCode`.
 
 ## Method selector
 
-`selectedMethodCode` берётся из backend default и синхронизируется с URL query `methodCode`. Если URL содержит недоступный метод, frontend откатывается на backend default и показывает предупреждение. Map/profile calls передают `methodCode`; экспорт данных включает method code/label.
+`selectedMethodCode` берётся из URL только если он есть в `availableMethods`; иначе используется backend `defaultMethodCode`. Map/profile calls передают `methodCode`, изменение метода инвалидирует соответствующие React Query ключи. DTO `/methods` поддерживает новый объектный response и legacy `displayName/methodVersion` adapter.
 
 ## Approval workflow
 
-Submit отправляет `baseCalculationRunId`, `managedScope`, `irrigationLayer` и `clientDiff` на `/api/v2/kornix/water-regime/approvals`. Реализованы обработка reused/no changes, polling при `pollRequired`, переключение на applied calculation run и запрет переключения active view при failed approval.
+Submit отправляет `baseCalculationRunId`, `managedScope`, положительный `irrigationLayer` и `clientDiff` на `/api/v2/kornix/water-regime/approvals`. Реализованы no-op/reused, 202 polling, applied switch на новый run и failed behavior без переключения active view.
 
 ## No-zero policy
 
-`0 мм` не сериализуется и очищается как пустое значение. Пустая ячейка означает отсутствие полива. `irrigationLayer` содержит только значения `irrigationMm > 0`.
+`0 мм`, отрицательные и NaN значения нормализуются в пустое значение. Пустая ячейка означает отсутствие полива. Перед submit проверяется, что все `irrigationMm > 0`.
 
 ## Stale read-only
 
-`frontendMode=stale_read_only` и `not_ready` блокируют редактирование и submit без logout. UI показывает backend reason через `submitBlockedReason` или локальную validation-причину.
+`stale_read_only` и `not_ready` блокируют submit и редактирование, но допускают чтение map/profile при наличии валидного displayed run. Причина блокировки показывается через backend `submitBlockedReason` или локальное validation-сообщение.
 
 ## Map/profile
 
-Map/profile вызываются только с `calculationRunId + methodCode`, где run берётся из `currentAppliedCalculationRunId`. Catalog placeholder не уходит в backend map/profile. Profile не использует hardcoded `2026-06-07` или expected `68` points; пропуски не заполняются нулями.
+Map/profile вызываются только с `calculationRunId=currentApplied/displayed run` и выбранным `methodCode`. Catalog placeholder не уходит в backend. В production code нет hardcoded `2026-06-07` или expected `68` points.
 
 ## Errors
 
-`ApiError` сохраняет backend error envelope `code/message/details/requestId`; `401` переводит UI в auth-required state, `403` показывает insufficient permissions, остальные ошибки отображают code/message/requestId.
+`ApiError` сохраняет `code`, `message`, `status`, `details`, `requestId`. UI показывает code/message/requestId для operator-readable diagnostics. `401` переводит auth state в anonymous, `403` отображается как forbidden, domain/service errors показываются из backend envelope.
 
 ## Checks
 
@@ -86,28 +76,32 @@ Map/profile вызываются только с `calculationRunId + methodCode`
 | TypeScript | `npm run typecheck` | PASS | `codex_reports/kornix_frontend_test_log.txt` |
 | Build | `npm run build` | PASS | `codex_reports/kornix_frontend_test_log.txt` |
 | Validate | `./scripts/validate.sh` | PASS | `codex_reports/kornix_frontend_test_log.txt` |
-| Contract check | `./scripts/check-frontend-contract.sh` | PASS | `codex_reports/kornix_frontend_test_log.txt` |
+| npm test | `npm test` | NOT_RUN | `codex_reports/kornix_frontend_test_log.txt` |
 
 ## Browser smoke
 
-Browser/live smoke не выполнен: backend API на `http://127.0.0.1:8000` недоступен. Предыдущие curl-проверки `/api/v1/me` и `/api/v2/kornix/current-context` завершились connection refused.
+Browser/live smoke не выполнен: backend stub API на `http://127.0.0.1:8000` недоступен. Curl-проверки `/api/v1/me`, `/api/v2/kornix/current-context` и `/api/v2/kornix/irrigation-layer/current` завершились connection refused.
 
 ## Known limitations
 
-- Report files сейчас локальные/uncommitted, если их нужно включить в репозиторий, требуется отдельный commit/push.
-- Без backend нельзя подтвердить реальные DTO, session cookies, CSRF exchange, map/profile payloads и approval polling.
+- Stub values `1.0` baseline и `2.0` after approval не подтверждены live backend response.
+- Текущий working tree не запушен после stub-stitching правок.
+- Real water regime engine остаётся pending по условию задачи.
 
 ## Что не проверено
 
-- BFF login/session flow in browser against real backend.
-- GET /api/v2/kornix/current-context live response semantics.
-- Map/profile live calls with currentAppliedCalculationRunId + methodCode.
-- Approval submit and polling against real backend.
+- GET /api/v1/me against backend stub API.
+- GET /api/v2/kornix/current-context against backend stub API.
+- GET /api/v2/kornix/irrigation-layer/current active projection.
+- Browser method selector with live availableMethods.
+- Baseline map/profile sample values equal 1.0.
+- Approval submit, polling, applied transition and new run switch.
+- Post-approval map/profile sample values equal 2.0.
 - stale_read_only mode from real backend context.
 
 ## Следующие шаги
 
-- Поднять backend API на `http://localhost:8000`.
+- Поднять backend stub API на `http://localhost:8000`.
 - Запустить `make integration-dev`.
-- Выполнить browser smoke по `/api/v1/me`, `/api/v2/kornix/current-context`, map/profile и approval workflow.
-- После PASS обновить `codex_reports/kornix_frontend_smoke_summary.json` и финальный статус.
+- Выполнить browser smoke: current-context, methods, irrigation-layer/current, map/profile baseline `1.0`, approval polling, map/profile after approval `2.0`.
+- После PASS обновить `codex_reports/kornix_frontend_smoke_summary.json` и статус на `KORNIX_API_V2_FRONTEND_STITCHING_READY_WITH_STUB_ENGINE`.

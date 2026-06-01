@@ -140,6 +140,7 @@ GET  /api/v2/kornix/current-context
 GET  /api/v2/kornix/field-seasons/catalog?seasonYear=2026
 GET  /api/v2/kornix/methods
 GET  /api/v2/kornix/readiness/current
+GET  /api/v2/kornix/irrigation-layer/current
 POST /api/v2/kornix/water-regime/approvals
 GET  /api/v2/kornix/water-regime/approvals/{approvalBatchId}
 GET  /api/v2/kornix/calculation-runs/{calculationRunId}/status
@@ -152,8 +153,11 @@ GET  /api/v2/kornix/water-regime/profile-timeseries?calculationRunId=...&methodC
 `defaultMethodCode` и `currentAppliedCalculationRunId`. Именно
 `currentAppliedCalculationRunId` является отображаемым расчётом. Если его нет,
 frontend показывает каталог/состояние готовности и не вызывает map/profile.
-Утверждение поливов отправляет только положительные непустые значения в
-`irrigationLayer`; `0 мм` и пустые ячейки не сериализуются.
+Активная проекция поливов загружается из `irrigation-layer/current` и является
+исходным состоянием таблицы. Локальное хранилище используется только как draft
+несохранённых правок. Утверждение поливов отправляет только положительные
+непустые значения в `irrigationLayer`; `0 мм` и пустые ячейки не
+сериализуются. Editable-ячейки ограничены backend-issued `managedScope`.
 Для `POST`, `PUT`, `PATCH`, `DELETE` frontend перед запросом получает CSRF token
 через `/api/v1/auth/csrf`, если token ещё не пришёл в cookie или meta.
 

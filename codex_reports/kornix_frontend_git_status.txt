@@ -1,6 +1,18 @@
 $ git status --short --branch
 ## main...origin/main
-?? codex_reports/
+ M CHANGELOG.md
+ M README.md
+ M codex_reports/KORNIX_FRONTEND_BIG_BANG_FINAL_REPORT.md
+ M codex_reports/kornix_frontend_big_bang_final_report.json
+ M codex_reports/kornix_frontend_changed_files.txt
+ M codex_reports/kornix_frontend_git_status.txt
+ M codex_reports/kornix_frontend_smoke_summary.json
+ M codex_reports/kornix_frontend_test_log.txt
+ M scripts/check-frontend-contract.sh
+ M src/api/kornixApi.ts
+ M src/api/mockData.ts
+ M src/types/kornix.ts
+ M src/workspace/IrrigationInputTable.tsx
 
 $ git log -1 --oneline
-099630d Prepare frontend for KORNIX API v2
+bb74ba0 Add frontend big bang final reports

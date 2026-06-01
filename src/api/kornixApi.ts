@@ -14,8 +14,10 @@ import type {
   KornixApprovalStatusDto,
   KornixApprovalSubmitResponseDto,
   KornixCalculationRunStatusDto,
+  KornixCurrentIrrigationLayerDto,
   KornixCurrentContextDto,
   KornixMethodDto,
+  KornixMethodsResponseDto,
   KornixReadinessSummaryDto,
   KornixProfileTimeseriesDto
 } from '../types/kornix';
@@ -24,6 +26,7 @@ import {
   buildMockApprovalStatus,
   buildMockFieldSeasonMapForDay,
   getMockFieldSeasonCatalog,
+  getMockCurrentIrrigationLayer,
   getMockCurrentContext,
   MOCK_INITIAL_CALCULATION_RUN_ID
 } from './mockData';
@@ -58,6 +61,11 @@ type CamelCaseRecommendationDto = {
 type MapPropertiesWithCamelCaseRecommendation = FieldSeasonMapPropertiesDto & {
   recommendedIrrigationDate?: string | null;
   recommendedIrrigationMm?: number | null;
+};
+
+type LegacyMethodDto = Partial<KornixMethodDto> & {
+  displayName?: string;
+  methodVersion?: string;
 };
 
 function normalizeRecommendation(
@@ -111,6 +119,35 @@ function normalizeProfileTimeseries(profile: KornixProfileTimeseriesDto): Kornix
     ...profile,
     warnings: profile.warnings ?? [],
     recommendations: profile.recommendations.map(normalizeRecommendation)
+  };
+}
+
+function normalizeMethod(method: LegacyMethodDto): KornixMethodDto {
+  return {
+    methodCode: method.methodCode ?? '',
+    label: method.label ?? method.displayName ?? method.methodCode ?? 'Метод без названия',
+    version: method.version ?? method.methodVersion ?? 'unknown',
+    isDefault: Boolean(method.isDefault),
+    isRequired: Boolean(method.isRequired),
+    isCandidate: method.isCandidate,
+    methodFamily: method.methodFamily ?? null
+  };
+}
+
+function normalizeMethodsResponse(response: KornixMethodsResponseDto | KornixMethodDto[]): KornixMethodsResponseDto {
+  if (Array.isArray(response)) {
+    const methods = response.map(normalizeMethod).filter((method) => method.methodCode);
+    const defaultMethod = methods.find((method) => method.isDefault) ?? methods[0];
+    return {
+      defaultMethodCode: defaultMethod?.methodCode ?? '',
+      operationalMethodSetCode: 'unknown',
+      methods
+    };
+  }
+
+  return {
+    ...response,
+    methods: response.methods.map(normalizeMethod).filter((method) => method.methodCode)
   };
 }
 
@@ -206,6 +243,14 @@ export const kornixApi = {
     );
   },
 
+  async getCurrentIrrigationLayerV2(): Promise<KornixCurrentIrrigationLayerDto> {
+    if (mockEnabled) {
+      return delay(getMockCurrentIrrigationLayer());
+    }
+
+    return requestJson<KornixCurrentIrrigationLayerDto>(`${KORNIX_API_PREFIX}/irrigation-layer/current`);
+  },
+
   async getCalculationRunStatusV2(calculationRunId: string): Promise<KornixCalculationRunStatusDto> {
     return requestJson<KornixCalculationRunStatusDto>(
       `${KORNIX_API_PREFIX}/calculation-runs/${encodeURIComponent(calculationRunId)}/status`
@@ -216,8 +261,9 @@ export const kornixApi = {
     return requestJson<KornixReadinessSummaryDto>(`${KORNIX_API_PREFIX}/readiness/current`);
   },
 
-  async getMethodsV2(): Promise<KornixMethodDto[]> {
-    return requestJson<KornixMethodDto[]>(`${KORNIX_API_PREFIX}/methods`);
+  async getMethodsV2(): Promise<KornixMethodsResponseDto> {
+    const response = await requestJson<KornixMethodsResponseDto | KornixMethodDto[]>(`${KORNIX_API_PREFIX}/methods`);
+    return normalizeMethodsResponse(response);
   },
 
   async getFieldSeasonMapV2(params: {

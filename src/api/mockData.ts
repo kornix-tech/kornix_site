@@ -6,6 +6,7 @@ import type {
   KornixApprovalRequestDto,
   KornixApprovalStatusDto,
   KornixApprovalSubmitResponseDto,
+  KornixCurrentIrrigationLayerDto,
   KornixCurrentContextDto
 } from '../types/kornix';
 import { deriveWaterMetrics } from '../features/water-regime/derivedWaterMetrics';
@@ -292,5 +293,17 @@ export function buildMockApprovalStatus(approvalBatchId: string): KornixApproval
     resultAvailable: true,
     pollRequired: false,
     warnings: []
+  };
+}
+
+export function getMockCurrentIrrigationLayer(): KornixCurrentIrrigationLayerDto {
+  const context = getMockCurrentContext();
+  return {
+    organizationCode: context.organizationCode,
+    seasonYear: context.seasonYear,
+    managedScope: context.managedScope,
+    irrigationLayer: [],
+    projectionHash: `mock-empty-${context.managedScope.scopeVersion}`,
+    generatedAt: new Date().toISOString()
   };
 }

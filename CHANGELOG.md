@@ -3,6 +3,15 @@
 ## [Unreleased]
 
 ### Changed
+- Ввод поливов для API v2 теперь загружает backend active projection через
+  `/api/v2/kornix/irrigation-layer/current`, использует его как начальное
+  состояние таблицы и считает `clientDiff` от backend projection, а не от
+  локальной отметки утверждения.
+- Editable range таблицы поливов ограничен backend-issued `managedScope`
+  (`dateFrom..dateTo` и список `fieldSeasonIds`); значения вне scope
+  блокируются и не могут попасть в approval submit.
+- Contract-check дополнительно запрещает `/api/admin/v1`, `/admin` leakage и
+  локальную `approvedSignature`-семантику для утверждённых поливов.
 - Пользовательский workspace KORNIX переведён с legacy `/api/v1/kornix` на
   контракт `/api/v2/kornix`, при этом auth/me и CSRF остаются на `/api/v1`.
 - Отображаемый расчёт теперь определяется `currentAppliedCalculationRunId` из

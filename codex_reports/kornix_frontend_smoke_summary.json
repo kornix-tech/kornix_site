@@ -1,27 +1,43 @@
 {
   "status": "NOT_RUN",
-  "reason": "Backend API was unavailable at http://127.0.0.1:8000 during final report generation.",
-  "generatedAt": "2026-06-01T18:10:29+03:00",
+  "reason": "Backend stub API was unavailable at http://127.0.0.1:8000 during final report generation.",
+  "generatedAt": "2026-06-01T20:22:02+03:00",
   "environment": {
     "frontendUrl": "http://localhost:5173",
     "apiBaseUrl": "http://localhost:8000",
     "authMode": "bff",
     "mockApiEnabled": false
   },
+  "stubEngine": {
+    "expectedBaselineValue": 1.0,
+    "expectedApprovalValue": 2.0,
+    "realWaterRegimeEnginePending": true
+  },
   "network": {
     "me": "NOT_RUN_BACKEND_UNAVAILABLE",
     "csrf": "NOT_RUN_BACKEND_UNAVAILABLE",
     "currentContextV2": "NOT_RUN_BACKEND_UNAVAILABLE",
+    "currentIrrigationLayerV2": "NOT_RUN_BACKEND_UNAVAILABLE",
     "mapV2": "NOT_RUN_BACKEND_UNAVAILABLE",
     "profileV2": "NOT_RUN_BACKEND_UNAVAILABLE",
     "approvalSubmit": "NOT_RUN_BACKEND_UNAVAILABLE",
     "approvalPolling": "NOT_RUN_BACKEND_UNAVAILABLE"
+  },
+  "baseline": {
+    "mapValueSample": null,
+    "profileValueSample": null
+  },
+  "approval": {
+    "mapValueSample": null,
+    "profileValueSample": null,
+    "status": "NOT_RUN"
   },
   "ui": {
     "frontendMode": null,
     "submitAllowed": null,
     "methodSelectorVisible": null,
     "selectedMethodCode": null,
+    "activeLayerPrefilled": null,
     "staleReadOnlyHandled": null,
     "zeroMmForbidden": null,
     "approvalFailureDoesNotSwitchActiveRun": null
@@ -35,6 +51,10 @@
     {
       "code": "BACKEND_UNAVAILABLE",
       "message": "curl http://127.0.0.1:8000/api/v2/kornix/current-context failed with connection refused"
+    },
+    {
+      "code": "BACKEND_UNAVAILABLE",
+      "message": "curl http://127.0.0.1:8000/api/v2/kornix/irrigation-layer/current failed with connection refused"
     }
   ]
 }
