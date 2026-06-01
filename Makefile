@@ -1,4 +1,4 @@
-.PHONY: build up down logs dev validate clean
+.PHONY: build up down logs dev integration-dev validate clean
 
 build:
 	docker compose build
@@ -14,6 +14,9 @@ logs:
 
 dev:
 	docker compose -f docker-compose.dev.yml up --build
+
+integration-dev:
+	docker compose --env-file .env.integration.example -f docker-compose.dev.yml up --build
 
 validate:
 	docker run --rm -v "$$(pwd):/app" -w /app node:20-alpine sh -lc "npm ci && npm run typecheck && npm run build"

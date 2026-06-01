@@ -88,6 +88,7 @@ function normalizeMapProperties(properties: MapPropertiesWithCamelCaseRecommenda
 function normalizeMapFeatureCollection(collection: FieldSeasonMapFeatureCollection): FieldSeasonMapFeatureCollection {
   return {
     ...collection,
+    warnings: collection.warnings ?? [],
     features: collection.features.map((feature) => ({
       ...feature,
       geometry: feature.geometry ?? { type: 'MultiPolygon' as const, coordinates: [] },
@@ -99,6 +100,7 @@ function normalizeMapFeatureCollection(collection: FieldSeasonMapFeatureCollecti
 function normalizeProfileTimeseries(profile: KornixProfileTimeseriesDto): KornixProfileTimeseriesDto {
   return {
     ...profile,
+    warnings: profile.warnings ?? [],
     recommendations: profile.recommendations.map(normalizeRecommendation)
   };
 }

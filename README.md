@@ -46,18 +46,20 @@ docker compose -f docker-compose.dev.yml up --build
 http://localhost:5173
 ```
 
-## Интеграционный запуск с backend
+## Run frontend against local backend API
 
-Для smoke-проверки с реальным backend используйте `.env.integration.example`:
+Для smoke-проверки с локальным backend API используйте `.env.integration.example`.
+Этот профиль запускает frontend в BFF-режиме, отключает mock API и направляет
+запросы на `http://localhost:8000`:
 
 ```bash
-cp .env.integration.example .env
-npm run dev -- --host 0.0.0.0
+make integration-dev
 ```
 
 После изменения любых `VITE_*` переменных перезапускайте Vite dev server:
 эти значения читаются на старте dev server или встраиваются на этапе build.
-Mock-режим не использовать для backend smoke.
+Mock-режим не использовать для backend smoke; tenant scope определяет backend
+через session endpoints.
 
 ## Production-like режим
 

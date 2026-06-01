@@ -46,10 +46,12 @@ const gradientLegend: Record<Exclude<MapDisplayMode, 'status'>, { min: string; m
 export function MapDisplayPanel({
   mode,
   onModeChange,
+  warnings = [],
   children
 }: {
   mode: MapDisplayMode;
   onModeChange: (mode: MapDisplayMode) => void;
+  warnings?: Array<{ code: string; message: string }>;
   children?: React.ReactNode;
 }) {
   return (
@@ -93,6 +95,15 @@ export function MapDisplayPanel({
           </div>
         )}
       </div>
+      {warnings.length > 0 && (
+        <div className="diagnostic-warning-list" aria-label="Предупреждения карты">
+          {warnings.map((warning) => (
+            <span key={`${warning.code}-${warning.message}`}>
+              <strong>{warning.code}</strong>: {warning.message}
+            </span>
+          ))}
+        </div>
+      )}
       {children}
     </aside>
   );

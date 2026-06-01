@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { kornixApi } from '../api/kornixApi';
+import { ApiError } from '../shared/api/httpClient';
 import type {
   FieldSeasonMapFeature,
   FieldSeasonMapFeatureCollection,
@@ -18,6 +19,7 @@ type DateGroup = {
 };
 
 type ApprovalState = 'empty' | 'dirty' | 'approved' | 'saving' | 'error';
+type CalculationWarning = { code: string; message: string };
 
 const HIGH_ALERT_IRRIGATION_MM = 30;
 const IRRIGATION_STEP_LEGEND = [
@@ -316,6 +318,15 @@ function irrigationApprovalSignature(
   });
 }
 
+function calculationErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const requestId = error.requestId ? ` · ${error.requestId}` : '';
+    return `${error.code}: ${error.message}${requestId}`;
+  }
+
+  return error instanceof Error ? error.message : 'Не удалось рассчитать водный режим.';
+}
+
 function sortedFields(fields: FieldSeasonMapFeatureCollection): FieldSeasonMapFeature[] {
   return [...fields.features].sort((left, right) =>
     compareFieldKeys(left.properties.fieldKey, right.properties.fieldKey)
@@ -367,6 +378,7 @@ export function IrrigationInputTable({
   const [approvedSignature, approveSignature] = useApprovedIrrigationSignature(seasonYear, storageScope);
   const [isSavingApproval, setIsSavingApproval] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [calculationWarnings, setCalculationWarnings] = useState<CalculationWarning[]>([]);
   const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);
   const [elapsedCalculationSeconds, setElapsedCalculationSeconds] = useState(0);
   const [isLegendVisible, setIsLegendVisible] = useState(true);
@@ -461,12 +473,24 @@ export function IrrigationInputTable({
     setIsSavingApproval(true);
     setCalculationStartedAt(Date.now());
     setApprovalError(null);
+    setCalculationWarnings([]);
     try {
       const response = await kornixApi.calculateWaterRegime(irrigationTaskPayload);
+      if (response.calculationStatus === 'failed') {
+        const warningsText = response.warnings?.length
+          ? response.warnings.map((warning) => `${warning.code}: ${warning.message}`).join('; ')
+          : 'Backend вернул failed без warning details.';
+
+        throw new Error(
+          `Расчёт KORNIX завершился со статусом failed. calculationRunId=${response.calculationRunId}. ${warningsText}`
+        );
+      }
+
       approveSignature(approvalSignature);
+      setCalculationWarnings(response.warnings ?? []);
       onCalculationComplete(response.calculationRunId);
     } catch (error) {
-      setApprovalError(error instanceof Error ? error.message : 'Не удалось рассчитать водный режим.');
+      setApprovalError(calculationErrorMessage(error));
     } finally {
       setIsSavingApproval(false);
       setCalculationStartedAt(null);
@@ -475,6 +499,7 @@ export function IrrigationInputTable({
 
   function changeIrrigationValue(key: string, value: string) {
     setApprovalError(null);
+    setCalculationWarnings([]);
     updateValue(key, value);
   }
 
@@ -525,6 +550,16 @@ export function IrrigationInputTable({
       {isSavingApproval && (
         <div className="irrigation-calculation-progress" role="progressbar" aria-label="Расчёт водного режима">
           <span />
+        </div>
+      )}
+
+      {calculationWarnings.length > 0 && (
+        <div className="diagnostic-warning-list" aria-label="Предупреждения расчёта KORNIX">
+          {calculationWarnings.map((warning) => (
+            <span key={`${warning.code}-${warning.message}`}>
+              <strong>{warning.code}</strong>: {warning.message}
+            </span>
+          ))}
         </div>
       )}
 

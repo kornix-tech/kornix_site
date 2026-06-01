@@ -65,6 +65,7 @@ export type FieldSeasonMapFeatureCollection = GeoJSON.FeatureCollection<
   seasonYear: 2026;
   calculationRunId: CalculationRunId;
   day: string;
+  warnings?: Array<{ code: string; message: string }>;
 };
 
 export type FieldSeasonCatalogFieldDto = {

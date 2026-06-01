@@ -27,6 +27,7 @@ const WaterRegimeChart = lazy(() =>
 const IrrigationInputTable = lazy(() =>
   import('./IrrigationInputTable').then((module) => ({ default: module.IrrigationInputTable }))
 );
+const RESERVED_CALCULATION_RUN_IDS = new Set(['catalog']);
 
 export function WorkspacePage() {
   const workspaceRef = useRef<HTMLElement | null>(null);
@@ -67,8 +68,12 @@ export function WorkspacePage() {
 
   const mockCalculationRunId =
     import.meta.env.VITE_ENABLE_MOCK_API === 'true' && isMockRuntimeAllowed() ? 'mock-sp-2026-initial' : null;
-  const activeCalculationRunId =
+  const activeCalculationRunIdCandidate =
     state.calculationRunId ?? contextQuery.data?.latestCalculationRunId ?? mockCalculationRunId;
+  const activeCalculationRunId =
+    activeCalculationRunIdCandidate && !RESERVED_CALCULATION_RUN_IDS.has(activeCalculationRunIdCandidate)
+      ? activeCalculationRunIdCandidate
+      : null;
   const serverDate = contextQuery.data?.serverDate ?? DEFAULT_WORKSPACE_STATE.mapDay;
   const forecastStartDate = contextQuery.data?.forecastStartDate ?? DEFAULT_WORKSPACE_STATE.to;
   const forecastEndDate = contextQuery.data?.forecastEndDate ?? DEFAULT_WORKSPACE_STATE.to;
@@ -320,7 +325,11 @@ export function WorkspacePage() {
               onChange={(mapDay) => updateState({ mapDay }, true)}
             />
           </div>
-          <MapDisplayPanel mode={mapDisplayMode} onModeChange={setMapDisplayMode}>
+          <MapDisplayPanel
+            mode={mapDisplayMode}
+            onModeChange={setMapDisplayMode}
+            warnings={calculatedFields.warnings ?? []}
+          >
             <ExportActions onExportGraphics={handleExportGraphics} onExportData={handleExportMapData} />
           </MapDisplayPanel>
         </section>

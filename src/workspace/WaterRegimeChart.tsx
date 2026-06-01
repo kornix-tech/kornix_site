@@ -779,6 +779,16 @@ function ChartBody({
           Прогноз: {forecastStart} — {forecastEnd}
         </div>
 
+        {profile.warnings.length > 0 && (
+          <div className="diagnostic-warning-list" aria-label="Предупреждения графика">
+            {profile.warnings.map((warning) => (
+              <span key={`${warning.code}-${warning.message}`}>
+                <strong>{warning.code}</strong>: {warning.message}
+              </span>
+            ))}
+          </div>
+        )}
+
         <LegendStrip />
 
         <ExportActions onExportGraphics={onExportGraphics} onExportData={onExportData} dataDisabled={!profileCsv} />

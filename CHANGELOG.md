@@ -30,6 +30,14 @@
 - URL parser больше не принимает служебный `calculationRunId=catalog`, чтобы
   placeholder каталога не уходил в backend map/profile endpoints.
 - Добавлен `.env.integration.example` для backend smoke без mock API.
+- Submit поливов считает `calculationStatus=failed` ошибкой: не утверждает
+  сценарий, не переключает URL и показывает `calculationRunId`/warning codes.
+- Backend warnings по расчёту, карте и profile-timeseries отображаются как
+  диагностические предупреждения без блокировки успешного сценария.
+- Служебный `calculationRunId=catalog` игнорируется не только из URL, но и из
+  текущего backend context, чтобы map/profile не запрашивались с placeholder id.
+- Добавлен `make integration-dev` для запуска frontend против локального backend
+  API через `.env.integration.example` без mock-режима.
 - Обновлён frontend-контракт до API v1.1: добавлены даты backend
   `serverDate`, `forecastStartDate`, `forecastEndDate`, каталог полей до
   первого расчёта и поддержка пустого сценария `irrigation_tasks`.
