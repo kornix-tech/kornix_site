@@ -1,0 +1,129 @@
+{
+  "project": "KORNIX",
+  "component": "frontend",
+  "reportVersion": "1.0",
+  "status": "NOT_READY_BIG_BANG_FRONTEND_GAP",
+  "notReadyCode": "BACKEND_SMOKE_UNAVAILABLE",
+  "generatedAt": "2026-06-01T18:10:29+03:00",
+  "git": {
+    "branch": "main",
+    "commit": "099630df2473ebf4ad1d61f289f1cef4306da53a",
+    "dirty": true,
+    "untrackedFiles": [
+      "codex_reports/"
+    ],
+    "remotePushed": true
+  },
+  "baseline": {
+    "usedCurrentGitTreeOnly": true,
+    "oldArchivesUsed": false
+  },
+  "apiMigration": {
+    "authV1Preserved": true,
+    "kornixV2Used": true,
+    "legacyV1CalculateUsedInProduction": false,
+    "apiBasePaths": {
+      "auth": "/api/v1",
+      "kornix": "/api/v2/kornix"
+    }
+  },
+  "currentContext": {
+    "usesCurrentAppliedCalculationRunId": true,
+    "usesCurrentOperationalBaseCalculationRunId": true,
+    "usesFrontendMode": true,
+    "usesSubmitAllowed": true,
+    "usesSubmitBlockedReason": true,
+    "usesManagedScopeFromBackend": true
+  },
+  "methods": {
+    "selectorImplemented": true,
+    "defaultFromBackend": true,
+    "expectedDefaultMethodCode": "simple_eto_single_layer_soil",
+    "methodCodeSentToMap": true,
+    "methodCodeSentToProfile": true,
+    "urlSync": true
+  },
+  "approvals": {
+    "endpoint": "/api/v2/kornix/water-regime/approvals",
+    "sendsBaseCalculationRunId": true,
+    "sendsManagedScope": true,
+    "sendsIrrigationLayer": true,
+    "sendsClientDiff": true,
+    "handles200Reused": true,
+    "handles202Polling": true,
+    "handlesApplied": true,
+    "handlesFailedWithoutSwitchingActiveRun": true
+  },
+  "noZeroPolicy": {
+    "zeroMmInputForbidden": true,
+    "emptyCellMeansNoIrrigation": true,
+    "irrigationLayerOnlyPositiveValues": true
+  },
+  "staleReadOnly": {
+    "implemented": true,
+    "submitBlockedWhenNotAllowed": true,
+    "reasonDisplayed": true
+  },
+  "mapProfile": {
+    "usesCurrentAppliedRun": true,
+    "methodAware": true,
+    "noCatalogPlaceholderBackendCall": true,
+    "dynamicExpectedDays": true,
+    "noHardcodedFinalDate": true,
+    "noHardcoded68Points": true
+  },
+  "tests": [
+    {
+      "name": "npm ci",
+      "command": "npm ci --no-audit --no-fund",
+      "status": "PASS",
+      "logPath": "codex_reports/kornix_frontend_test_log.txt"
+    },
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "PASS",
+      "logPath": "codex_reports/kornix_frontend_test_log.txt"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "status": "PASS",
+      "logPath": "codex_reports/kornix_frontend_test_log.txt"
+    },
+    {
+      "name": "validate",
+      "command": "./scripts/validate.sh",
+      "status": "PASS",
+      "logPath": "codex_reports/kornix_frontend_test_log.txt"
+    }
+  ],
+  "browserSmoke": {
+    "status": "NOT_RUN",
+    "summaryPath": "codex_reports/kornix_frontend_smoke_summary.json",
+    "currentContextPass": false,
+    "methodSelectorPass": false,
+    "approvalPollingPass": false,
+    "staleReadOnlyPass": false,
+    "noZeroPass": false
+  },
+  "blockers": [
+    "Backend API is unavailable at http://127.0.0.1:8000, so frontend browser/live API smoke could not be completed.",
+    "Final READY gate requires frontend smoke PASS against /api/v1/me and /api/v2/kornix/current-context/map/profile/approvals."
+  ],
+  "notChecked": [
+    "BFF login/session flow in browser against real backend.",
+    "GET /api/v2/kornix/current-context live response semantics.",
+    "Map/profile live calls with currentAppliedCalculationRunId + methodCode.",
+    "Approval submit and polling against real backend.",
+    "stale_read_only mode from real backend context."
+  ],
+  "artifacts": [
+    "codex_reports/KORNIX_FRONTEND_BIG_BANG_FINAL_REPORT.md",
+    "codex_reports/kornix_frontend_big_bang_final_report.json",
+    "codex_reports/kornix_frontend_test_log.txt",
+    "codex_reports/kornix_frontend_smoke_summary.json",
+    "codex_reports/kornix_frontend_git_status.txt",
+    "codex_reports/kornix_frontend_changed_files.txt"
+  ]
+}

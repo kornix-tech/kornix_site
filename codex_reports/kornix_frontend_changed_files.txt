@@ -1,0 +1,18 @@
+Changed files in HEAD commit:
+commit 099630df2473ebf4ad1d61f289f1cef4306da53a
+subject Prepare frontend for KORNIX API v2
+
+.env.integration.example
+CHANGELOG.md
+README.md
+docker-compose.dev.yml
+scripts/check-frontend-contract.sh
+scripts/validate.sh
+src/api/kornixApi.ts
+src/api/mockData.ts
+src/styles.css
+src/types/kornix.ts
+src/workspace/IrrigationInputTable.tsx
+src/workspace/WaterRegimeChart.tsx
+src/workspace/WorkspacePage.tsx
+src/workspace/workspaceUrlState.ts

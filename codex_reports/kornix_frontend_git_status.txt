@@ -1,0 +1,6 @@
+$ git status --short --branch
+## main...origin/main
+?? codex_reports/
+
+$ git log -1 --oneline
+099630d Prepare frontend for KORNIX API v2
