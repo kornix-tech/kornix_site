@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { kornixApi } from '../api/kornixApi';
 import { useAuth } from '../features/auth/AuthProvider';
-import { isMockRuntimeAllowed } from '../config/runtimeSafety';
 import { ApiError } from '../shared/api/httpClient';
+import type { KornixMethodDto } from '../types/kornix';
 import type { MapDisplayMode } from './FieldMap';
 import { ExportActions } from './ExportActions';
 import { FieldSelectorPanel } from './FieldSelectorPanel';
@@ -66,14 +66,18 @@ export function WorkspacePage() {
     queryFn: () => kornixApi.getCurrentContext()
   });
 
-  const mockCalculationRunId =
-    import.meta.env.VITE_ENABLE_MOCK_API === 'true' && isMockRuntimeAllowed() ? 'mock-sp-2026-initial' : null;
-  const activeCalculationRunIdCandidate =
-    state.calculationRunId ?? contextQuery.data?.latestCalculationRunId ?? mockCalculationRunId;
+  const activeCalculationRunIdCandidate = contextQuery.data?.currentAppliedCalculationRunId ?? null;
   const activeCalculationRunId =
     activeCalculationRunIdCandidate && !RESERVED_CALCULATION_RUN_IDS.has(activeCalculationRunIdCandidate)
       ? activeCalculationRunIdCandidate
       : null;
+  const availableMethods = contextQuery.data?.availableMethods ?? [];
+  const defaultMethodCode = contextQuery.data?.defaultMethodCode ?? null;
+  const isUrlMethodValid = Boolean(
+    state.methodCode && availableMethods.some((method) => method.methodCode === state.methodCode)
+  );
+  const selectedMethodCode = isUrlMethodValid ? state.methodCode : defaultMethodCode;
+  const selectedMethod = availableMethods.find((method) => method.methodCode === selectedMethodCode) ?? null;
   const serverDate = contextQuery.data?.serverDate ?? DEFAULT_WORKSPACE_STATE.mapDay;
   const forecastStartDate = contextQuery.data?.forecastStartDate ?? DEFAULT_WORKSPACE_STATE.to;
   const forecastEndDate = contextQuery.data?.forecastEndDate ?? DEFAULT_WORKSPACE_STATE.to;
@@ -86,18 +90,19 @@ export function WorkspacePage() {
       : state.mapDay;
 
   const fieldsQuery = useQuery({
-    queryKey: ['field-season-map', activeCalculationRunId, effectiveMapDay],
-    enabled: Boolean(activeCalculationRunId),
+    queryKey: ['field-season-map', activeCalculationRunId, selectedMethodCode, effectiveMapDay],
+    enabled: Boolean(activeCalculationRunId && selectedMethodCode),
     queryFn: () =>
       kornixApi.getFieldSeasonMap({
         calculationRunId: activeCalculationRunId ?? '',
+        methodCode: selectedMethodCode ?? '',
         day: effectiveMapDay
       }),
     placeholderData: (previousData) => previousData
   });
   const catalogQuery = useQuery({
     queryKey: ['field-season-catalog', state.seasonYear],
-    enabled: !activeCalculationRunId,
+    enabled: Boolean(contextQuery.data && !activeCalculationRunId),
     queryFn: () => kornixApi.getFieldSeasonCatalog({ seasonYear: state.seasonYear }),
     retry: 1
   });
@@ -129,10 +134,17 @@ export function WorkspacePage() {
   );
 
   useEffect(() => {
-    if (!state.calculationRunId && contextQuery.data?.latestCalculationRunId) {
-      updateState({ calculationRunId: contextQuery.data.latestCalculationRunId }, true);
+    const nextPatch: Partial<WorkspaceUrlState> = {};
+    if (contextQuery.data && state.calculationRunId !== activeCalculationRunId) {
+      nextPatch.calculationRunId = activeCalculationRunId;
     }
-  }, [contextQuery.data?.latestCalculationRunId, state.calculationRunId, updateState]);
+    if (contextQuery.data && state.methodCode !== selectedMethodCode) {
+      nextPatch.methodCode = selectedMethodCode;
+    }
+    if (Object.keys(nextPatch).length > 0) {
+      updateState(nextPatch, true);
+    }
+  }, [activeCalculationRunId, contextQuery.data, selectedMethodCode, state.calculationRunId, state.methodCode, updateState]);
 
   useEffect(() => {
     const context = contextQuery.data;
@@ -183,6 +195,8 @@ export function WorkspacePage() {
     const rows = buildCsv([
       [
         'day',
+        'method_code',
+        'method_label',
         'display_mode',
         'field_key',
         'field_name',
@@ -204,6 +218,8 @@ export function WorkspacePage() {
         const derived = deriveWaterMetrics(field);
         return [
           effectiveMapDay,
+          selectedMethodCode,
+          selectedMethod?.label ?? selectedMethodCode,
           mapDisplayMode,
           field.fieldKey,
           field.fieldName,
@@ -223,7 +239,7 @@ export function WorkspacePage() {
       })
     ]);
 
-    downloadCsv(`kornix-map-${effectiveMapDay}-${mapDisplayMode}`, rows);
+    downloadCsv(`kornix-map-${effectiveMapDay}-${selectedMethodCode ?? 'method'}-${mapDisplayMode}`, rows);
   }
 
   function handleExportChartData() {
@@ -257,7 +273,7 @@ export function WorkspacePage() {
             </p>
           </div>
           <div className="header-actions">
-            <ReadinessSummary context={contextQuery.data} />
+            <ReadinessSummary context={contextQuery.data} selectedMethod={selectedMethod} />
             <button type="button" onClick={() => void handleLogout()}>
               Выйти
             </button>
@@ -285,6 +301,13 @@ export function WorkspacePage() {
               Ввод поливов
             </button>
           </nav>
+          <WorkspaceStatusPanel
+            context={contextQuery.data}
+            selectedMethodCode={selectedMethodCode}
+            selectedMethod={selectedMethod}
+            invalidUrlMethodCode={state.methodCode && !isUrlMethodValid ? state.methodCode : null}
+            onMethodChange={(methodCode) => updateState({ methodCode })}
+          />
         </div>
       </header>
 
@@ -351,6 +374,8 @@ export function WorkspacePage() {
               from={state.from}
               to={state.to}
               calculationRunId={activeCalculationRunId}
+              methodCode={selectedMethodCode}
+              methodLabel={selectedMethod?.label ?? selectedMethodCode ?? 'метод не выбран'}
               serverDate={serverDate}
               forecastStartDate={forecastStartDate}
               forecastEndDate={forecastEndDate}
@@ -374,6 +399,9 @@ export function WorkspacePage() {
             serverDate={serverDate}
             forecastStartDate={forecastStartDate}
             forecastEndDate={forecastEndDate}
+            context={contextQuery.data ?? null}
+            baseCalculationRunId={activeCalculationRunId}
+            selectedMethodCode={selectedMethodCode}
             onCalculationComplete={(calculationRunId) => {
               updateState({ calculationRunId }, true);
               void contextQuery.refetch();
@@ -385,15 +413,98 @@ export function WorkspacePage() {
   );
 }
 
-function ReadinessSummary({ context }: { context: Awaited<ReturnType<typeof kornixApi.getCurrentContext>> | undefined }) {
+function ReadinessSummary({
+  context,
+  selectedMethod
+}: {
+  context: Awaited<ReturnType<typeof kornixApi.getCurrentContext>> | undefined;
+  selectedMethod: KornixMethodDto | null;
+}) {
   if (!context) {
     return <span className="readiness readiness-unknown">готовность: загрузка</span>;
   }
 
   return (
-    <span className={`readiness readiness-${context.latestCalculationStatus}`}>
-      расчёт: {context.latestCalculationStatus} · {context.irrigatedFieldCount2026}/{context.fieldCount}
+    <span className={`readiness readiness-${context.readinessSummary.status}`}>
+      {context.frontendMode} · {context.dataFreshnessStatus} · {selectedMethod?.label ?? context.defaultMethodCode}
     </span>
+  );
+}
+
+function WorkspaceStatusPanel({
+  context,
+  selectedMethodCode,
+  selectedMethod,
+  invalidUrlMethodCode,
+  onMethodChange
+}: {
+  context: Awaited<ReturnType<typeof kornixApi.getCurrentContext>> | undefined;
+  selectedMethodCode: string | null;
+  selectedMethod: KornixMethodDto | null;
+  invalidUrlMethodCode: string | null;
+  onMethodChange: (methodCode: string) => void;
+}) {
+  if (!context) {
+    return null;
+  }
+
+  const warnings = [
+    ...(context.warnings ?? []),
+    ...(context.readinessSummary.warnings ?? []),
+    ...(invalidUrlMethodCode
+      ? [
+          {
+            code: 'INVALID_METHOD_CODE',
+            message: `Метод ${invalidUrlMethodCode} недоступен, выбран ${selectedMethodCode ?? context.defaultMethodCode}.`
+          }
+        ]
+      : [])
+  ];
+
+  return (
+    <div className="workspace-status-panel">
+      <label>
+        Метод
+        <select
+          value={selectedMethodCode ?? ''}
+          onChange={(event) => onMethodChange(event.target.value)}
+          disabled={context.availableMethods.length <= 1}
+        >
+          {context.availableMethods.map((method) => (
+            <option key={method.methodCode} value={method.methodCode}>
+              {method.label} ({method.methodCode})
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="workspace-status-grid">
+        <span>Дата backend: {context.serverDate}</span>
+        <span>
+          Окно: {context.calculationWindow.from} — {context.calculationWindow.to}
+        </span>
+        <span>Режим: {context.frontendMode}</span>
+        <span>Свежесть: {context.dataFreshnessStatus}</span>
+        <span>Run: {context.currentAppliedCalculationRunId ?? 'нет'}</span>
+        <span>Готовность: {context.readinessSummary.status}</span>
+        <span>Метод: {selectedMethod?.methodCode ?? context.defaultMethodCode}</span>
+      </div>
+      {context.submitBlockedReason && (
+        <div className="diagnostic-warning-list">
+          <span>
+            <strong>{context.submitBlockedReason}</strong>: утверждение сейчас заблокировано backend.
+          </span>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <div className="diagnostic-warning-list" aria-label="Предупреждения контекста KORNIX">
+          {warnings.map((warning) => (
+            <span key={`${warning.code}-${warning.message}`}>
+              <strong>{warning.code}</strong>: {warning.message}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

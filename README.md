@@ -50,7 +50,8 @@ http://localhost:5173
 
 Для smoke-проверки с локальным backend API используйте `.env.integration.example`.
 Этот профиль запускает frontend в BFF-режиме, отключает mock API и направляет
-запросы на `http://localhost:8000`:
+запросы на `http://localhost:8000`. Auth endpoints остаются на `/api/v1`,
+пользовательский KORNIX calculation API работает через `/api/v2/kornix`:
 
 ```bash
 make integration-dev
@@ -134,17 +135,25 @@ GET  /api/v1/me
 GET  /api/v1/auth/csrf
 GET  /api/v1/auth/login?returnTo=/map
 POST /api/v1/auth/logout
-GET  /api/v1/kornix/current-context
-GET  /api/v1/kornix/field-seasons/catalog?seasonYear=2026
-POST /api/v1/kornix/water-regime/calculate
-GET  /api/v1/kornix/field-seasons/map?calculationRunId=...&day=YYYY-MM-DD
-GET  /api/v1/kornix/water-regime/profile-timeseries?calculationRunId=...&fieldSeasonIds=...&aggregation=area_weighted_mean
+
+GET  /api/v2/kornix/current-context
+GET  /api/v2/kornix/field-seasons/catalog?seasonYear=2026
+GET  /api/v2/kornix/methods
+GET  /api/v2/kornix/readiness/current
+POST /api/v2/kornix/water-regime/approvals
+GET  /api/v2/kornix/water-regime/approvals/{approvalBatchId}
+GET  /api/v2/kornix/calculation-runs/{calculationRunId}/status
+GET  /api/v2/kornix/field-seasons/map?calculationRunId=...&methodCode=...&day=YYYY-MM-DD
+GET  /api/v2/kornix/water-regime/profile-timeseries?calculationRunId=...&methodCode=...&fieldSeasonIds=...&aggregation=area_weighted_mean
 ```
 
-`current-context` должен отдавать календарные даты backend в московской зоне:
-`serverDate`, `forecastStartDate`, `forecastEndDate`. Если готового
-`latestCalculationRunId` ещё нет, frontend строит таблицу первого расчёта через
-каталог полей `field-seasons/catalog`.
+`current-context` должен отдавать календарные даты backend в московской зоне,
+`managedScope`, `frontendMode`, `submitAllowed`, `availableMethods`,
+`defaultMethodCode` и `currentAppliedCalculationRunId`. Именно
+`currentAppliedCalculationRunId` является отображаемым расчётом. Если его нет,
+frontend показывает каталог/состояние готовности и не вызывает map/profile.
+Утверждение поливов отправляет только положительные непустые значения в
+`irrigationLayer`; `0 мм` и пустые ячейки не сериализуются.
 Для `POST`, `PUT`, `PATCH`, `DELETE` frontend перед запросом получает CSRF token
 через `/api/v1/auth/csrf`, если token ещё не пришёл в cookie или meta.
 
@@ -169,12 +178,10 @@ cookie.
 
 ## API checklist
 
-Актуальный frontend-контракт API v1.1 находится в
-[`docs/kornix-frontend-api-v1.md`](docs/kornix-frontend-api-v1.md).
-Он фиксирует tenant-scoped BFF workflow, групповой `calculationRunId`, каталог
-полей до первого расчёта, backend-даты, отправку только `irrigation_tasks`,
-v1.0 `long_name_for_code`, правило `null != 0` и разделение рекомендаций от
-задач полива.
+Актуальный пользовательский frontend переведён на Big Bang контракт
+`/api/v2/kornix`: tenant scope задаёт BFF/backend, frontend не передаёт
+`organizationCode` как доверенный фильтр, использует backend-даты, выбранный
+`methodCode`, `managedScope`, approval workflow с polling и правило `null != 0`.
 
 Backend error envelope должен иметь форму
 `{ "error": { "code", "message", "details", "requestId" } }`; frontend

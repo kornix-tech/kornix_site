@@ -3,8 +3,9 @@ import type {
   FieldSeasonCatalogDto,
   FieldSeasonMapFeatureCollection,
   FieldWaterRegimeStatusCode,
-  IrrigationTaskPayloadDto,
-  KornixCalculateResponse,
+  KornixApprovalRequestDto,
+  KornixApprovalStatusDto,
+  KornixApprovalSubmitResponseDto,
   KornixCurrentContextDto
 } from '../types/kornix';
 import { deriveWaterMetrics } from '../features/water-regime/derivedWaterMetrics';
@@ -100,24 +101,55 @@ function mockThresholdCoefficients(fc: number, wpc: number) {
 
 export function getMockCurrentContext(): KornixCurrentContextDto {
   const serverDate = todayIso();
+  const forecastStartDate = serverDate;
+  const forecastEndDate = addDaysIso(serverDate, 7);
   return {
     organizationCode: 'SP',
     organizationName: 'Спасское',
     seasonYear: 2026,
     calculationWindow: {
       from: '2026-04-01',
-      to: addDaysIso(serverDate, 7),
+      to: forecastEndDate,
       timezone: MOSCOW_TIMEZONE
     },
     serverDate,
-    forecastStartDate: addDaysIso(serverDate, 1),
-    forecastEndDate: addDaysIso(serverDate, 7),
+    forecastStartDate,
+    forecastEndDate,
+    managedScope: {
+      dateFrom: addDaysIso(serverDate, -21),
+      dateTo: forecastEndDate,
+      fieldSeasonIds: spasskoeIrrigatedFieldFeatures.map((feature) => feature.properties.fieldSeasonId),
+      scopeVersion: `mock-${serverDate}`
+    },
+    currentOperationalBaseCalculationRunId: lastCalculationRunId,
+    currentAppliedCalculationRunId: lastCalculationRunId,
+    lastSuccessfulCalculationRunId: lastCalculationRunId,
+    currentOperationalStatus: 'completed',
+    currentAppliedStatus: 'completed',
+    dataFreshnessStatus: 'current',
+    frontendMode: 'current_editable',
+    submitAllowed: true,
+    submitBlockedReason: null,
+    readinessSummary: {
+      status: 'pass',
+      checkedAt: new Date().toISOString(),
+      warnings: []
+    },
+    readinessDetailsUrl: '/api/v2/kornix/readiness/current',
+    availableMethods: [
+      {
+        methodCode: 'simple_eto_single_layer_soil',
+        label: 'Simple ETo, однослойная почва',
+        version: 'mock',
+        isDefault: true,
+        isRequired: true
+      }
+    ],
+    defaultMethodCode: 'simple_eto_single_layer_soil',
     fieldCount: spasskoeIrrigatedFieldFeatures.length,
-    irrigatedFieldCount2026: spasskoeIrrigatedFieldFeatures.length,
-    latestCalculationRunId: lastCalculationRunId,
-    latestCalculationStatus: 'completed',
     generatedAt: new Date().toISOString(),
-    mapBounds: spasskoeMapBounds
+    mapBounds: spasskoeMapBounds,
+    warnings: []
   };
 }
 
@@ -216,19 +248,19 @@ export function buildMockFieldSeasonMapForDay(
   };
 }
 
-export function canonicalScenarioHash(payload: IrrigationTaskPayloadDto): string {
+export function canonicalScenarioHash(payload: KornixApprovalRequestDto): string {
   const canonical = JSON.stringify(
-    [...payload.irrigation_tasks]
+    [...payload.irrigationLayer]
       .sort((left, right) =>
         left.fieldSeasonId.localeCompare(right.fieldSeasonId) ||
         left.irrigationDate.localeCompare(right.irrigationDate) ||
-        left.irrigationTaskMm - right.irrigationTaskMm
+        left.irrigationMm - right.irrigationMm
       )
   );
   return `mock-${hashString(canonical).toString(16)}`;
 }
 
-export function buildMockCalculateResponse(payload: IrrigationTaskPayloadDto): KornixCalculateResponse {
+export function buildMockApprovalResponse(payload: KornixApprovalRequestDto): KornixApprovalSubmitResponseDto {
   const hash = canonicalScenarioHash(payload);
   const reusedPreviousCalculation = hash === lastScenarioHash;
   if (!reusedPreviousCalculation) {
@@ -236,33 +268,29 @@ export function buildMockCalculateResponse(payload: IrrigationTaskPayloadDto): K
     lastCalculationRunId = `mock-sp-2026-${hash.slice(5)}-${Date.now().toString(36)}`;
   }
 
-  const startedAt = new Date().toISOString();
-  const serverDate = todayIso();
   return {
-    organizationCode: 'SP',
-    seasonYear: 2026,
+    approvalBatchId: `mock-approval-${hash.slice(5)}`,
     calculationRunId: lastCalculationRunId,
+    approvalStatus: reusedPreviousCalculation ? 'no_changes' : 'applied',
     calculationStatus: reusedPreviousCalculation ? 'reused_existing' : 'completed',
-    irrigationScenarioHash: hash,
     reusedPreviousCalculation,
-    calculationWindow: {
-      from: '2026-04-01',
-      to: addDaysIso(serverDate, 7),
-      timezone: MOSCOW_TIMEZONE
-    },
-    serverDate,
-    forecastStartDate: addDaysIso(serverDate, 1),
-    forecastEndDate: addDaysIso(serverDate, 7),
-    fieldCount: spasskoeIrrigatedFieldFeatures.length,
-    irrigatedFieldCount2026: spasskoeIrrigatedFieldFeatures.length,
-    timing: {
-      startedAt,
-      finishedAt: new Date().toISOString(),
-      durationMs: reusedPreviousCalculation ? 40 : 820
-    },
+    pollRequired: false,
     warnings:
-      payload.irrigation_tasks.length === 0
-        ? [{ code: 'EMPTY_IRRIGATION_TASK', message: 'Расчёт выполнен без пользовательских поливов.' }]
+      payload.irrigationLayer.length === 0
+        ? [{ code: 'EMPTY_IRRIGATION_LAYER', message: 'Сценарий утверждён без пользовательских поливов.' }]
         : []
+  };
+}
+
+export function buildMockApprovalStatus(approvalBatchId: string): KornixApprovalStatusDto {
+  return {
+    approvalBatchId,
+    approvalStatus: 'applied',
+    ledgerEventsStatus: 'active',
+    calculationRunId: lastCalculationRunId,
+    calculationStatus: 'completed',
+    resultAvailable: true,
+    pollRequired: false,
+    warnings: []
   };
 }

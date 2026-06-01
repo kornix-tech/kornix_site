@@ -12,6 +12,7 @@ export type WorkspaceUrlState = {
   tab: WorkspaceTab;
   seasonYear: number;
   calculationRunId: string | null;
+  methodCode: string | null;
   mapDay: string;
   fieldSeasonIds: string[];
   fieldsExplicitlyCleared: boolean;
@@ -24,6 +25,7 @@ export const DEFAULT_WORKSPACE_STATE: WorkspaceUrlState = {
   tab: 'map',
   seasonYear: 2026,
   calculationRunId: null,
+  methodCode: null,
   mapDay: todayIso(),
   fieldSeasonIds: [],
   fieldsExplicitlyCleared: false,
@@ -96,6 +98,7 @@ export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/
   );
   const fieldsParam = searchParams.get('fields') ?? searchParams.get('fieldSeasonIds') ?? '';
   const calculationRunIdParam = searchParams.get('calculationRunId');
+  const methodCodeParam = searchParams.get('methodCode');
   const fieldsExplicitlyCleared = fieldsParam === 'none';
   const fieldSeasonIds = fieldsExplicitlyCleared ? [] : parseFieldSeasonIds(fieldsParam);
   const from = normalizedDate(searchParams.get('from'), DEFAULT_WORKSPACE_STATE.from);
@@ -111,6 +114,7 @@ export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/
       !RESERVED_CALCULATION_RUN_IDS.has(calculationRunIdParam)
         ? calculationRunIdParam
         : null,
+    methodCode: methodCodeParam && FIELD_SEASON_ID_PATTERN.test(methodCodeParam) ? methodCodeParam : null,
     mapDay: tab === 'map' ? parsedMapDay : DEFAULT_WORKSPACE_STATE.mapDay,
     fieldSeasonIds,
     fieldsExplicitlyCleared,
@@ -127,6 +131,9 @@ export function serializeWorkspaceState(state: WorkspaceUrlState): URLSearchPara
   }
   if (state.calculationRunId) {
     params.set('calculationRunId', state.calculationRunId);
+  }
+  if (state.methodCode) {
+    params.set('methodCode', state.methodCode);
   }
   if (state.tab === 'map' && state.mapDay !== DEFAULT_WORKSPACE_STATE.mapDay) {
     params.set('day', state.mapDay);

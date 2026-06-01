@@ -4,7 +4,11 @@ import { ApiError } from '../shared/api/httpClient';
 import type {
   FieldSeasonMapFeature,
   FieldSeasonMapFeatureCollection,
-  IrrigationTaskPayloadDto
+  KornixApprovalClientDiffDto,
+  KornixApprovalIrrigationCellDto,
+  KornixApprovalRequestDto,
+  KornixApprovalStatusDto,
+  KornixCurrentContextDto
 } from '../types/kornix';
 import { compareFieldKeys } from './FieldSelectorPanel';
 import { fieldStatusClassName, fieldStatusLabel } from './fieldStatusPresentation';
@@ -279,43 +283,78 @@ function useApprovedIrrigationSignature(seasonYear: number, storageScope: string
   return [approvedSignature, approve] as const;
 }
 
-function buildIrrigationTaskPayload(
+function buildIrrigationLayer(
   values: IrrigationValues,
   editableEnd: string
-): IrrigationTaskPayloadDto {
-  const irrigationTasks = Object.entries(values)
+): KornixApprovalIrrigationCellDto[] {
+  return Object.entries(values)
     .map(([key, value]) => {
       const parsedKey = splitValueKey(key);
-      const irrigationTaskMm = Number(value);
-      if (!parsedKey || parsedKey.day > editableEnd || !Number.isFinite(irrigationTaskMm) || irrigationTaskMm <= 0) {
+      const irrigationMm = Number(value);
+      if (!parsedKey || parsedKey.day > editableEnd || !Number.isFinite(irrigationMm) || irrigationMm <= 0) {
         return null;
       }
 
       return {
         fieldSeasonId: parsedKey.fieldSeasonId,
         irrigationDate: parsedKey.day,
-        irrigationTaskMm
+        irrigationMm
       };
     })
     .filter((task): task is NonNullable<typeof task> => task !== null)
     .sort((left, right) =>
       left.fieldSeasonId.localeCompare(right.fieldSeasonId) || left.irrigationDate.localeCompare(right.irrigationDate)
     );
-
-  return {
-    generatedAt: new Date().toISOString(),
-    irrigation_tasks: irrigationTasks
-  };
 }
 
 function irrigationApprovalSignature(
   values: IrrigationValues,
   editableEnd: string
 ): string {
-  const payload = buildIrrigationTaskPayload(values, editableEnd);
-  return JSON.stringify({
-    irrigation_tasks: payload.irrigation_tasks
-  });
+  return JSON.stringify(buildIrrigationLayer(values, editableEnd));
+}
+
+function cellIdentity(cell: KornixApprovalIrrigationCellDto): string {
+  return `${cell.fieldSeasonId}:${cell.irrigationDate}`;
+}
+
+function safeParseApprovedLayer(signature: string): KornixApprovalIrrigationCellDto[] {
+  try {
+    const parsed = JSON.parse(signature) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter(
+      (cell): cell is KornixApprovalIrrigationCellDto =>
+        typeof cell === 'object' &&
+        cell !== null &&
+        typeof (cell as KornixApprovalIrrigationCellDto).fieldSeasonId === 'string' &&
+        typeof (cell as KornixApprovalIrrigationCellDto).irrigationDate === 'string' &&
+        typeof (cell as KornixApprovalIrrigationCellDto).irrigationMm === 'number' &&
+        Number.isFinite((cell as KornixApprovalIrrigationCellDto).irrigationMm) &&
+        (cell as KornixApprovalIrrigationCellDto).irrigationMm > 0
+    );
+  } catch {
+    return [];
+  }
+}
+
+function buildClientDiff(
+  previousLayer: KornixApprovalIrrigationCellDto[],
+  nextLayer: KornixApprovalIrrigationCellDto[]
+): KornixApprovalClientDiffDto {
+  const previousByKey = new Map(previousLayer.map((cell) => [cellIdentity(cell), cell]));
+  const nextByKey = new Map(nextLayer.map((cell) => [cellIdentity(cell), cell]));
+
+  return {
+    added: nextLayer.filter((cell) => !previousByKey.has(cellIdentity(cell))),
+    updated: nextLayer.filter((cell) => {
+      const previous = previousByKey.get(cellIdentity(cell));
+      return previous !== undefined && previous.irrigationMm !== cell.irrigationMm;
+    }),
+    deleted: previousLayer.filter((cell) => !nextByKey.has(cellIdentity(cell)))
+  };
 }
 
 function calculationErrorMessage(error: unknown): string {
@@ -340,6 +379,9 @@ export function IrrigationInputTable({
   serverDate,
   forecastStartDate,
   forecastEndDate,
+  context,
+  baseCalculationRunId,
+  selectedMethodCode,
   onCalculationComplete
 }: {
   fields: FieldSeasonMapFeatureCollection;
@@ -348,6 +390,9 @@ export function IrrigationInputTable({
   serverDate: string;
   forecastStartDate: string;
   forecastEndDate: string;
+  context: KornixCurrentContextDto | null;
+  baseCalculationRunId: string | null;
+  selectedMethodCode: string | null;
   onCalculationComplete: (calculationRunId: string) => void;
 }) {
   const today = serverDate;
@@ -382,8 +427,8 @@ export function IrrigationInputTable({
   const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);
   const [elapsedCalculationSeconds, setElapsedCalculationSeconds] = useState(0);
   const [isLegendVisible, setIsLegendVisible] = useState(true);
-  const irrigationTaskPayload = useMemo(
-    () => buildIrrigationTaskPayload(values, editableEnd),
+  const irrigationLayer = useMemo(
+    () => buildIrrigationLayer(values, editableEnd),
     [editableEnd, values]
   );
   const approvalSignature = useMemo(
@@ -397,13 +442,28 @@ export function IrrigationInputTable({
         ? 'error'
         : approvedSignature === approvalSignature
           ? 'approved'
-          : irrigationTaskPayload.irrigation_tasks.length === 0
+          : irrigationLayer.length === 0
             ? 'empty'
             : 'dirty';
-  const actualIrrigationCount = irrigationTaskPayload.irrigation_tasks.filter(
+  const isSubmitBlocked =
+    !context ||
+    context.frontendMode !== 'current_editable' ||
+    !context.submitAllowed ||
+    !baseCalculationRunId ||
+    !selectedMethodCode ||
+    isSavingApproval;
+  const isInputReadOnly = context?.frontendMode === 'stale_read_only' || context?.frontendMode === 'not_ready';
+  const blockedReason =
+    context?.submitBlockedReason ??
+    (!baseCalculationRunId
+      ? 'Нет опубликованного расчёта для baseCalculationRunId.'
+      : !selectedMethodCode
+        ? 'Backend не вернул доступный метод расчёта.'
+        : null);
+  const actualIrrigationCount = irrigationLayer.filter(
     (task) => task.irrigationDate <= today
   ).length;
-  const plannedIrrigationCount = irrigationTaskPayload.irrigation_tasks.filter(
+  const plannedIrrigationCount = irrigationLayer.filter(
     (task) => task.irrigationDate >= forecastStart && task.irrigationDate <= forecastEnd
   ).length;
 
@@ -466,7 +526,8 @@ export function IrrigationInputTable({
   }, [today, days.length]);
 
   async function approveIrrigationEvents() {
-    if (isSavingApproval) {
+    if (isSubmitBlocked || !context || !baseCalculationRunId) {
+      setApprovalError(blockedReason ? String(blockedReason) : 'Утверждение сейчас недоступно.');
       return;
     }
 
@@ -475,8 +536,19 @@ export function IrrigationInputTable({
     setApprovalError(null);
     setCalculationWarnings([]);
     try {
-      const response = await kornixApi.calculateWaterRegime(irrigationTaskPayload);
-      if (response.calculationStatus === 'failed') {
+      const approvedLayer = safeParseApprovedLayer(approvedSignature);
+      const request: KornixApprovalRequestDto = {
+        seasonYear,
+        baseCalculationRunId,
+        approvalClientGeneratedAt: new Date().toISOString(),
+        managedScope: context.managedScope,
+        irrigationLayer,
+        clientDiff: buildClientDiff(approvedLayer, irrigationLayer)
+      };
+      const response = await kornixApi.submitWaterRegimeApprovalV2(request);
+      setCalculationWarnings(response.warnings ?? []);
+
+      if (response.approvalStatus === 'calculation_failed' || response.calculationStatus === 'failed') {
         const warningsText = response.warnings?.length
           ? response.warnings.map((warning) => `${warning.code}: ${warning.message}`).join('; ')
           : 'Backend вернул failed без warning details.';
@@ -486,15 +558,50 @@ export function IrrigationInputTable({
         );
       }
 
+      if (response.pollRequired) {
+        const status = await pollApprovalUntilFinal(response.approvalBatchId, response.pollAfterMs);
+        setCalculationWarnings((current) => [...current, ...(status.warnings ?? [])]);
+        if (status.approvalStatus === 'applied' && status.resultAvailable && status.calculationRunId) {
+          approveSignature(approvalSignature);
+          onCalculationComplete(status.calculationRunId);
+          return;
+        }
+
+        if (status.approvalStatus === 'calculation_failed') {
+          const errorText = status.error ? `${status.error.code}: ${status.error.message}` : 'Расчёт завершился ошибкой.';
+          throw new Error(errorText);
+        }
+
+        throw new Error(`Утверждение завершилось статусом ${status.approvalStatus}.`);
+      }
+
       approveSignature(approvalSignature);
-      setCalculationWarnings(response.warnings ?? []);
-      onCalculationComplete(response.calculationRunId);
+      if (response.calculationRunId) {
+        onCalculationComplete(response.calculationRunId);
+      }
     } catch (error) {
       setApprovalError(calculationErrorMessage(error));
     } finally {
       setIsSavingApproval(false);
       setCalculationStartedAt(null);
     }
+  }
+
+  async function pollApprovalUntilFinal(
+    approvalBatchId: string,
+    pollAfterMs = 1500
+  ): Promise<KornixApprovalStatusDto> {
+    let nextDelayMs = Math.max(500, pollAfterMs);
+    for (let attempt = 0; attempt < 80; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, nextDelayMs));
+      const status = await kornixApi.getApprovalStatusV2(approvalBatchId);
+      if (!status.pollRequired || status.approvalStatus !== 'pending_calculation') {
+        return status;
+      }
+      nextDelayMs = Math.min(5000, Math.max(500, nextDelayMs));
+    }
+
+    throw new Error('Backend долго рассчитывает водный режим. Повторите проверку статуса позже.');
   }
 
   function changeIrrigationValue(key: string, value: string) {
@@ -535,11 +642,12 @@ export function IrrigationInputTable({
               </span>
             )}
             {approvalError && <span className="irrigation-approval-error">{approvalError}</span>}
+            {blockedReason && <span className="irrigation-approval-error">{String(blockedReason)}</span>}
           </div>
           <button
             type="button"
             className={`irrigation-approve-button irrigation-approve-${approvalState}`}
-            disabled={approvalState === 'saving'}
+            disabled={isSubmitBlocked}
             onClick={() => void approveIrrigationEvents()}
           >
             Утверждаю
@@ -655,7 +763,7 @@ export function IrrigationInputTable({
                             inputMode="decimal"
                             type="text"
                             value={value}
-                            disabled={isLockedDay}
+                            disabled={isLockedDay || isInputReadOnly}
                             onChange={(event) => changeIrrigationValue(key, event.target.value)}
                             onBlur={(event) => changeIrrigationValue(key, event.target.value)}
                             onKeyDown={(event) => {
@@ -669,7 +777,7 @@ export function IrrigationInputTable({
                             <button
                               type="button"
                               tabIndex={-1}
-                              disabled={isLockedDay}
+                              disabled={isLockedDay || isInputReadOnly}
                               onClick={() => changeIrrigationValue(key, nextSteppedValue(value, 1))}
                             >
                               ▲
@@ -677,7 +785,7 @@ export function IrrigationInputTable({
                             <button
                               type="button"
                               tabIndex={-1}
-                              disabled={isLockedDay}
+                              disabled={isLockedDay || isInputReadOnly}
                               onClick={() => changeIrrigationValue(key, nextSteppedValue(value, -1))}
                             >
                               ▼

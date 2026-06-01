@@ -250,7 +250,8 @@ button:active {
   grid-template-columns: minmax(220px, 1fr) minmax(280px, max-content);
   grid-template-areas:
     "copy actions"
-    "copy tabs";
+    "copy tabs"
+    "status status";
   gap: 8px 14px;
   align-items: center;
 }
@@ -323,6 +324,46 @@ button:active {
   border-color: var(--color-green-700);
   background: linear-gradient(135deg, var(--color-green-700), var(--color-green-900));
   box-shadow: 0 10px 24px rgb(12 48 31 / 20%);
+}
+
+.workspace-status-panel {
+  grid-area: status;
+  display: grid;
+  gap: 6px;
+  padding-top: 2px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.workspace-status-panel label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--color-green-800);
+  font-weight: 800;
+}
+
+.workspace-status-panel select {
+  max-width: min(100%, 420px);
+  min-height: 30px;
+  padding: 5px 28px 5px 10px;
+  border: 1px solid rgb(23 65 38 / 18%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 88%);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.workspace-status-grid {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+}
+
+.workspace-status-grid span {
+  white-space: nowrap;
 }
 
 .export-actions {
@@ -856,21 +897,25 @@ input[type='checkbox'] {
 }
 
 .status-ok,
-.readiness-ready {
+.readiness-ready,
+.readiness-pass {
   background: var(--color-green-100);
   color: var(--color-green-800);
   border-color: rgb(95 143 47 / 30%);
 }
 
 .status-warning,
-.readiness-partial {
+.readiness-partial,
+.readiness-pending,
+.readiness-degraded {
   background: #fff5df;
   color: #8a5200;
   border-color: #f0cc7c;
 }
 
 .status-critical,
-.readiness-not_ready {
+.readiness-not_ready,
+.readiness-fail {
   background: #feeaea;
   color: #8e1b1e;
   border-color: #f4b4b6;
@@ -1941,7 +1986,8 @@ input[type='checkbox'] {
     grid-template-areas:
       "copy"
       "actions"
-      "tabs";
+      "tabs"
+      "status";
   }
 
   .header-actions {

@@ -61,9 +61,10 @@ export type FieldSeasonMapFeatureCollection = GeoJSON.FeatureCollection<
   FieldSeasonMapPropertiesDto
 > & {
   generatedAt: string;
-  organizationCode: 'SP';
-  seasonYear: 2026;
+  organizationCode: string;
+  seasonYear: number;
   calculationRunId: CalculationRunId;
+  methodCode?: string;
   day: string;
   warnings?: Array<{ code: string; message: string }>;
 };
@@ -84,8 +85,8 @@ export type FieldSeasonCatalogFieldDto = {
 };
 
 export type FieldSeasonCatalogDto = {
-  organizationCode: 'SP';
-  seasonYear: 2026;
+  organizationCode: string;
+  seasonYear: number;
   generatedAt: string;
   fields: FieldSeasonCatalogFieldDto[];
 };
@@ -121,18 +122,82 @@ export type KornixMetricDefinition = {
 
 export type CurrentUserDto = AuthUser;
 
+export type KornixFrontendMode = 'current_editable' | 'stale_read_only' | 'not_ready';
+
+export type KornixSubmitBlockedReason =
+  | null
+  | 'DATA_REFRESH_IN_PROGRESS'
+  | 'CURRENT_OPERATIONAL_NOT_PUBLISHED'
+  | 'DATA_COMPLETENESS_FAILED'
+  | 'CALCULATION_QUEUED'
+  | 'CALCULATION_RUNNING'
+  | 'CALCULATION_FAILED'
+  | 'DAILY_UPDATE_DEGRADED';
+
+export type KornixManagedScopeDto = {
+  dateFrom: string;
+  dateTo: string;
+  fieldSeasonIds: string[];
+  scopeVersion: string;
+};
+
+export type KornixMethodDto = {
+  methodCode: string;
+  label: string;
+  version: string;
+  isDefault: boolean;
+  isRequired: boolean;
+};
+
+export type KornixReadinessSummaryDto = {
+  status: 'pass' | 'pending' | 'fail' | 'degraded';
+  checkedAt: string | null;
+  missingDailyForcingRows?: number;
+  missingHourlySourceRows?: number;
+  failedRequiredMethods?: string[];
+  nextRetryAt?: string | null;
+  strictFullWeatherPass?: boolean;
+  operationalRequiredPass?: boolean;
+  warnings?: Array<{ code: string; message: string }>;
+};
+
 export type KornixCurrentContextDto = {
-  organizationCode: 'SP';
+  organizationCode: string;
   organizationName: string;
-  seasonYear: 2026;
-  calculationWindow: CalculationWindowDto;
+  seasonYear: number;
   serverDate: string;
   forecastStartDate: string;
   forecastEndDate: string;
+  calculationWindow: CalculationWindowDto;
+  managedScope: KornixManagedScopeDto;
+  currentOperationalBaseCalculationRunId: CalculationRunId | null;
+  currentAppliedCalculationRunId: CalculationRunId | null;
+  lastSuccessfulCalculationRunId: CalculationRunId | null;
+  currentOperationalStatus:
+    | 'not_started'
+    | 'data_refresh_in_progress'
+    | 'data_gap'
+    | 'calculation_queued'
+    | 'calculation_running'
+    | 'completed'
+    | 'failed'
+    | 'degraded';
+  currentAppliedStatus: 'completed' | 'not_available' | 'stale' | 'failed';
+  dataFreshnessStatus:
+    | 'current'
+    | 'stale'
+    | 'data_gap'
+    | 'source_delay'
+    | 'calculation_failed'
+    | 'degraded';
+  frontendMode: KornixFrontendMode;
+  submitAllowed: boolean;
+  submitBlockedReason: KornixSubmitBlockedReason;
+  readinessSummary: KornixReadinessSummaryDto;
+  readinessDetailsUrl: string;
+  availableMethods: KornixMethodDto[];
+  defaultMethodCode: string;
   fieldCount: number;
-  irrigatedFieldCount2026: number;
-  latestCalculationRunId: CalculationRunId | null;
-  latestCalculationStatus: 'not_calculated' | 'completed' | 'failed' | 'in_progress';
   generatedAt: string;
   mapBounds: null | {
     minLng: number;
@@ -140,6 +205,7 @@ export type KornixCurrentContextDto = {
     maxLng: number;
     maxLat: number;
   };
+  warnings: Array<{ code: string; message: string }>;
 };
 
 export type MetricPointBase = {
@@ -191,9 +257,10 @@ export type IrrigationRecommendationDto = {
 };
 
 export type KornixProfileTimeseriesDto = {
-  organizationCode: 'SP';
-  seasonYear: 2026;
+  organizationCode: string;
+  seasonYear: number;
   calculationRunId: CalculationRunId;
+  methodCode?: string;
   window: CalculationWindowDto;
   serverDate: string;
   forecastStartDate: string;
@@ -209,39 +276,69 @@ export type KornixProfileTimeseriesDto = {
   warnings: Array<{ code: string; message: string }>;
 };
 
-export type IrrigationTaskDto = {
+export type KornixApprovalIrrigationCellDto = {
   fieldSeasonId: string;
   irrigationDate: string;
-  irrigationTaskMm: number;
+  irrigationMm: number;
 };
 
-export type IrrigationTaskPayloadDto = {
-  generatedAt: string;
-  irrigation_tasks: IrrigationTaskDto[];
+export type KornixApprovalClientDiffDto = {
+  added: unknown[];
+  updated: unknown[];
+  deleted: unknown[];
 };
 
-export type KornixCalculateRequest = {
-  seasonYear: 2026;
-  irrigationScenario: IrrigationTaskPayloadDto;
+export type KornixApprovalRequestDto = {
+  seasonYear: number;
+  baseCalculationRunId: string;
+  approvalClientGeneratedAt: string;
+  managedScope: KornixManagedScopeDto;
+  irrigationLayer: KornixApprovalIrrigationCellDto[];
+  clientDiff: KornixApprovalClientDiffDto;
 };
 
-export type KornixCalculateResponse = {
-  organizationCode: 'SP';
-  seasonYear: 2026;
+export type KornixApprovalSubmitResponseDto = {
+  approvalBatchId: string;
   calculationRunId: CalculationRunId;
-  calculationStatus: 'completed' | 'reused_existing' | 'failed';
-  irrigationScenarioHash: string;
+  approvalStatus: 'no_changes' | 'pending_calculation' | 'applied' | 'calculation_failed';
+  calculationStatus: 'reused_existing' | 'queued' | 'running' | 'completed' | 'failed';
   reusedPreviousCalculation: boolean;
-  calculationWindow: CalculationWindowDto;
-  serverDate: string;
-  forecastStartDate: string;
-  forecastEndDate: string;
-  fieldCount: number;
-  irrigatedFieldCount2026: number;
-  timing: {
-    startedAt: string;
-    finishedAt: string | null;
-    durationMs: number | null;
-  };
+  pollRequired: boolean;
+  pollAfterMs?: number;
+  statusUrl?: string;
   warnings: Array<{ code: string; message: string }>;
+};
+
+export type KornixApprovalStatusDto = {
+  approvalBatchId: string;
+  approvalStatus:
+    | 'pending_calculation'
+    | 'applied'
+    | 'calculation_failed'
+    | 'cancelled'
+    | 'superseded'
+    | 'no_changes';
+  ledgerEventsStatus: 'pending' | 'active' | 'rejected' | 'none';
+  calculationRunId: string | null;
+  calculationStatus: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'reused_existing' | null;
+  resultAvailable: boolean;
+  pollRequired: boolean;
+  warnings: Array<{ code: string; message: string }>;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  } | null;
+};
+
+export type KornixCalculationRunStatusDto = {
+  calculationRunId: string;
+  calculationStatus: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'reused_existing';
+  methodCode?: string;
+  warnings?: Array<{ code: string; message: string }>;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  } | null;
 };

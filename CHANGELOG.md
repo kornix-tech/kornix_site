@@ -3,6 +3,23 @@
 ## [Unreleased]
 
 ### Changed
+- Пользовательский workspace KORNIX переведён с legacy `/api/v1/kornix` на
+  контракт `/api/v2/kornix`, при этом auth/me и CSRF остаются на `/api/v1`.
+- Отображаемый расчёт теперь определяется `currentAppliedCalculationRunId` из
+  backend current-context; старое предположение про `latestCalculationRunId`
+  удалено из рабочего flow.
+- Добавлен выбор метода расчёта из `availableMethods`; map/profile запрашивают
+  данные с выбранным `methodCode`, а URL хранит только валидный выбранный метод.
+- Утверждение поливов переведено на approval workflow: frontend отправляет
+  `managedScope`, положительный `irrigationLayer`, `clientDiff` и обрабатывает
+  polling статуса approval без переключения на failed расчёт.
+- `stale_read_only` и `not_ready` режимы current-context блокируют отправку и
+  редактирование поливов, но не трактуются как ошибка авторизации.
+- Интеграционный env-профиль явно фиксирует `VITE_KORNIX_API_VERSION=v2` и
+  описывает разделение `/api/v1` auth endpoints и `/api/v2/kornix` расчётов.
+- В validate-проверку добавлен contract-check, который блокирует возврат
+  legacy `/api/v1/kornix`, `latestCalculationRunId`, старого calculate-flow и
+  `irrigation_tasks` в рабочем `src`.
 - Mock `calculationRunId` на рабочей странице теперь подчиняется той же
   runtime-защите, что mock API/auth, и не подставляется вне разрешённых
   локальных host.

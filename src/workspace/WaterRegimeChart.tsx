@@ -529,10 +529,12 @@ function waterReserveDomain(rows: ProfileRow[], saturation: number | null): [num
   return [visibleMinimum, visibleMaximum];
 }
 
-function buildProfileCsv(rows: ProfileRow[], forecastStart: string): string {
+function buildProfileCsv(rows: ProfileRow[], forecastStart: string, methodCode: string, methodLabel: string): string {
   return buildCsv([
     [
       'day',
+      'method_code',
+      'method_label',
       'period',
       'air_temperature_daily_c',
       'relative_humidity_daily_pct',
@@ -550,6 +552,8 @@ function buildProfileCsv(rows: ProfileRow[], forecastStart: string): string {
     ],
     ...rows.map((row) => [
       row.day,
+      methodCode,
+      methodLabel,
       row.day >= forecastStart ? 'forecast' : 'fact',
       row.temperature,
       row.humidity,
@@ -570,6 +574,8 @@ function buildProfileCsv(rows: ProfileRow[], forecastStart: string): string {
 
 export function WaterRegimeChart({
   calculationRunId,
+  methodCode,
+  methodLabel,
   fields,
   fieldSeasonIds,
   from,
@@ -584,6 +590,8 @@ export function WaterRegimeChart({
   onExportData
 }: {
   calculationRunId: string | null;
+  methodCode: string | null;
+  methodLabel: string;
   fields: FieldSeasonMapFeature[];
   fieldSeasonIds: string[];
   from: string;
@@ -598,11 +606,12 @@ export function WaterRegimeChart({
   onExportData: () => void;
 }) {
   const profileQuery = useQuery({
-    queryKey: ['water-regime-profile', calculationRunId, fieldSeasonIds.join(',')],
-    enabled: Boolean(calculationRunId) && fieldSeasonIds.length > 0,
+    queryKey: ['water-regime-profile', calculationRunId, methodCode, fieldSeasonIds.join(',')],
+    enabled: Boolean(calculationRunId && methodCode) && fieldSeasonIds.length > 0,
     queryFn: () =>
       kornixApi.getProfileTimeseries({
         calculationRunId: calculationRunId ?? '',
+        methodCode: methodCode ?? '',
         fieldSeasonIds,
         aggregation: fieldSeasonIds.length > 1 ? 'area_weighted_mean' : undefined
       })
@@ -614,10 +623,10 @@ export function WaterRegimeChart({
   const forecastEnd = profileQuery.data?.forecastEndDate ?? forecastEndDate;
 
   useEffect(() => {
-    if (!calculationRunId || fieldSeasonIds.length === 0 || isLoading || isError) {
+  if (!calculationRunId || !methodCode || fieldSeasonIds.length === 0 || isLoading || isError) {
       onCsvChange(null);
     }
-  }, [calculationRunId, fieldSeasonIds.length, isError, isLoading, onCsvChange]);
+  }, [calculationRunId, methodCode, fieldSeasonIds.length, isError, isLoading, onCsvChange]);
 
   return (
     <section className="chart-panel">
@@ -625,6 +634,7 @@ export function WaterRegimeChart({
         <div className="empty-state">Выберите одно или несколько полей слева.</div>
       )}
       {!calculationRunId && <div className="empty-state">Нет расчёта. Утвердите поливы.</div>}
+      {calculationRunId && !methodCode && <div className="empty-state">Backend не вернул метод расчёта.</div>}
 
       {isLoading && <div className="empty-state">Загрузка графика…</div>}
       {isError && <div className="error-state">Не удалось загрузить временной ряд.</div>}
@@ -637,6 +647,8 @@ export function WaterRegimeChart({
           serverDate={profileQuery.data.serverDate ?? serverDate}
           from={from}
           selectedCount={fieldSeasonIds.length}
+          methodCode={methodCode ?? profileQuery.data.methodCode ?? ''}
+          methodLabel={methodLabel}
           to={to}
           onFromChange={onFromChange}
           onToChange={onToChange}
@@ -657,6 +669,8 @@ function ChartBody({
   serverDate,
   from,
   selectedCount,
+  methodCode,
+  methodLabel,
   to,
   onFromChange,
   onToChange,
@@ -671,6 +685,8 @@ function ChartBody({
   serverDate: string;
   from: string;
   selectedCount: number;
+  methodCode: string;
+  methodLabel: string;
   to: string;
   onFromChange: (value: string) => void;
   onToChange: (value: string) => void;
@@ -713,7 +729,7 @@ function ChartBody({
         .filter(Boolean)
         .join(' · ')
     : null;
-  const profileCsv = buildProfileCsv(rows, forecastStart);
+  const profileCsv = buildProfileCsv(rows, forecastStart, methodCode, methodLabel);
 
   useEffect(() => {
     onCsvChange(profileCsv);
@@ -767,6 +783,7 @@ function ChartBody({
 
         <div className="chart-caption">
           <strong>Водный режим</strong>
+          <span>{methodLabel}</span>
           {aggregation && (
             <span>
               {aggregation.selectedFieldCount} полей · {aggregation.totalAreaHa.toFixed(1)} га
