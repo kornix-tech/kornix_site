@@ -1,18 +1,21 @@
-$ git status --short --branch
-## main...origin/main
- M CHANGELOG.md
- M README.md
- M codex_reports/KORNIX_FRONTEND_BIG_BANG_FINAL_REPORT.md
- M codex_reports/kornix_frontend_big_bang_final_report.json
- M codex_reports/kornix_frontend_changed_files.txt
- M codex_reports/kornix_frontend_git_status.txt
- M codex_reports/kornix_frontend_smoke_summary.json
- M codex_reports/kornix_frontend_test_log.txt
- M scripts/check-frontend-contract.sh
- M src/api/kornixApi.ts
- M src/api/mockData.ts
- M src/types/kornix.ts
- M src/workspace/IrrigationInputTable.tsx
-
-$ git log -1 --oneline
-bb74ba0 Add frontend big bang final reports
+M  .env.example
+M  .env.integration.example
+M  CHANGELOG.md
+M  README.md
+A  codex_reports/KORNIX_FRONTEND_API_V2_STITCHING_FINAL_REPORT.md
+D  codex_reports/KORNIX_FRONTEND_BIG_BANG_FINAL_REPORT.md
+A  codex_reports/kornix_frontend_api_v2_stitching_final_report.json
+D  codex_reports/kornix_frontend_big_bang_final_report.json
+M  codex_reports/kornix_frontend_changed_files.txt
+MM codex_reports/kornix_frontend_git_status.txt
+M  codex_reports/kornix_frontend_smoke_summary.json
+M  codex_reports/kornix_frontend_test_log.txt
+A  doc/KORNIX_FRONTEND_API_V2_WORKFLOW.md
+A  doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md
+A  doc/KORNIX_FRONTEND_EXTERNAL_CONTEXT_API_V2_STITCHING.md
+A  doc/KORNIX_FRONTEND_SMOKE_TESTING.md
+M  docker-compose.dev.yml
+M  src/shared/api/httpClient.ts
+M  src/workspace/IrrigationInputTable.tsx
+M  src/workspace/WorkspacePage.tsx
+M  vite.config.ts

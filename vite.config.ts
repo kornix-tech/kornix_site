@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const devApiProxyTarget = process.env.KORNIX_DEV_API_PROXY_TARGET || process.env.VITE_API_BASE_URL || 'http://localhost:8001';
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -30,6 +32,13 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: devApiProxyTarget,
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 });

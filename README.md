@@ -50,7 +50,7 @@ http://localhost:5173
 
 Для smoke-проверки с локальным backend API используйте `.env.integration.example`.
 Этот профиль запускает frontend в BFF-режиме, отключает mock API и направляет
-запросы на `http://localhost:8000`. Auth endpoints остаются на `/api/v1`,
+запросы на `http://localhost:8001`. Auth endpoints остаются на `/api/v1`,
 пользовательский KORNIX calculation API работает через `/api/v2/kornix`:
 
 ```bash
@@ -61,6 +61,12 @@ make integration-dev
 эти значения читаются на старте dev server или встраиваются на этапе build.
 Mock-режим не использовать для backend smoke; tenant scope определяет backend
 через session endpoints.
+
+В Docker dev-режиме браузер ходит в same-origin `/api/*`, а Vite проксирует
+эти запросы к backend. Это сохраняет внешний frontend env
+`VITE_API_BASE_URL=http://localhost:8001` и убирает зависимость от CORS на
+локальном backend. При необходимости внутреннюю цель proxy можно переопределить
+через `KORNIX_DEV_API_PROXY_TARGET`.
 
 ## Production-like режим
 
@@ -89,7 +95,7 @@ KORNIX_FRONTEND_PORT=80
 VITE_AUTH_MODE=mock
 VITE_ENABLE_MOCK_API=true
 VITE_ALLOW_PRIVATE_MOCK_RUNTIME=false
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=http://localhost:8001
 ```
 
 Для подключения реального backend:
@@ -98,7 +104,7 @@ VITE_API_BASE_URL=http://localhost:8000
 VITE_AUTH_MODE=bff
 VITE_ENABLE_MOCK_API=false
 VITE_ALLOW_PRIVATE_MOCK_RUNTIME=false
-VITE_API_BASE_URL=https://api.example.com
+VITE_API_BASE_URL=http://localhost:8001
 ```
 
 Frontend ожидает, что backend сам определяет organization/farm scope по авторизации. Клиент не должен передавать `organizationId` как trust-фильтр.
@@ -190,6 +196,16 @@ cookie.
 Backend error envelope должен иметь форму
 `{ "error": { "code", "message", "details", "requestId" } }`; frontend
 показывает `code/message` и сохраняет `requestId` в `ApiError`.
+
+Актуальная документация текущего API v2 stitching этапа:
+
+- [`doc/KORNIX_FRONTEND_EXTERNAL_CONTEXT_API_V2_STITCHING.md`](doc/KORNIX_FRONTEND_EXTERNAL_CONTEXT_API_V2_STITCHING.md)
+- [`doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md`](doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md)
+- [`doc/KORNIX_FRONTEND_API_V2_WORKFLOW.md`](doc/KORNIX_FRONTEND_API_V2_WORKFLOW.md)
+- [`doc/KORNIX_FRONTEND_SMOKE_TESTING.md`](doc/KORNIX_FRONTEND_SMOKE_TESTING.md)
+
+Финальные машинно-проверяемые отчёты текущего этапа находятся в
+[`codex_reports/`](codex_reports/).
 
 Исторические требования к KORNIX system API сохранены в
 [`docs/kornix-system-api-requirements-v0.2.md`](docs/kornix-system-api-requirements-v0.2.md).

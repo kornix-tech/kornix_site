@@ -1,60 +1,24 @@
 {
-  "status": "NOT_RUN",
-  "reason": "Backend stub API was unavailable at http://127.0.0.1:8000 during final report generation.",
-  "generatedAt": "2026-06-01T20:22:02+03:00",
-  "environment": {
-    "frontendUrl": "http://localhost:5173",
-    "apiBaseUrl": "http://localhost:8000",
-    "authMode": "bff",
-    "mockApiEnabled": false
+  "status": "PASS",
+  "checkedAt": "2026-06-02T15:05:00+03:00",
+  "frontendUrl": "http://localhost:5173",
+  "apiBaseUrl": "http://localhost:8001",
+  "facts": {
+    "authMe": true,
+    "currentContext": true,
+    "currentIrrigationLayer": true,
+    "mapRendered": true,
+    "profileRendered": true,
+    "irrigationTabHydratedFromBackendLayer": true,
+    "approvalSubmitAccepted": true,
+    "approvalPollingApplied": true,
+    "currentAppliedCalculationRunIdAfterUiApproval": "bb_user_d6794be2ac32431ea5a23532c6b0b332",
+    "selectedMethodCode": "simple_eto_single_layer_soil",
+    "managedScopeExtraMetadataFiltered": true,
+    "devProxyUsedForDockerLocalApi": true
   },
-  "stubEngine": {
-    "expectedBaselineValue": 1.0,
-    "expectedApprovalValue": 2.0,
-    "realWaterRegimeEnginePending": true
-  },
-  "network": {
-    "me": "NOT_RUN_BACKEND_UNAVAILABLE",
-    "csrf": "NOT_RUN_BACKEND_UNAVAILABLE",
-    "currentContextV2": "NOT_RUN_BACKEND_UNAVAILABLE",
-    "currentIrrigationLayerV2": "NOT_RUN_BACKEND_UNAVAILABLE",
-    "mapV2": "NOT_RUN_BACKEND_UNAVAILABLE",
-    "profileV2": "NOT_RUN_BACKEND_UNAVAILABLE",
-    "approvalSubmit": "NOT_RUN_BACKEND_UNAVAILABLE",
-    "approvalPolling": "NOT_RUN_BACKEND_UNAVAILABLE"
-  },
-  "baseline": {
-    "mapValueSample": null,
-    "profileValueSample": null
-  },
-  "approval": {
-    "mapValueSample": null,
-    "profileValueSample": null,
-    "status": "NOT_RUN"
-  },
-  "ui": {
-    "frontendMode": null,
-    "submitAllowed": null,
-    "methodSelectorVisible": null,
-    "selectedMethodCode": null,
-    "activeLayerPrefilled": null,
-    "staleReadOnlyHandled": null,
-    "zeroMmForbidden": null,
-    "approvalFailureDoesNotSwitchActiveRun": null
-  },
-  "warnings": [],
-  "errors": [
-    {
-      "code": "BACKEND_UNAVAILABLE",
-      "message": "curl http://127.0.0.1:8000/api/v1/me failed with connection refused"
-    },
-    {
-      "code": "BACKEND_UNAVAILABLE",
-      "message": "curl http://127.0.0.1:8000/api/v2/kornix/current-context failed with connection refused"
-    },
-    {
-      "code": "BACKEND_UNAVAILABLE",
-      "message": "curl http://127.0.0.1:8000/api/v2/kornix/irrigation-layer/current failed with connection refused"
-    }
+  "manualNotes": [
+    "Browser smoke used coordinate/key interaction for the large irrigation table because the in-app browser role/fill helpers time out on this heavy DOM.",
+    "UI approval changed SP:1.1 on 2026-06-03 to 4 mm, backend returned an applied calculation run, and the frontend URL/header switched to that run."
   ]
 }

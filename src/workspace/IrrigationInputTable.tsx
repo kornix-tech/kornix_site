@@ -167,10 +167,6 @@ function normalizeStoredIrrigationValues(values: IrrigationValues): IrrigationVa
   );
 }
 
-function currentValuesHasEntries(values: IrrigationValues): boolean {
-  return Object.keys(values).length > 0;
-}
-
 function irrigationDepthClassName(value: string): string {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 4 || parsed > HIGH_ALERT_IRRIGATION_MM) {
@@ -310,6 +306,19 @@ function buildIrrigationLayer(
     );
 }
 
+function approvalManagedScope(
+  managedScope: KornixCurrentContextDto['managedScope']
+): KornixCurrentContextDto['managedScope'] {
+  // current-context может возвращать служебные поля scope, которые нужны UI,
+  // но approval endpoint принимает только строгий DTO без backend-only metadata.
+  return {
+    dateFrom: managedScope.dateFrom,
+    dateTo: managedScope.dateTo,
+    fieldSeasonIds: managedScope.fieldSeasonIds,
+    scopeVersion: managedScope.scopeVersion
+  };
+}
+
 function irrigationApprovalSignature(
   values: IrrigationValues,
   managedScope: KornixCurrentContextDto['managedScope'] | null
@@ -418,6 +427,7 @@ export function IrrigationInputTable({
   context,
   baseCalculationRunId,
   selectedMethodCode,
+  onContextRefresh,
   onCalculationComplete
 }: {
   fields: FieldSeasonMapFeatureCollection;
@@ -429,6 +439,7 @@ export function IrrigationInputTable({
   context: KornixCurrentContextDto | null;
   baseCalculationRunId: string | null;
   selectedMethodCode: string | null;
+  onContextRefresh: () => Promise<unknown>;
   onCalculationComplete: (calculationRunId: string) => void;
 }) {
   const today = serverDate;
@@ -558,8 +569,8 @@ export function IrrigationInputTable({
     }
 
     hydratedProjectionHashRef.current = activeLayerQuery.data.projectionHash;
-    replaceValues((currentValuesHasEntries(values) ? values : layerToValues(activeLayerQuery.data.irrigationLayer)), true);
-  }, [activeLayerQuery.data, replaceValues, values]);
+    replaceValues(layerToValues(activeLayerQuery.data.irrigationLayer), false);
+  }, [activeLayerQuery.data, replaceValues]);
 
   useEffect(() => {
     const scrollContainer = tableScrollRef.current;
@@ -619,7 +630,7 @@ export function IrrigationInputTable({
         seasonYear,
         baseCalculationRunId,
         approvalClientGeneratedAt: new Date().toISOString(),
-        managedScope: context.managedScope,
+        managedScope: approvalManagedScope(context.managedScope),
         irrigationLayer,
         clientDiff: buildClientDiff(backendIrrigationLayer, irrigationLayer)
       };
@@ -660,6 +671,14 @@ export function IrrigationInputTable({
         onCalculationComplete(response.calculationRunId);
       }
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'BASE_CALCULATION_RUN_IS_NOT_CURRENT_APPLIED') {
+        await onContextRefresh();
+        setApprovalError(
+          `${calculationErrorMessage(error)}. Контекст обновлён, пользовательские правки сохранены как draft; повторите утверждение с новым baseCalculationRunId.`
+        );
+        return;
+      }
+
       setApprovalError(calculationErrorMessage(error));
     } finally {
       setIsSavingApproval(false);

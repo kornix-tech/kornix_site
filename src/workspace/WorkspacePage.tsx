@@ -402,6 +402,7 @@ export function WorkspacePage() {
             context={contextQuery.data ?? null}
             baseCalculationRunId={activeCalculationRunId}
             selectedMethodCode={selectedMethodCode}
+            onContextRefresh={() => contextQuery.refetch()}
             onCalculationComplete={(calculationRunId) => {
               updateState({ calculationRunId }, true);
               void contextQuery.refetch();

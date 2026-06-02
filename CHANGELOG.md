@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Changed
+- Локальный integration-dev профиль сохраняет `VITE_API_BASE_URL=http://localhost:8001`,
+  но в Docker/Vite dev-режиме проксирует same-origin `/api/*` к backend через
+  `host.docker.internal:8001`, чтобы frontend smoke не зависел от CORS.
+- Approval submit для API v2 больше не отправляет backend-only metadata
+  `managedScope.scopeHash`; payload нормализуется до строгих полей
+  `dateFrom`, `dateTo`, `fieldSeasonIds`, `scopeVersion`.
 - Ввод поливов для API v2 теперь загружает backend active projection через
   `/api/v2/kornix/irrigation-layer/current`, использует его как начальное
   состояние таблицы и считает `clientDiff` от backend projection, а не от

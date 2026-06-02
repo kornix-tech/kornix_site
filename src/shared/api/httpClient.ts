@@ -47,7 +47,31 @@ function buildUrl(path: string): string {
     throw new ApiError('http_error', 'Некорректный относительный путь API.');
   }
 
+  if (shouldUseDevApiProxy()) {
+    return path;
+  }
+
   return apiBaseUrl ? new URL(path, apiBaseUrl).toString() : path;
+}
+
+function shouldUseDevApiProxy(): boolean {
+  if (!import.meta.env.DEV || !apiBaseUrl || typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    const apiUrl = new URL(apiBaseUrl);
+    const frontendUrl = new URL(window.location.origin);
+    const isLocalBackend = ['localhost', '127.0.0.1', '::1'].includes(apiUrl.hostname);
+    const isDifferentDevOrigin = apiUrl.origin !== frontendUrl.origin;
+
+    // В локальной интеграции backend может не включать CORS для dev-порта Vite.
+    // Оставляем VITE_API_BASE_URL как источник правды, но отправляем запросы
+    // same-origin на dev-server, где vite.config.ts проксирует /api/* к backend.
+    return isLocalBackend && isDifferentDevOrigin;
+  } catch {
+    return false;
+  }
 }
 
 function csrfTokenFromCookie(): string | null {
