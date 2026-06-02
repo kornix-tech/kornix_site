@@ -1,0 +1,81 @@
+{
+  "status": "KORNIX_FRONTEND_VDS_SECURITY_NOT_READY",
+  "ready_claimed": false,
+  "frontend_ready": false,
+  "integrated_unified_vds_verified": false,
+  "blockers_fixed": [
+    "stale calculation-run endpoint replaced with /api/v2/kornix/water-regime/calculation-runs/{calculationRunId}",
+    "README contract updated to remove stale calculation-run status route",
+    "browser storage docs clarified for non-sensitive mock flag and UI drafts",
+    "production build docs clarified for nginx SPA fallback"
+  ],
+  "remaining_blockers": [
+    "host WSL npm executable is unavailable, so host npm ci/typecheck could not run",
+    "repository has no lint script",
+    "repository has no test script",
+    "integrated backend/reverse-proxy smoke was not run"
+  ],
+  "cross_repo_backend_dependencies": [
+    "backend must expose public API through /api",
+    "backend must provide BFF/session auth and CSRF endpoints under /api/v1/auth and /api/v1/me",
+    "backend must provide /api/v2/kornix/water-regime/calculation-runs/{calculationRunId}",
+    "reverse proxy must route / to frontend and /api/ to backend without conflicting CSP headers"
+  ],
+  "checks_run": [
+    "static security grep saved to codex_reports/frontend_static_security_grep.txt",
+    "direct TypeScript typecheck via bundled node.exe",
+    "docker build -f Dockerfile.prod -t kornix-frontend-stage1-smoke .",
+    "Docker build-stage npm ci",
+    "Docker build-stage npm run typecheck",
+    "Docker build-stage vite build",
+    "production container curl /",
+    "production container curl /login",
+    "production container curl /map",
+    "production container curl /healthz",
+    "production bundle grep for localhost, admin, legacy and stale routes",
+    "git diff --check"
+  ],
+  "checks_failed": [
+    {
+      "check": "direct vite build via bundled Windows node.exe",
+      "reason": "Rollup optional dependency for win32 was absent because node_modules is installed for the WSL/Linux workspace; Docker Linux build passed"
+    }
+  ],
+  "checks_not_run": [
+    {
+      "check": "host WSL npm ci",
+      "reason": "npm executable is not installed in the WSL shell"
+    },
+    {
+      "check": "npm run lint",
+      "reason": "package.json has no lint script"
+    },
+    {
+      "check": "npm test",
+      "reason": "package.json has no test script"
+    },
+    {
+      "check": "integrated HTTPS reverse-proxy/backend smoke",
+      "reason": "backend/reverse-proxy deployment and public domain were not available in this frontend workspace"
+    },
+    {
+      "check": "browser DevTools CSP tile verification",
+      "reason": "no integrated authenticated backend/browser session was available"
+    }
+  ],
+  "production_api_base_verified": true,
+  "bff_session_mode_verified": true,
+  "csrf_verified": true,
+  "no_browser_tokens_verified": true,
+  "spa_fallback_verified": true,
+  "csp_verified": true,
+  "stale_endpoint_removed_verified": true,
+  "docs_updated": [
+    "README.md",
+    "doc/security/KORNIX_FRONTEND_AUTH_SESSION.md",
+    "doc/security/KORNIX_FRONTEND_PRODUCTION_BUILD.md",
+    "CHANGELOG.md"
+  ],
+  "commit": null,
+  "pushed": false
+}

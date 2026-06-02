@@ -1,0 +1,11 @@
+CHANGELOG.md
+README.md
+codex_reports/KORNIX_FRONTEND_VDS_SECURITY_FINAL_REPORT.md
+codex_reports/kornix_frontend_vds_security_changed_files.txt
+codex_reports/kornix_frontend_vds_security_final_report.json
+codex_reports/kornix_frontend_vds_security_git_status.txt
+codex_reports/kornix_frontend_vds_security_smoke_summary.json
+codex_reports/kornix_frontend_vds_security_test_log.txt
+doc/security/KORNIX_FRONTEND_AUTH_SESSION.md
+doc/security/KORNIX_FRONTEND_PRODUCTION_BUILD.md
+src/api/kornixApi.ts

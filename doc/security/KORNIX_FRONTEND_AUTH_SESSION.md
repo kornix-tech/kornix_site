@@ -45,3 +45,11 @@ VITE_AUTH_MODE=bff
 VITE_ENABLE_MOCK_API=false
 VITE_API_BASE_URL=/api
 ```
+
+## Browser Storage
+
+Runtime grep may find `sessionStorage` in `mockAuthClient` and `localStorage`
+in the irrigation input table. These entries are intentionally non-sensitive:
+the mock auth value is only a localhost demo flag, and irrigation storage keeps
+unsaved UI drafts scoped by user/organization/season. Access tokens, refresh
+tokens, JWTs and session identifiers are never persisted by frontend code.

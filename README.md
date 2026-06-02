@@ -205,7 +205,7 @@ GET  /api/v2/kornix/readiness/current
 GET  /api/v2/kornix/irrigation-layer/current
 POST /api/v2/kornix/water-regime/approvals
 GET  /api/v2/kornix/water-regime/approvals/{approvalBatchId}
-GET  /api/v2/kornix/calculation-runs/{calculationRunId}/status
+GET  /api/v2/kornix/water-regime/calculation-runs/{calculationRunId}
 GET  /api/v2/kornix/field-seasons/map?calculationRunId=...&methodCode=...&day=YYYY-MM-DD
 GET  /api/v2/kornix/water-regime/profile-timeseries?calculationRunId=...&methodCode=...&fieldSeasonIds=...&aggregation=area_weighted_mean
 ```

@@ -253,7 +253,7 @@ export const kornixApi = {
 
   async getCalculationRunStatusV2(calculationRunId: string): Promise<KornixCalculationRunStatusDto> {
     return requestJson<KornixCalculationRunStatusDto>(
-      `${KORNIX_API_PREFIX}/calculation-runs/${encodeURIComponent(calculationRunId)}/status`
+      `${KORNIX_API_PREFIX}/water-regime/calculation-runs/${encodeURIComponent(calculationRunId)}`
     );
   },
 

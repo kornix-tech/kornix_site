@@ -1,0 +1,9 @@
+## npm ci
+bash: line 1: npm: command not found
+## npm run typecheck
+bash: line 1: npm: command not found
+## npm run lint
+bash: line 1: npm: command not found
+## npm test
+bash: line 1: npm: command not found
+## direct typecheck via bundled node

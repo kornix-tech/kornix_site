@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Changed
+- Frontend calculation-run status helper переведён на production route
+  `/api/v2/kornix/water-regime/calculation-runs/{calculationRunId}`; старый
+  `/api/v2/kornix/calculation-runs/{calculationRunId}/status` удалён из
+  runtime-кода и README-контракта.
 - Frontend подготовлен к VDS production security: production API base теперь
   документирован и проверяется как `/api`, добавлены `Dockerfile.prod`,
   `docker-compose.prod.yml`, `.env.local.example` и `.env.production.example`.

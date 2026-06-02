@@ -1,0 +1,56 @@
+## curl /
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Tue, 02 Jun 2026 16:43:35 GMT
+Content-Type: text/html
+Content-Length: 726
+Last-Modified: Tue, 02 Jun 2026 16:43:06 GMT
+Connection: keep-alive
+ETag: "6a1f081a-2d6"
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+Cross-Origin-Opener-Policy: same-origin
+X-Permitted-Cross-Domain-Policies: none
+Content-Security-Policy: default-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+Accept-Ranges: bytes
+
+## curl /login
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Tue, 02 Jun 2026 16:43:35 GMT
+Content-Type: text/html
+Content-Length: 726
+Last-Modified: Tue, 02 Jun 2026 16:43:06 GMT
+Connection: keep-alive
+ETag: "6a1f081a-2d6"
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+Cross-Origin-Opener-Policy: same-origin
+X-Permitted-Cross-Domain-Policies: none
+Content-Security-Policy: default-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+Accept-Ranges: bytes
+
+## curl /map
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Tue, 02 Jun 2026 16:43:35 GMT
+Content-Type: text/html
+Content-Length: 726
+Last-Modified: Tue, 02 Jun 2026 16:43:06 GMT
+Connection: keep-alive
+ETag: "6a1f081a-2d6"
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+Cross-Origin-Opener-Policy: same-origin
+X-Permitted-Cross-Domain-Policies: none
+Content-Security-Policy: default-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+Accept-Ranges: bytes
+
+## curl /healthz
+ok
