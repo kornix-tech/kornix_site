@@ -88,6 +88,20 @@ Production build не должен содержать `localhost` как API bas
 reverse proxy обслуживает `https://<domain>/` как frontend и
 `https://<domain>/api/` как backend API.
 
+Production static smoke для Stage 1:
+
+```bash
+docker build -f Dockerfile.prod -t kornix-frontend-stage1-smoke .
+docker run --rm -d --name kornix-frontend-stage1-smoke \
+  -p 127.0.0.1:18081:80 kornix-frontend-stage1-smoke
+sh scripts/frontend_stage1_nginx_smoke.sh 18081
+docker rm -f kornix-frontend-stage1-smoke
+```
+
+Ожидаемо: `/`, `/login` и `/map` возвращают frontend HTML `200`,
+`/healthz` возвращает `200`, отсутствующий asset под `/assets/` возвращает
+`404`, а ответы frontend routes содержат production security headers и CSP.
+
 ## Перенос на VDS
 
 На VDS frontend-контейнер не должен быть единственной публичной границей.

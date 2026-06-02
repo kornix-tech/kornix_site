@@ -1,0 +1,36 @@
+{
+  "status": "KORNIX_FRONTEND_STAGE1_VDS_SECURITY_READY",
+  "image": "kornix-frontend-stage1-smoke",
+  "docker_build_passed": true,
+  "smoke_port": "127.0.0.1:18081",
+  "routes": {
+    "/": {
+      "status": 200,
+      "content": "frontend HTML"
+    },
+    "/login": {
+      "status": 200,
+      "content": "frontend HTML"
+    },
+    "/map": {
+      "status": 200,
+      "content": "frontend HTML"
+    },
+    "/healthz": {
+      "status": 200,
+      "content": "ok"
+    },
+    "/assets/__missing__.js": {
+      "status": 404,
+      "content": "nginx missing asset response"
+    }
+  },
+  "spa_fallback_verified": true,
+  "security_headers_verified": true,
+  "csp_verified": true,
+  "map_tile_csp_verified": true,
+  "notes": [
+    "Port 18080 was occupied by an unrelated existing container, so production smoke used 127.0.0.1:18081.",
+    "The smoke container was stopped after verification."
+  ]
+}

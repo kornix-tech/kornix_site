@@ -1,0 +1,1 @@
+No lint script is defined in package.json; lint was not run.

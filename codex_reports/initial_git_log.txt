@@ -1,3 +1,4 @@
+8eb2565 chore(security): harden KORNIX frontend Stage 1 VDS deployment
 9671a21 Prepare frontend for secure VDS production deployment
 29e8bf5 Finalize KORNIX API v2 frontend stitching
 7d97cf1 Prepare frontend stub API stitching
@@ -17,4 +18,3 @@ d3a4424 Refine chart date range zoom strip
 1791626 Improve water regime chart zoom and alignment
 be7231d Prepare frontend for KORNIX API v1 integration
 2eaeafa Build KORNIX frontend site
-ccb94fc commit
