@@ -5,8 +5,9 @@ services:
       target: prod
       args:
         KORNIX_SESSION_MODE: ${VITE_AUTH_MODE:-bff}
-        KORNIX_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        KORNIX_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
         KORNIX_ENABLE_MOCK_API: ${VITE_ENABLE_MOCK_API:-false}
+        KORNIX_ALLOW_PRIVATE_MOCK_RUNTIME: ${VITE_ALLOW_PRIVATE_MOCK_RUNTIME:-false}
     image: kornix-frontend:local
     container_name: kornix-frontend
     restart: unless-stopped

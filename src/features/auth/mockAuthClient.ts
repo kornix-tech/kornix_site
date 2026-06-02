@@ -1,4 +1,4 @@
-import type { AuthClient, AuthUser } from './types';
+import type { AuthClient, AuthUser, LoginCredentials } from './types';
 
 const MOCK_SESSION_KEY = 'kornix.mock.authenticated';
 
@@ -8,7 +8,7 @@ export const mockAuthUser: AuthUser = {
   email: 'operator@sp.kornix.local',
   organizationCode: 'SP',
   organizationName: 'Спасское',
-  roles: ['admin']
+  roles: ['farm_operator']
 };
 
 export class MockAuthClient implements AuthClient {
@@ -16,7 +16,7 @@ export class MockAuthClient implements AuthClient {
     return window.sessionStorage.getItem(MOCK_SESSION_KEY) === 'true' ? mockAuthUser : null;
   }
 
-  async login(): Promise<void> {
+  async login(_credentials: LoginCredentials): Promise<void> {
     // Храним только dev-флаг mock-сессии, не токен и не идентификатор сессии.
     window.sessionStorage.setItem(MOCK_SESSION_KEY, 'true');
   }

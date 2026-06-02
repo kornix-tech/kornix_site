@@ -76,16 +76,71 @@ Mock-режим не использовать для backend smoke; tenant scope
 docker compose up -d --build
 ```
 
-## Перенос на VDS
-
-На VDS можно использовать тот же каталог и тот же `docker-compose.yml`. Для публичного доступа поменять bind-address в `.env`:
+Для production/VDS используйте `.env.production.example` как шаблон:
 
 ```env
-KORNIX_FRONTEND_BIND=0.0.0.0
-KORNIX_FRONTEND_PORT=80
+VITE_AUTH_MODE=bff
+VITE_ENABLE_MOCK_API=false
+VITE_API_BASE_URL=/api
 ```
 
-Для production с внешним reverse proxy обычно лучше оставить контейнер на локальном порту, например `127.0.0.1:8080`, и проксировать через системный Nginx/Caddy/Traefik.
+Production build не должен содержать `localhost` как API base. Публичный
+reverse proxy обслуживает `https://<domain>/` как frontend и
+`https://<domain>/api/` как backend API.
+
+## Перенос на VDS
+
+На VDS frontend-контейнер не должен быть единственной публичной границей.
+Рекомендуемая схема: публичны только `80/443` reverse proxy, frontend доступен
+локально/внутри Docker, backend API опубликован через `/api`, admin и DB не
+публикуются наружу.
+
+Команда production deployment:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  --env-file .env.production \
+  up -d --build
+```
+
+Для production с внешним reverse proxy оставьте контейнер на локальном порту:
+
+```env
+KORNIX_FRONTEND_BIND=127.0.0.1
+KORNIX_FRONTEND_PORT=8080
+```
+
+Firewall VDS: открыть только `22/tcp`, `80/tcp`, `443/tcp`. Не открывать
+`5432`, `55434`, `8000`, `8001`, `8002`, `5173`.
+
+## Security model
+
+Frontend не является security boundary. Он не хранит секреты, не хранит
+access/refresh token/JWT/session id в `localStorage`, `sessionStorage` или
+`IndexedDB`, не принимает `organizationId` как доверенный tenant filter и не
+экспонирует backend admin routes.
+
+Security boundary находится на backend/BFF: tenant scope, session, права
+доступа, `managedScope`, stale-base checks, CSRF и audit должны проверяться
+сервером. Даже при компрометации browser bundle backend обязан отклонять чужие
+`fieldSeasonIds`, даты вне scope, `irrigationMm=0`, устаревший
+`baseCalculationRunId` и запросы без CSRF.
+
+## Production API base
+
+Production frontend собирается с:
+
+```env
+VITE_API_BASE_URL=/api
+VITE_AUTH_MODE=bff
+VITE_ENABLE_MOCK_API=false
+```
+
+`/api/v1/*` используется только для auth/session/CSRF. Пользовательский KORNIX
+API работает только через `/api/v2/kornix/*`. Legacy `/api/v1/kornix/*` и
+`/api/admin/v1/*` запрещены для пользовательского frontend.
 
 ## Mock API
 
@@ -130,16 +185,17 @@ refresh token, access token и session id не сохраняются в `localS
 
 1. вызывает `GET /api/v1/me`;
 2. при `401` показывает `/login`;
-3. по кнопке входа перенаправляет на
-   `/api/v1/auth/login?returnTo=<current-url>`;
-4. выполняет реальные API-запросы с `credentials: include`.
+3. форма входа отправляет `POST /api/v1/auth/login` с `username/password`;
+4. после успеха перечитывает `/api/v1/me` и возвращает пользователя на исходный URL;
+5. выполняет реальные API-запросы с `credentials: include`;
+6. при `401`, `403`, CSRF errors или session expired показывает понятное состояние входа/ошибки без fallback в mock.
 
 Backend должен реализовать:
 
 ```http
 GET  /api/v1/me
 GET  /api/v1/auth/csrf
-GET  /api/v1/auth/login?returnTo=/map
+POST /api/v1/auth/login
 POST /api/v1/auth/logout
 
 GET  /api/v2/kornix/current-context
@@ -165,7 +221,9 @@ frontend показывает каталог/состояние готовнос
 непустые значения в `irrigationLayer`; `0 мм` и пустые ячейки не
 сериализуются. Editable-ячейки ограничены backend-issued `managedScope`.
 Для `POST`, `PUT`, `PATCH`, `DELETE` frontend перед запросом получает CSRF token
-через `/api/v1/auth/csrf`, если token ещё не пришёл в cookie или meta.
+через `/api/v1/auth/csrf`, если token ещё не пришёл в cookie или meta. При
+`CSRF_TOKEN_INVALID` unsafe-запрос повторно получает CSRF token и делает один
+безопасный повтор запроса.
 
 Проверка `/api/v1/me` для будущего backend:
 
@@ -203,6 +261,14 @@ Backend error envelope должен иметь форму
 - [`doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md`](doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md)
 - [`doc/KORNIX_FRONTEND_API_V2_WORKFLOW.md`](doc/KORNIX_FRONTEND_API_V2_WORKFLOW.md)
 - [`doc/KORNIX_FRONTEND_SMOKE_TESTING.md`](doc/KORNIX_FRONTEND_SMOKE_TESTING.md)
+
+Security documentation index:
+
+- [`doc/security/KORNIX_FRONTEND_SECURITY_ARCHITECTURE.md`](doc/security/KORNIX_FRONTEND_SECURITY_ARCHITECTURE.md)
+- [`doc/security/KORNIX_FRONTEND_AUTH_SESSION.md`](doc/security/KORNIX_FRONTEND_AUTH_SESSION.md)
+- [`doc/security/KORNIX_FRONTEND_PRODUCTION_BUILD.md`](doc/security/KORNIX_FRONTEND_PRODUCTION_BUILD.md)
+- [`doc/security/KORNIX_FRONTEND_VDS_DEPLOYMENT.md`](doc/security/KORNIX_FRONTEND_VDS_DEPLOYMENT.md)
+- [`doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md`](doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md)
 
 Финальные машинно-проверяемые отчёты текущего этапа находятся в
 [`codex_reports/`](codex_reports/).

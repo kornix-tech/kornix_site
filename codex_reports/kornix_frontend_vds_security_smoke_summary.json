@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-06-02T18:17:00+03:00",
+  "frontendProductionUrl": "http://localhost:8080",
+  "productionApiBase": "/api",
+  "facts": {
+    "productionImageBuilds": true,
+    "nginxSecurityHeadersPresent": true,
+    "cspConnectSrcSelfOnly": true,
+    "loginPageHasUsernamePasswordFields": true,
+    "mockDisabledForProductionExample": true,
+    "localIntegrationStillUsesBackend8001": true,
+    "requiredSecurityDocsExist": true
+  },
+  "notes": [
+    "Production smoke used local 127.0.0.1:8080 container; real VDS must put HTTPS reverse proxy in front of frontend and backend /api.",
+    "Backend login endpoint availability is a backend dependency; frontend now implements POST /api/v1/auth/login contract."
+  ]
+}

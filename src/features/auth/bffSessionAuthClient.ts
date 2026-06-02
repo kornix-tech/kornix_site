@@ -1,6 +1,5 @@
-import { ApiError, apiBaseUrl, requestJson } from '../../shared/api/httpClient';
-import { normalizeReturnTo } from './returnTo';
-import type { AuthClient, AuthUser } from './types';
+import { ApiError, requestJson } from '../../shared/api/httpClient';
+import type { AuthClient, AuthUser, LoginCredentials } from './types';
 
 export class BffSessionAuthClient implements AuthClient {
   async getCurrentUser(): Promise<AuthUser | null> {
@@ -14,10 +13,14 @@ export class BffSessionAuthClient implements AuthClient {
     }
   }
 
-  async login(returnTo?: string): Promise<void> {
-    const query = new URLSearchParams({ returnTo: normalizeReturnTo(returnTo) });
-    window.location.href = new URL(`/api/v1/auth/login?${query.toString()}`, apiBaseUrl || window.location.origin)
-      .toString();
+  async login(credentials: LoginCredentials): Promise<void> {
+    await requestJson<void>('/api/v1/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(credentials)
+    });
   }
 
   async logout(): Promise<void> {

@@ -1,14 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AUTH_REQUIRED_EVENT } from '../../shared/api/httpClient';
 import { createAuthClient, getAuthMode } from './authClient';
-import type { AuthClient, AuthState } from './types';
+import type { AuthClient, AuthState, LoginCredentials } from './types';
 
 type AuthContextValue = {
   authMode: ReturnType<typeof getAuthMode>;
   state: AuthState;
   isLoading: boolean;
   user: Extract<AuthState, { status: 'authenticated' }>['user'] | null;
-  login: (returnTo?: string) => Promise<void>;
+  login: (credentials: LoginCredentials, returnTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -49,13 +49,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (returnTo?: string) => {
-      await authClientRef.current.login(returnTo);
-      if (authMode === 'mock') {
-        await refresh();
-      }
+    async (credentials: LoginCredentials, returnTo?: string) => {
+      await authClientRef.current.login(credentials, returnTo);
+      await refresh();
     },
-    [authMode, refresh]
+    [refresh]
   );
 
   const logout = useCallback(async () => {

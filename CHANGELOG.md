@@ -3,6 +3,19 @@
 ## [Unreleased]
 
 ### Changed
+- Frontend подготовлен к VDS production security: production API base теперь
+  документирован и проверяется как `/api`, добавлены `Dockerfile.prod`,
+  `docker-compose.prod.yml`, `.env.local.example` и `.env.production.example`.
+- BFF login UX переведён с redirect-сценария на форму `username/password` с
+  `POST /api/v1/auth/login`, последующим refetch `/api/v1/me` и сохранением
+  запрета на хранение токенов в browser storage.
+- Production Nginx CSP ужесточён: удалены localhost API origins из `connect-src`,
+  оставлены security headers и задокументирована причина временного
+  `style-src 'unsafe-inline'`.
+- CSRF handling для unsafe API-запросов теперь выполняет один безопасный
+  refresh/retry при backend code `CSRF_TOKEN_INVALID`.
+- Добавлена обязательная frontend security documentation в `doc/security/` и
+  расширен contract-check для VDS security readiness.
 - Локальный integration-dev профиль сохраняет `VITE_API_BASE_URL=http://localhost:8001`,
   но в Docker/Vite dev-режиме проксирует same-origin `/api/*` к backend через
   `host.docker.internal:8001`, чтобы frontend smoke не зависел от CORS.

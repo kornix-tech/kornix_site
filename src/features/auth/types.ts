@@ -1,4 +1,4 @@
-export type AuthRole = 'admin' | 'farm_operator' | 'viewer' | 'service_admin';
+export type AuthRole = 'farm_operator' | 'viewer';
 
 export type AuthUser = {
   id: string;
@@ -15,9 +15,14 @@ export type AuthState =
   | { status: 'anonymous' }
   | { status: 'error'; message: string };
 
+export type LoginCredentials = {
+  username: string;
+  password: string;
+};
+
 export type AuthClient = {
   getCurrentUser(): Promise<AuthUser | null>;
-  login(returnTo?: string): Promise<void>;
+  login(credentials: LoginCredentials, returnTo?: string): Promise<void>;
   logout(): Promise<void>;
 };
 

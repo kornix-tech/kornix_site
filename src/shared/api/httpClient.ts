@@ -51,11 +51,17 @@ function buildUrl(path: string): string {
     return path;
   }
 
+  if (apiBaseUrl.startsWith('/')) {
+    return path.startsWith(apiBaseUrl.endsWith('/') ? apiBaseUrl : `${apiBaseUrl}/`)
+      ? path
+      : `${apiBaseUrl.replace(/\/$/, '')}${path}`;
+  }
+
   return apiBaseUrl ? new URL(path, apiBaseUrl).toString() : path;
 }
 
 function shouldUseDevApiProxy(): boolean {
-  if (!import.meta.env.DEV || !apiBaseUrl || typeof window === 'undefined') {
+  if (!import.meta.env.DEV || !apiBaseUrl || apiBaseUrl.startsWith('/') || typeof window === 'undefined') {
     return false;
   }
 
@@ -106,9 +112,9 @@ function authRequiredError(errorEnvelope: BackendErrorEnvelope['error'] | null, 
   );
 }
 
-async function ensureCsrfToken(path: string): Promise<string | null> {
+async function ensureCsrfToken(path: string, forceRefresh = false): Promise<string | null> {
   const existingToken = csrfToken();
-  if (existingToken || path === CSRF_BOOTSTRAP_PATH) {
+  if ((existingToken && !forceRefresh) || path === CSRF_BOOTSTRAP_PATH) {
     return existingToken;
   }
 
@@ -166,18 +172,33 @@ export async function requestJson<T>(path: string, init: KornixRequestInit = {})
     headers.set('X-CSRF-Token', token);
   }
 
-  let response: Response;
-  try {
-    response = await fetch(buildUrl(path), {
+  async function performFetch(signal?: AbortSignal): Promise<Response> {
+    return fetch(buildUrl(path), {
       ...fetchInit,
       // Cookie-based BFF session требует credentials: include. В mock-режиме этот флаг безвреден.
       credentials: 'include',
-      signal: fetchInit.signal ?? controller?.signal,
+      signal,
       headers
     });
+  }
+
+  let response: Response;
+  try {
+    response = await performFetch(fetchInit.signal ?? controller?.signal ?? undefined);
   } finally {
     if (timeoutId !== undefined) {
       window.clearTimeout(timeoutId);
+    }
+  }
+
+  if (response.status === 403 && UNSAFE_METHODS.has(method)) {
+    const errorEnvelope = await parseBackendErrorEnvelope(response);
+    if (errorEnvelope?.code === 'CSRF_TOKEN_INVALID') {
+      const retryToken = await ensureCsrfToken(path, true);
+      if (retryToken) {
+        headers.set('X-CSRF-Token', retryToken);
+        response = await performFetch(fetchInit.signal ?? undefined);
+      }
     }
   }
 
