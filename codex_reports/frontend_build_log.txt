@@ -1,31 +1,36 @@
+\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:115
+		throw new Error(
+		      ^
 
-> kornix-frontend@0.1.0 build
-> npm run typecheck && vite build
+Error: Cannot find module @rollup/rollup-win32-x64-msvc. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
+    at requireWithFriendlyError (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:115:9)
+    at Object.<anonymous> (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:124:76)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:328:3)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:233:7)
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25) {
+  [cause]: Error: Cannot find module '@rollup/rollup-win32-x64-msvc'
+  Require stack:
+  - \\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1456:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+      at Module._load (node:internal/modules/cjs/loader:1242:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1556:12)
+      at require (node:internal/modules/helpers:152:16)
+      at requireWithFriendlyError (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:97:10)
+      at Object.<anonymous> (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:124:76)
+      at Module._compile (node:internal/modules/cjs/loader:1812:14) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [
+      '\\\\wsl.localhost\\Ubuntu\\home\\zenbook\\site\\node_modules\\rollup\\dist\\native.js'
+    ]
+  }
+}
 
-
-> kornix-frontend@0.1.0 typecheck
-> tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false
-
-vite v7.3.3 building client environment for production...
-transforming...
-✓ 773 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                                 0.73 kB │ gzip:   0.34 kB
-dist/assets/vendor-map-CIGW-MKW.css            15.61 kB │ gzip:   6.46 kB
-dist/assets/index-nQ6MXr0w.css                 34.64 kB │ gzip:   7.52 kB
-dist/assets/FieldMap-DMIhRtcO.js                6.71 kB │ gzip:   2.91 kB
-dist/assets/index-VDAUHfGj.js                  13.00 kB │ gzip:   5.19 kB
-dist/assets/IrrigationInputTable-CNQNrywQ.js   15.35 kB │ gzip:   5.74 kB
-dist/assets/WaterRegimeChart-DtpAknj1.js       24.41 kB │ gzip:   7.12 kB
-dist/assets/vendor-query-B7GAe2XU.js           33.63 kB │ gzip:  10.13 kB
-dist/assets/index-C0fq3lWv.js                  40.07 kB │ gzip:  13.02 kB
-dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
-dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
-dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
-✓ built in 4.20s
-npm notice
-npm notice New major version of npm available! 10.8.2 -> 11.16.0
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
-npm notice To update run: npm install -g npm@11.16.0
-npm notice
+Node.js v24.14.0

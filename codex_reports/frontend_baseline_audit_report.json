@@ -1,0 +1,83 @@
+{
+  "repository": {
+    "path": "/home/zenbook/site",
+    "branch": "main",
+    "remote": "origin git@github.com:kornix-tech/kornix_site.git",
+    "head": "49e1232 chore(security): finalize frontend Stage 1 VDS reports",
+    "workingTreeInitiallyClean": false,
+    "workingTreeFinallyClean": true
+  },
+  "contextFiles": {
+    "read": [],
+    "missing": [
+      "KORNIX_EXTERNAL_CONTEXT_AFTER_API_STITCHING_AND_RELEASE_PLAN.md",
+      "KORNIX_VDS_PRODUCTION_DEPLOYMENT_RUNBOOK.md",
+      "KORNIX_VDS_SECURITY_DOCUMENTATION_CODEX_ADDENDUM.md",
+      "KORNIX_NEW_CHAT_CONTEXT_20260531_AFTER_DB92_AND_FRONTEND_API.md",
+      "KORNIX_20260530_1633.md",
+      "_expert_chatgpt_work_protocol.md"
+    ]
+  },
+  "frontendStatus": {
+    "apiClient": "implemented",
+    "authSession": "implemented",
+    "csrf": "implemented",
+    "currentContext": "implemented",
+    "irrigationLayer": "implemented",
+    "approvalWorkflow": "implemented",
+    "map": "implemented",
+    "profileTimeseries": "implemented",
+    "productionBuild": "implemented",
+    "security": "partial"
+  },
+  "endpointUsage": {
+    "allowedEndpointsFound": [
+      "GET /api/v1/me",
+      "GET /api/v1/auth/csrf",
+      "POST /api/v1/auth/login",
+      "POST /api/v1/auth/logout",
+      "GET /api/v2/kornix/current-context",
+      "GET /api/v2/kornix/irrigation-layer/current",
+      "POST /api/v2/kornix/water-regime/approvals",
+      "GET /api/v2/kornix/water-regime/approvals/{approvalBatchId}",
+      "GET /api/v2/kornix/water-regime/calculation-runs/{calculationRunId}",
+      "GET /api/v2/kornix/field-seasons/map",
+      "GET /api/v2/kornix/water-regime/profile-timeseries",
+      "GET /api/v2/kornix/methods"
+    ],
+    "forbiddenEndpointsFound": [],
+    "notes": [
+      "Legacy /api/v1/kornix occurrences are documentation-only or security scan patterns; runtime src scan passed.",
+      "localStorage is used only for non-authoritative irrigation drafts; sessionStorage is used only for local mock auth flag.",
+      "KML text occurs in mock field fixture comments/messages, not as a runtime KML reader or production data source.",
+      "Additional runtime endpoints /api/v2/kornix/readiness/current and /api/v2/kornix/field-seasons/catalog are present for readiness/catalog flow."
+    ]
+  },
+  "browserStorage": {
+    "localStorageTokenRisk": "absent",
+    "sessionStorageTokenRisk": "absent",
+    "indexedDbTokenRisk": "absent"
+  },
+  "checks": {
+    "install": "PASS",
+    "typecheck": "PASS",
+    "lint": "NOT_RUN",
+    "tests": "NOT_RUN",
+    "build": "PASS",
+    "dockerBuild": "PASS",
+    "forbiddenPatternAudit": "PASS"
+  },
+  "securityDocumentation": {
+    "architecture": true,
+    "authSession": true,
+    "productionBuild": true,
+    "vdsDeployment": true,
+    "securityTestPlan": true
+  },
+  "blockers": [
+    "Local WSL node/npm unavailable; Docker build is the successful build/install path.",
+    "No lint/test scripts are defined.",
+    "Authenticated backend session is required for full API smoke."
+  ],
+  "finalStatus": "FRONTEND_BASELINE_AUDITED_ENV_LIMITED"
+}

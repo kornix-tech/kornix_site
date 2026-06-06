@@ -1,0 +1,9 @@
+{
+  "securityDocumentation": {
+    "architecture": true,
+    "authSession": true,
+    "productionBuild": true,
+    "vdsDeployment": true,
+    "securityTestPlan": true
+  }
+}

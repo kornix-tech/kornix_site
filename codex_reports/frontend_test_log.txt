@@ -1,1 +1,46 @@
-No test script is defined in package.json; tests were not run.
+# frontend test log
+## install
+NOT_RUN: npm is not available in WSL PATH and bundled runtime exposes node.exe only, no npm.
+## typecheck
+TYPECHECK_EXIT_CODES app=0 node=0
+## lint
+NOT_RUN: package.json has no lint script.
+## tests
+NOT_RUN: package.json has no test script.
+## build
+\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:115
+		throw new Error(
+		      ^
+System.Management.Automation.RemoteException
+Error: Cannot find module @rollup/rollup-win32-x64-msvc. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
+    at requireWithFriendlyError (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:115:9)
+    at Object.<anonymous> (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:124:76)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:328:3)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:233:7)
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25) {
+  [cause]: Error: Cannot find module '@rollup/rollup-win32-x64-msvc'
+  Require stack:
+  - \\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1456:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+      at Module._load (node:internal/modules/cjs/loader:1242:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1556:12)
+      at require (node:internal/modules/helpers:152:16)
+      at requireWithFriendlyError (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:97:10)
+      at Object.<anonymous> (\\wsl.localhost\Ubuntu\home\zenbook\site\node_modules\rollup\dist\native.js:124:76)
+      at Module._compile (node:internal/modules/cjs/loader:1812:14) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [
+      '\\\\wsl.localhost\\Ubuntu\\home\\zenbook\\site\\node_modules\\rollup\\dist\\native.js'
+    ]
+  }
+}
+System.Management.Automation.RemoteException
+Node.js v24.14.0

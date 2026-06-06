@@ -1,3 +1,5 @@
+## contract check
+## stage1 security scan
 == Forbidden runtime endpoints ==
 PASS: no forbidden/stale runtime endpoints in src
 == Current calculation-run endpoint ==

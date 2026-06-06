@@ -1,0 +1,158 @@
+## package manager
+package-lock.json
+package.json
+## runtime
+## forbidden production source scan
+scripts/frontend_stage1_security_scan.sh:6:  -E "/api/v1/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status" src; then
+scripts/frontend_stage1_security_scan.sh:52:  -E "localhost:8001|localhost:8002|/api/v1/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status|VITE_ENABLE_MOCK_API.:true" dist; then
+scripts/check-frontend-contract.sh:41:check_absent "/api/v1/kornix" "legacy KORNIX v1 endpoints must not be used by frontend src"
+doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md:40:- Do not call `/api/v1/kornix/*` from production frontend code.
+doc/KORNIX_FRONTEND_SECURITY_CHECKLIST.md:9:- [x] No KORNIX legacy `/api/v1/kornix/*` calls in `src`.
+doc/KORNIX_FRONTEND_SMOKE_TESTING.md:31:- No `/api/v1/kornix/*` requests
+doc/security/KORNIX_FRONTEND_SECURITY_ARCHITECTURE.md:33:- `/api/v1/kornix/*`.
+doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md:36:- [ ] No `/api/v1/kornix/*` calls.
+docs/kornix-system-api-requirements-v0.2.md:135:| Context | `GET /api/v1/kornix/current-context?seasonYear=2026` | yes | organization/farm/season/readiness |
+docs/kornix-system-api-requirements-v0.2.md:136:| Map | `GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=YYYY-MM-DD` | yes | GeoJSON + daily values |
+docs/kornix-system-api-requirements-v0.2.md:137:| Summary | `GET /api/v1/kornix/field-seasons/current-water-regime` | recommended | may be merged into map endpoint for MVP |
+docs/kornix-system-api-requirements-v0.2.md:138:| Timeseries | `GET /api/v1/kornix/water-regime/timeseries` | yes | one metric per request |
+docs/kornix-system-api-requirements-v0.2.md:139:| Profile timeseries | `GET /api/v1/kornix/water-regime/profile-timeseries` | recommended | batch endpoint for chart performance |
+docs/kornix-system-api-requirements-v0.2.md:140:| Irrigation input | `GET /api/v1/kornix/irrigation-events?seasonYear=2026&from=YYYY-MM-DD&to=YYYY-MM-DD` | recommended | fact and planned irrigation calendar |
+docs/kornix-system-api-requirements-v0.2.md:141:| Irrigation input | `PUT /api/v1/kornix/irrigation-events` | recommended | save fact/planned irrigation values |
+docs/kornix-system-api-requirements-v0.2.md:142:| Metrics | `GET /api/v1/kornix/metrics` | recommended | metadata and units |
+docs/kornix-system-api-requirements-v0.2.md:143:| Readiness | `GET /api/v1/kornix/readiness/current?seasonYear=2026` | recommended | blockers and calculation state |
+docs/kornix-system-api-requirements-v0.2.md:144:| Runs | `GET /api/v1/kornix/runs/latest?seasonYear=2026` | recommended | latest run, freshness, model version |
+docs/kornix-system-api-requirements-v0.2.md:221:GET /api/v1/kornix/current-context?seasonYear=2026
+docs/kornix-system-api-requirements-v0.2.md:275:GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
+docs/kornix-system-api-requirements-v0.2.md:364:GET /api/v1/kornix/field-seasons/current-water-regime?seasonYear=2026&day=2026-05-31
+docs/kornix-system-api-requirements-v0.2.md:437:GET /api/v1/kornix/water-regime/timeseries?fieldSeasonIds=fs_1,fs_2&metric=current_water_mm&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
+docs/kornix-system-api-requirements-v0.2.md:582:GET /api/v1/kornix/water-regime/profile-timeseries?fieldSeasonIds=fs_1,fs_2&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
+docs/kornix-system-api-requirements-v0.2.md:756:GET /api/v1/kornix/irrigation-events?seasonYear=2026&from=2026-04-01&to=2026-06-07
+docs/kornix-system-api-requirements-v0.2.md:776:PUT /api/v1/kornix/irrigation-events
+docs/kornix-system-api-requirements-v0.2.md:815:POST /api/v1/kornix/exports/water-regime.csv
+docs/kornix-system-api-requirements-v0.2.md:816:POST /api/v1/kornix/exports/map-state.geojson
+docs/frontend-api-contract-v0.1.md:51:## GET /api/v1/kornix/current-context
+docs/frontend-api-contract-v0.1.md:80:## GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
+docs/frontend-api-contract-v0.1.md:116:## GET /api/v1/kornix/water-regime/timeseries
+docs/kornix-frontend-api-v1.md:11:2. `GET /api/v1/kornix/current-context` возвращает сезонный контекст и последний
+docs/kornix-frontend-api-v1.md:14:3. `POST /api/v1/kornix/water-regime/calculate` принимает только сценарий
+docs/kornix-frontend-api-v1.md:17:4. `GET /api/v1/kornix/field-seasons/map?calculationRunId=<id>&day=YYYY-MM-DD`
+docs/kornix-frontend-api-v1.md:19:5. `GET /api/v1/kornix/water-regime/profile-timeseries?calculationRunId=<id>&fieldSeasonIds=<ids>&aggregation=area_weighted_mean`
+docs/kornix-frontend-api-v1.md:26:GET /api/v1/kornix/field-seasons/catalog?seasonYear=2026
+docs/auth-api-contract-v0.1.md:99:GET /api/v1/kornix/field-seasons/map?organizationId=org_123
+docs/auth-api-contract-v0.1.md:105:GET /api/v1/kornix/current-context
+docs/auth-api-contract-v0.1.md:106:GET /api/v1/kornix/field-seasons/map?seasonYear=2026
+docs/kornix-frontend-api-checklist-v0.1.md:87:| Context | `GET /api/v1/kornix/current-context?seasonYear=2026` | yes | TODO | org/farm/season/readiness |
+docs/kornix-frontend-api-checklist-v0.1.md:88:| Map | `GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=YYYY-MM-DD` | yes | TODO | GeoJSON + current values |
+docs/kornix-frontend-api-checklist-v0.1.md:89:| Tooltip | `GET /api/v1/kornix/field-seasons/current-water-regime?seasonYear=2026&day=YYYY-MM-DD` | recommended | TODO | may be merged into map endpoint |
+docs/kornix-frontend-api-checklist-v0.1.md:90:| Chart | `GET /api/v1/kornix/water-regime/timeseries` | yes | TODO | all graph metrics |
+docs/kornix-frontend-api-checklist-v0.1.md:91:| Metrics | `GET /api/v1/kornix/metrics` | recommended | TODO | backend/frontend metric sync |
+docs/kornix-frontend-api-checklist-v0.1.md:92:| Readiness | `GET /api/v1/kornix/readiness/current?seasonYear=2026` | recommended | TODO | explicit blockers |
+docs/kornix-frontend-api-checklist-v0.1.md:93:| Runs | `GET /api/v1/kornix/runs/latest?seasonYear=2026` | recommended | TODO | run id/model version/freshness |
+docs/kornix-frontend-api-checklist-v0.1.md:121:GET /api/v1/kornix/current-context?seasonYear=2026
+docs/kornix-frontend-api-checklist-v0.1.md:135:GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
+docs/kornix-frontend-api-checklist-v0.1.md:151:GET /api/v1/kornix/field-seasons/current-water-regime?seasonYear=2026&day=2026-05-31
+docs/kornix-frontend-api-checklist-v0.1.md:159:GET /api/v1/kornix/water-regime/timeseries?fieldSeasonIds=fs_1,fs_2&metric=current_water_mm&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
+docs/kornix-frontend-api-checklist-v0.1.md:176:GET /api/v1/kornix/metrics
+docs/kornix-frontend-api-checklist-v0.1.md:184:GET /api/v1/kornix/readiness/current?seasonYear=2026
+docs/kornix-frontend-api-checklist-v0.1.md:185:GET /api/v1/kornix/runs/latest?seasonYear=2026
+docs/kornix-frontend-api-checklist-v0.1.md:669:GET /api/v1/kornix/water-regime/profile-timeseries?fieldSeasonIds=...&from=...&to=...&aggregation=area_weighted_mean
+README.md:156:API работает только через `/api/v2/kornix/*`. Legacy `/api/v1/kornix/*` и
+CHANGELOG.md:38:- Пользовательский workspace KORNIX переведён с legacy `/api/v1/kornix` на
+CHANGELOG.md:53:  legacy `/api/v1/kornix`, `latestCalculationRunId`, старого calculate-flow и
+scripts/frontend_stage1_security_scan.sh:6:  -E "/api/v1/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status" src; then
+scripts/frontend_stage1_security_scan.sh:52:  -E "localhost:8001|localhost:8002|/api/v1/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status|VITE_ENABLE_MOCK_API.:true" dist; then
+scripts/check-frontend-contract.sh:42:check_absent "/api/admin/v1|/admin" "user frontend must not expose backend admin/research routes"
+doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md:41:- Do not call `/api/admin/v1` or expose backend admin UI in the user frontend.
+doc/KORNIX_FRONTEND_SMOKE_TESTING.md:32:- No `/api/admin/v1` requests
+doc/security/KORNIX_FRONTEND_SECURITY_ARCHITECTURE.md:34:- `/api/admin/v1/*`.
+doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md:37:- [ ] No `/api/admin/v1/*` calls.
+README.md:157:`/api/admin/v1/*` запрещены для пользовательского frontend.
+CHANGELOG.md:36:- Contract-check дополнительно запрещает `/api/admin/v1`, `/admin` leakage и
+src/workspace/IrrigationInputTable.tsx:216:        window.localStorage.setItem(storageKey, JSON.stringify(nextValues));
+src/workspace/IrrigationInputTable.tsx:218:        window.localStorage.removeItem(storageKey);
+src/workspace/IrrigationInputTable.tsx:231:      const raw = window.localStorage.getItem(storageKey);
+src/workspace/WorkspacePage.tsx:84:  const localStorageScope = `${contextQuery.data?.organizationCode ?? user?.organizationCode ?? 'unknown'}:${
+src/workspace/WorkspacePage.tsx:395:            key={localStorageScope}
+src/workspace/WorkspacePage.tsx:398:            storageScope={localStorageScope}
+scripts/frontend_stage1_security_scan.sh:16:  -E "localStorage\\.(setItem|getItem).*token|sessionStorage\\.(setItem|getItem).*token|indexedDB.*token|accessToken|refreshToken|jwt|JWT" src; then
+scripts/frontend_stage1_security_scan.sh:23:  -E "localStorage|sessionStorage|indexedDB|IndexedDB" src || true
+scripts/frontend_stage1_security_scan.sh:24:echo "NOTE: sessionStorage is localhost mock flag only; localStorage is non-authoritative irrigation UI draft only."
+scripts/check-frontend-contract.sh:47:check_absent "useApprovedIrrigationSignature|approvedSignature" "approved irrigation state must not use localStorage as source of truth"
+scripts/check-frontend-contract.sh:48:check_absent "localStorage\\.setItem\\([^)]*(token|jwt|session|access|refresh)|sessionStorage\\.setItem\\([^)]*(token|jwt|session|access|refresh)" "frontend must not store auth tokens in browser storage"
+doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md:43:- Do not treat `localStorage` as the source of truth for approved irrigation.
+doc/security/KORNIX_FRONTEND_AUTH_SESSION.md:7:`credentials: include` and does not store tokens in `localStorage`,
+doc/security/KORNIX_FRONTEND_AUTH_SESSION.md:51:Runtime grep may find `sessionStorage` in `mockAuthClient` and `localStorage`
+doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md:38:- [ ] No tokens in `localStorage`, `sessionStorage`, `IndexedDB`.
+docs/auth-api-contract-v0.1.md:14:`localStorage` / `sessionStorage`. Все реальные запросы к backend выполняются с
+docs/kornix-frontend-api-checklist-v0.1.md:60:- frontend не хранит access token, refresh token, JWT или session id в `localStorage`/`sessionStorage`;
+README.md:135:access/refresh token/JWT/session id в `localStorage`, `sessionStorage` или
+README.md:195:refresh token, access token и session id не сохраняются в `localStorage` или
+CHANGELOG.md:64:- Черновики и признак утверждения поливов в `localStorage` теперь разделены по
+src/features/auth/mockAuthClient.ts:16:    return window.sessionStorage.getItem(MOCK_SESSION_KEY) === 'true' ? mockAuthUser : null;
+src/features/auth/mockAuthClient.ts:21:    window.sessionStorage.setItem(MOCK_SESSION_KEY, 'true');
+src/features/auth/mockAuthClient.ts:25:    window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+scripts/frontend_stage1_security_scan.sh:16:  -E "localStorage\\.(setItem|getItem).*token|sessionStorage\\.(setItem|getItem).*token|indexedDB.*token|accessToken|refreshToken|jwt|JWT" src; then
+scripts/frontend_stage1_security_scan.sh:23:  -E "localStorage|sessionStorage|indexedDB|IndexedDB" src || true
+scripts/frontend_stage1_security_scan.sh:24:echo "NOTE: sessionStorage is localhost mock flag only; localStorage is non-authoritative irrigation UI draft only."
+scripts/check-frontend-contract.sh:48:check_absent "localStorage\\.setItem\\([^)]*(token|jwt|session|access|refresh)|sessionStorage\\.setItem\\([^)]*(token|jwt|session|access|refresh)" "frontend must not store auth tokens in browser storage"
+doc/security/KORNIX_FRONTEND_AUTH_SESSION.md:8:`sessionStorage` or `IndexedDB`.
+doc/security/KORNIX_FRONTEND_AUTH_SESSION.md:51:Runtime grep may find `sessionStorage` in `mockAuthClient` and `localStorage`
+doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md:38:- [ ] No tokens in `localStorage`, `sessionStorage`, `IndexedDB`.
+docs/auth-api-contract-v0.1.md:14:`localStorage` / `sessionStorage`. Все реальные запросы к backend выполняются с
+docs/kornix-frontend-api-checklist-v0.1.md:60:- frontend не хранит access token, refresh token, JWT или session id в `localStorage`/`sessionStorage`;
+README.md:135:access/refresh token/JWT/session id в `localStorage`, `sessionStorage` или
+README.md:196:`sessionStorage`.
+scripts/frontend_stage1_security_scan.sh:16:  -E "localStorage\\.(setItem|getItem).*token|sessionStorage\\.(setItem|getItem).*token|indexedDB.*token|accessToken|refreshToken|jwt|JWT" src; then
+scripts/frontend_stage1_security_scan.sh:23:  -E "localStorage|sessionStorage|indexedDB|IndexedDB" src || true
+doc/security/KORNIX_FRONTEND_AUTH_SESSION.md:8:`sessionStorage` or `IndexedDB`.
+doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md:38:- [ ] No tokens in `localStorage`, `sessionStorage`, `IndexedDB`.
+README.md:136:`IndexedDB`, не принимает `organizationId` как доверенный tenant filter и не
+src/api/spasskoeIrrigatedFields.ts:370:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:702:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:926:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:1366:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:1818:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:2246:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:2518:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:2910:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:3386:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:3854:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:4306:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:4782:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:5062:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:5518:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:5874:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:6146:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:6574:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:6846:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:7114:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:7390:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:7658:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:8082:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:8538:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:8978:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:9406:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:9810:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:10214:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:10622:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:11094:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:11546:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:11982:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:12422:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:12850:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:13270:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:13706:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:14134:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:14550:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+doc/security/KORNIX_FRONTEND_VDS_DEPLOYMENT.md:39:scripts/backup_postgres.sh
+doc/security/KORNIX_FRONTEND_SECURITY_ARCHITECTURE.md:35:- Direct database, KML, Python, downloader or admin endpoints.
+docs/kornix-system-api-requirements-v0.2.md:12:Frontend не реализует backend API, не подключается к PostgreSQL/TimescaleDB/PostGIS напрямую и не использует KML как production runtime source of truth. Источник истины для production — backend KORNIX поверх доменной базы данных и расчётного слоя.
+docs/kornix-system-api-requirements-v0.2.md:42:KML может использоваться как импортный источник геометрии, но не как runtime API source.
+docs/kornix-system-api-requirements-v0.2.md:253:    | 'KML_IRRIGATED_2026'
+docs/release-hardening-checklist.md:15:- User/API/KML strings injected into Leaflet HTML tooltips are escaped.
+docs/frontend-api-contract-v0.1.md:8:4. Карту питает DB-first backend, не KML-файлы.
+docs/kornix-frontend-api-v1.md:4:единственной границей доступа к данным: frontend не читает БД, KML, Open-Meteo,
+docs/kornix-frontend-api-v1.md:5:Python-модули расчёта и не передаёт `organizationId` или `organizationCode` как
+docs/kornix-frontend-api-checklist-v0.1.md:10:Frontend не реализует backend API и не должен напрямую читать PostgreSQL/TimescaleDB/PostGIS. Runtime source of truth для production — backend поверх KORNIX DB-слоя, а не KML/raw Open-Meteo/mock fixtures.
+docs/kornix-frontend-api-checklist-v0.1.md:41:KML может быть import-source или seed-data, но не production runtime API source. Frontend получает только HTTP JSON/GeoJSON.
+docs/kornix-frontend-api-checklist-v0.1.md:235:    | 'KML_IRRIGATED_2026'

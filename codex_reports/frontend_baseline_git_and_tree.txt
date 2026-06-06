@@ -1,0 +1,223 @@
+/home/zenbook/site
+ D codex_reports/baseline_commit.txt
+ D codex_reports/changed_files.txt
+ D codex_reports/final_report_metadata.md
+ D codex_reports/frontend_build_log.txt
+ D codex_reports/frontend_docker_build_log.txt
+ D codex_reports/frontend_lint_log.txt
+ D codex_reports/frontend_nginx_smoke_log.txt
+ D codex_reports/frontend_npm_ci_log.txt
+ D codex_reports/frontend_smoke_summary.json
+ D codex_reports/frontend_static_security_scan.txt
+ D codex_reports/frontend_test_log.txt
+ D codex_reports/frontend_typecheck_log.txt
+ D codex_reports/initial_git_log.txt
+ D codex_reports/initial_git_status.txt
+ D codex_reports/kornix_frontend_stage1_vds_security_final_report.json
+ D codex_reports/kornix_frontend_stage1_vds_security_final_report.md
+ D codex_reports/pre_commit_git_status.txt
+?? codex_reports/frontend_baseline_git_and_tree.txt
+main
+origin	git@github.com:kornix-tech/kornix_site.git (fetch)
+origin	git@github.com:kornix-tech/kornix_site.git (push)
+49e1232 chore(security): finalize frontend Stage 1 VDS reports
+./.dockerignore
+./.env
+./.env.example
+./.env.integration.example
+./.env.local.example
+./.env.production.example
+./.env.vds.example
+./.git/COMMIT_EDITMSG
+./.git/FETCH_HEAD
+./.git/HEAD
+./.git/ORIG_HEAD
+./.git/config
+./.git/description
+./.git/hooks/applypatch-msg.sample
+./.git/hooks/commit-msg.sample
+./.git/hooks/fsmonitor-watchman.sample
+./.git/hooks/post-update.sample
+./.git/hooks/pre-applypatch.sample
+./.git/hooks/pre-commit.sample
+./.git/hooks/pre-merge-commit.sample
+./.git/hooks/pre-push.sample
+./.git/hooks/pre-rebase.sample
+./.git/hooks/pre-receive.sample
+./.git/hooks/prepare-commit-msg.sample
+./.git/hooks/push-to-checkout.sample
+./.git/hooks/sendemail-validate.sample
+./.git/hooks/update.sample
+./.git/index
+./.git/info/exclude
+./.git/logs/HEAD
+./.gitignore
+./CHANGELOG.md
+./CODEX_DEPLOYMENT_INSTRUCTION.md
+./Dockerfile
+./Dockerfile.prod
+./Makefile
+./README.md
+./codex_reports/frontend_baseline_git_and_tree.txt
+./dist/assets/FieldMap-DMIhRtcO.js
+./dist/assets/IrrigationInputTable-CNQNrywQ.js
+./dist/assets/WaterRegimeChart-DtpAknj1.js
+./dist/assets/index-C0fq3lWv.js
+./dist/assets/index-VDAUHfGj.js
+./dist/assets/index-nQ6MXr0w.css
+./dist/assets/vendor-charts-C8Q1wtKQ.js
+./dist/assets/vendor-map-3SCwb1bY.js
+./dist/assets/vendor-map-CIGW-MKW.css
+./dist/assets/vendor-query-B7GAe2XU.js
+./dist/assets/vendor-react-Dtp2-oVi.js
+./dist/brand/kornix-logo.png
+./dist/index.html
+./doc/KORNIX_FRONTEND_API_V2_WORKFLOW.md
+./doc/KORNIX_FRONTEND_AUTH_AND_SESSION.md
+./doc/KORNIX_FRONTEND_DEVELOPER_INSTRUCTIONS.md
+./doc/KORNIX_FRONTEND_EXTERNAL_CONTEXT_API_V2_STITCHING.md
+./doc/KORNIX_FRONTEND_PRODUCTION_DEPLOYMENT.md
+./doc/KORNIX_FRONTEND_SECURITY_CHECKLIST.md
+./doc/KORNIX_FRONTEND_SMOKE_TESTING.md
+./doc/KORNIX_FRONTEND_VDS_SECURITY_CONTEXT.md
+./doc/security/KORNIX_FRONTEND_AUTH_SESSION.md
+./doc/security/KORNIX_FRONTEND_PRODUCTION_BUILD.md
+./doc/security/KORNIX_FRONTEND_SECURITY_ARCHITECTURE.md
+./doc/security/KORNIX_FRONTEND_SECURITY_TEST_PLAN.md
+./doc/security/KORNIX_FRONTEND_VDS_DEPLOYMENT.md
+./docker-compose.dev.yml
+./docker-compose.prod.yml
+./docker-compose.yml
+./docs/auth-api-contract-v0.1.md
+./docs/frontend-api-contract-v0.1.md
+./docs/kornix-frontend-api-checklist-v0.1.md
+./docs/kornix-frontend-api-v1.md
+./docs/kornix-system-api-requirements-v0.2.md
+./docs/release-hardening-checklist.md
+./index.html
+./nginx.conf
+./node_modules/.package-lock.json
+./node_modules/baseline-browser-mapping/LICENSE.txt
+./node_modules/baseline-browser-mapping/README.md
+./node_modules/baseline-browser-mapping/package.json
+./node_modules/browserslist/LICENSE
+./node_modules/browserslist/README.md
+./node_modules/browserslist/browser.js
+./node_modules/browserslist/cli.js
+./node_modules/browserslist/error.d.ts
+./node_modules/browserslist/error.js
+./node_modules/browserslist/index.d.ts
+./node_modules/browserslist/index.js
+./node_modules/browserslist/node.js
+./node_modules/browserslist/package.json
+./node_modules/browserslist/parse.js
+./node_modules/caniuse-lite/LICENSE
+./node_modules/caniuse-lite/README.md
+./node_modules/caniuse-lite/package.json
+./node_modules/clsx/clsx.d.mts
+./node_modules/clsx/clsx.d.ts
+./node_modules/clsx/license
+./node_modules/clsx/package.json
+./node_modules/clsx/readme.md
+./node_modules/convert-source-map/LICENSE
+./node_modules/convert-source-map/README.md
+./node_modules/convert-source-map/index.js
+./node_modules/convert-source-map/package.json
+./node_modules/csstype/LICENSE
+./node_modules/csstype/README.md
+./node_modules/csstype/index.d.ts
+./node_modules/csstype/index.js.flow
+./node_modules/csstype/package.json
+./node_modules/d3-array/LICENSE
+./node_modules/d3-array/README.md
+./node_modules/d3-array/package.json
+./node_modules/d3-color/LICENSE
+./node_modules/d3-color/README.md
+./node_modules/d3-color/package.json
+./node_modules/d3-ease/LICENSE
+./node_modules/d3-ease/README.md
+./node_modules/d3-ease/package.json
+./node_modules/d3-format/LICENSE
+./node_modules/d3-format/README.md
+./node_modules/d3-format/package.json
+./node_modules/d3-interpolate/LICENSE
+./node_modules/d3-interpolate/README.md
+./node_modules/d3-interpolate/package.json
+./node_modules/d3-path/LICENSE
+./node_modules/d3-path/README.md
+./node_modules/d3-path/package.json
+./node_modules/d3-scale/LICENSE
+./node_modules/d3-scale/README.md
+./node_modules/d3-scale/package.json
+./node_modules/d3-shape/LICENSE
+./node_modules/d3-shape/README.md
+./node_modules/d3-shape/package.json
+./node_modules/d3-time-format/LICENSE
+./node_modules/d3-time-format/README.md
+./node_modules/d3-time-format/package.json
+./node_modules/d3-time/LICENSE
+./node_modules/d3-time/README.md
+./node_modules/d3-time/package.json
+./node_modules/d3-timer/LICENSE
+./node_modules/d3-timer/README.md
+./node_modules/d3-timer/package.json
+./node_modules/debug/LICENSE
+./node_modules/debug/README.md
+./node_modules/debug/package.json
+./node_modules/decimal.js-light/CHANGELOG.md
+./node_modules/decimal.js-light/LICENCE.md
+./node_modules/decimal.js-light/README.md
+./node_modules/decimal.js-light/decimal.d.ts
+./node_modules/decimal.js-light/decimal.js
+./node_modules/decimal.js-light/decimal.min.js
+./node_modules/decimal.js-light/decimal.mjs
+./node_modules/decimal.js-light/package.json
+./node_modules/electron-to-chromium/LICENSE
+./node_modules/electron-to-chromium/README.md
+./node_modules/electron-to-chromium/chromium-versions.js
+./node_modules/electron-to-chromium/chromium-versions.json
+./node_modules/electron-to-chromium/full-chromium-versions.js
+./node_modules/electron-to-chromium/full-chromium-versions.json
+./node_modules/electron-to-chromium/full-versions.js
+./node_modules/electron-to-chromium/full-versions.json
+./node_modules/electron-to-chromium/index.js
+./node_modules/electron-to-chromium/package.json
+./node_modules/electron-to-chromium/versions.js
+./node_modules/electron-to-chromium/versions.json
+./node_modules/es-toolkit/CHANGELOG.md
+./node_modules/es-toolkit/LICENSE
+./node_modules/es-toolkit/README.md
+./node_modules/es-toolkit/array.d.ts
+./node_modules/es-toolkit/array.js
+./node_modules/es-toolkit/compat.d.ts
+./node_modules/es-toolkit/compat.js
+./node_modules/es-toolkit/error.d.ts
+./node_modules/es-toolkit/error.js
+./node_modules/es-toolkit/function.d.ts
+./node_modules/es-toolkit/function.js
+./node_modules/es-toolkit/map.d.ts
+./node_modules/es-toolkit/map.js
+./node_modules/es-toolkit/math.d.ts
+./node_modules/es-toolkit/math.js
+./node_modules/es-toolkit/object.d.ts
+./node_modules/es-toolkit/object.js
+./node_modules/es-toolkit/package.json
+./node_modules/es-toolkit/predicate.d.ts
+./node_modules/es-toolkit/predicate.js
+./node_modules/es-toolkit/promise.d.ts
+./node_modules/es-toolkit/promise.js
+./node_modules/es-toolkit/server.d.ts
+./node_modules/es-toolkit/server.js
+./node_modules/es-toolkit/set.d.ts
+./node_modules/es-toolkit/set.js
+./node_modules/es-toolkit/string.d.ts
+./node_modules/es-toolkit/string.js
+./node_modules/es-toolkit/util.d.ts
+./node_modules/es-toolkit/util.js
+./node_modules/esbuild/LICENSE.md
+./node_modules/esbuild/README.md
+./node_modules/esbuild/install.js
+./node_modules/esbuild/package.json
+./node_modules/escalade/index.d.mts
+./node_modules/escalade/index.d.ts
+./node_modules/escalade/license

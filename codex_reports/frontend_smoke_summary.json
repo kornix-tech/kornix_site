@@ -1,36 +1,17 @@
 {
-  "status": "KORNIX_FRONTEND_STAGE1_VDS_SECURITY_READY",
-  "image": "kornix-frontend-stage1-smoke",
-  "docker_build_passed": true,
-  "smoke_port": "127.0.0.1:18081",
-  "routes": {
-    "/": {
-      "status": 200,
-      "content": "frontend HTML"
-    },
-    "/login": {
-      "status": 200,
-      "content": "frontend HTML"
-    },
-    "/map": {
-      "status": 200,
-      "content": "frontend HTML"
-    },
-    "/healthz": {
-      "status": 200,
-      "content": "ok"
-    },
-    "/assets/__missing__.js": {
-      "status": 404,
-      "content": "nginx missing asset response"
-    }
-  },
-  "spa_fallback_verified": true,
-  "security_headers_verified": true,
-  "csp_verified": true,
-  "map_tile_csp_verified": true,
-  "notes": [
-    "Port 18080 was occupied by an unrelated existing container, so production smoke used 127.0.0.1:18081.",
-    "The smoke container was stopped after verification."
+  "dependenciesInstalled": true,
+  "typecheckRun": true,
+  "lintRun": false,
+  "testsRun": false,
+  "buildRun": true,
+  "dockerBuildRun": true,
+  "backendReachable": true,
+  "apiContractSmokeRun": true,
+  "forbiddenPatternsChecked": true,
+  "blockers": [
+    "WSL PATH does not provide node/npm, so local npm ci and local npm run build could not be executed directly.",
+    "Bundled Windows node can run TypeScript but local Vite build fails on missing Windows Rollup optional native package because node_modules belongs to the WSL/Linux install.",
+    "package.json has no lint or test scripts; lint/tests are therefore not configured for this repository snapshot.",
+    "Backend /api/v2/kornix/current-context is reachable but returns SESSION_REQUIRED without an authenticated server-side session."
   ]
 }

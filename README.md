@@ -287,6 +287,23 @@ Security documentation index:
 Финальные машинно-проверяемые отчёты текущего этапа находятся в
 [`codex_reports/`](codex_reports/).
 
+## Current baseline status
+
+Свежий baseline-аудит фиксируется в `codex_reports/` и должен читаться вместе с
+security-документацией выше. На 2026-06-06 frontend подтверждён как
+React/Vite SPA, работающий через backend HTTP API: auth/session endpoints
+остаются на `/api/v1`, пользовательский KORNIX contour работает через
+`/api/v2/kornix`, production API base — `/api`. Runtime-код не должен читать
+PostgreSQL/PostGIS, KML или Python-модули напрямую и не должен хранить
+access/refresh tokens в browser storage.
+
+Основные файлы текущего baseline-аудита:
+
+- [`codex_reports/frontend_baseline_audit_report.md`](codex_reports/frontend_baseline_audit_report.md)
+- [`codex_reports/frontend_baseline_audit_report.json`](codex_reports/frontend_baseline_audit_report.json)
+- [`codex_reports/frontend_smoke_summary.json`](codex_reports/frontend_smoke_summary.json)
+- [`codex_reports/frontend_security_documentation_matrix.json`](codex_reports/frontend_security_documentation_matrix.json)
+
 Исторические требования к KORNIX system API сохранены в
 [`docs/kornix-system-api-requirements-v0.2.md`](docs/kornix-system-api-requirements-v0.2.md).
 

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+- Добавлен свежий baseline-аудит frontend-кодовой базы KORNIX с машинно-читаемыми
+  отчётами в `codex_reports/` и ссылками на текущий security/documentation
+  статус в README.
+
 ### Changed
 - Frontend calculation-run status helper переведён на production route
   `/api/v2/kornix/water-regime/calculation-runs/{calculationRunId}`; старый
