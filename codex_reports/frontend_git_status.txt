@@ -1,31 +1,3 @@
- M CHANGELOG.md
- M README.md
- D codex_reports/baseline_commit.txt
- D codex_reports/changed_files.txt
- D codex_reports/final_report_metadata.md
- M codex_reports/frontend_build_log.txt
- M codex_reports/frontend_docker_build_log.txt
- D codex_reports/frontend_lint_log.txt
- D codex_reports/frontend_nginx_smoke_log.txt
- D codex_reports/frontend_npm_ci_log.txt
- M codex_reports/frontend_smoke_summary.json
- M codex_reports/frontend_static_security_scan.txt
- M codex_reports/frontend_test_log.txt
- D codex_reports/frontend_typecheck_log.txt
- D codex_reports/initial_git_log.txt
- D codex_reports/initial_git_status.txt
- D codex_reports/kornix_frontend_stage1_vds_security_final_report.json
- D codex_reports/kornix_frontend_stage1_vds_security_final_report.md
- D codex_reports/pre_commit_git_status.txt
-?? codex_reports/frontend_backend_smoke_log.txt
-?? codex_reports/frontend_baseline_audit_report.json
-?? codex_reports/frontend_baseline_audit_report.md
-?? codex_reports/frontend_baseline_git_and_tree.txt
-?? codex_reports/frontend_blockers.md
-?? codex_reports/frontend_changed_files.txt
-?? codex_reports/frontend_compose_config.txt
-?? codex_reports/frontend_compose_dev_config.txt
-?? codex_reports/frontend_docker_check_summary.txt
-?? codex_reports/frontend_forbidden_pattern_audit.txt
-?? codex_reports/frontend_git_status.txt
-?? codex_reports/frontend_security_documentation_matrix.json
+ M codex_reports/frontend_baseline_audit_report.json
+ M codex_reports/frontend_baseline_audit_report.md
+ M codex_reports/frontend_git_status.txt

@@ -19,7 +19,8 @@ build проходит, static security/contract scan проходит, backend 
 - Path: `/home/zenbook/site`
 - Branch: `main`
 - Remote: `origin git@github.com:kornix-tech/kornix_site.git`
-- Initial HEAD: `49e1232 chore(security): finalize frontend Stage 1 VDS reports`
+- Initial HEAD before this audit commit: `49e1232 chore(security): finalize frontend Stage 1 VDS reports`
+- Audit commit: `364386e docs: add KORNIX frontend baseline audit report`
 - Initial working tree: not clean after required stale `codex_reports/` cleanup.
 - Package manager: npm (`package-lock.json`).
 - Main build files: `package.json`, `vite.config.ts`, `Dockerfile`, `Dockerfile.prod`, `nginx.conf`.

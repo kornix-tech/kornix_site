@@ -3,7 +3,7 @@
     "path": "/home/zenbook/site",
     "branch": "main",
     "remote": "origin git@github.com:kornix-tech/kornix_site.git",
-    "head": "49e1232 chore(security): finalize frontend Stage 1 VDS reports",
+    "head": "364386e docs: add KORNIX frontend baseline audit report",
     "workingTreeInitiallyClean": false,
     "workingTreeFinallyClean": true
   },
