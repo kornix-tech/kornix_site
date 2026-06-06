@@ -1,0 +1,68 @@
+# Forbidden pattern audit
+
+## Runtime forbidden endpoint checks
+
+## Runtime browser token storage checks
+
+## Runtime storage findings for classification
+src/features/auth/mockAuthClient.ts:16:    return window.sessionStorage.getItem(MOCK_SESSION_KEY) === 'true' ? mockAuthUser : null;
+src/features/auth/mockAuthClient.ts:21:    window.sessionStorage.setItem(MOCK_SESSION_KEY, 'true');
+src/features/auth/mockAuthClient.ts:25:    window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+src/workspace/IrrigationInputTable.tsx:216:        window.localStorage.setItem(storageKey, JSON.stringify(nextValues));
+src/workspace/IrrigationInputTable.tsx:218:        window.localStorage.removeItem(storageKey);
+src/workspace/IrrigationInputTable.tsx:231:      const raw = window.localStorage.getItem(storageKey);
+src/workspace/WorkspacePage.tsx:84:  const localStorageScope = `${contextQuery.data?.organizationCode ?? user?.organizationCode ?? 'unknown'}:${
+src/workspace/WorkspacePage.tsx:395:            key={localStorageScope}
+src/workspace/WorkspacePage.tsx:398:            storageScope={localStorageScope}
+
+## Runtime DB/KML/Python keyword findings for classification
+src/api/spasskoeIrrigatedFields.ts:370:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:702:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:926:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:1366:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:1818:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:2246:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:2518:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:2910:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:3386:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:3854:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:4306:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:4782:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:5062:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:5518:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:5874:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:6146:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:6574:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:6846:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:7114:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:7390:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:7658:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:8082:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:8538:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:8978:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:9406:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:9810:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:10214:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:10622:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:11094:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:11546:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:11982:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:12422:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:12850:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:13270:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:13706:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:14134:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+src/api/spasskoeIrrigatedFields.ts:14550:          "Геометрия поля загружена из KML СП_.kml для полива 2026."
+
+## Classification
+production defects: none found in runtime src
+test/mock-only:
+- src/features/auth/mockAuthClient.ts sessionStorage: localhost/mock demo flag only, not access/refresh/JWT/session token storage.
+- src/api/spasskoeIrrigatedFields.ts KML text appears only as static mock/fixture provenance in dataQuality messages; frontend does not read KML at runtime.
+documentation-only:
+- Forbidden endpoint/DB/KML/Python mentions outside src are docs, historical audit notes, or explicit forbidden-pattern documentation.
+false positives:
+- src/workspace/IrrigationInputTable.tsx and WorkspacePage.tsx localStorage usage is non-authoritative irrigation UI draft state, not auth-token storage and not approved irrigation source of truth.
+
+RESULT: PASS forbidden runtime endpoint scan
+RESULT: PASS browser auth token storage scan

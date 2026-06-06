@@ -1,14 +1,25 @@
-# KORNIX Frontend Baseline Blockers
+# Frontend Confirmation Blockers
 
-## Blocking / limiting items
+## Current Status
 
-- WSL PATH does not contain `node`, `npm`, `pnpm` or `yarn`; local `npm ci` was not possible in the requested shell environment.
-- Bundled Windows `node.exe` successfully ran TypeScript, but local Vite build failed because WSL `node_modules` does not contain the Windows Rollup optional native package `@rollup/rollup-win32-x64-msvc`.
-- `package.json` has no `lint` or `test` scripts, so lint/tests are not configured in this snapshot.
-- Backend smoke reached `http://localhost:8001/api/v1/health`, but `GET /api/v2/kornix/current-context` returned `SESSION_REQUIRED`; authenticated integration smoke requires a valid backend session.
+`FRONTEND_BASELINE_CONFIRMED_ENV_LIMITED`
 
-## Not blockers
+## Remaining Blockers
 
-- Production Docker build completed successfully and executed `npm ci`, `npm run typecheck` and Vite production build inside the Linux Node image.
-- Static contract/security scan passed for runtime `src`: no legacy `/api/v1/kornix`, no backend-admin API calls, and no token-storage patterns were found.
-- Security documentation files under `doc/security/` exist and contain material baseline content.
+- WSL environment has no direct `node`/`npm`; Dockerized npm install,
+  typecheck, build and Docker image build passed.
+- `package.json` has no `lint` script.
+- `package.json` has no `test` script.
+- Full authenticated backend/browser API smoke was not run.
+- Local backend `GET /api/v2/kornix/current-context` returned `200` without an
+  explicit browser session. This should be reviewed in the backend/reverse-proxy
+  auth-boundary pass; frontend code still uses BFF/session auth and
+  `credentials: include`.
+
+## Not Blockers
+
+- Runtime `src` has no `/api/v1/kornix` or `/api/admin` calls.
+- Runtime `src` has no access/refresh/JWT token browser storage.
+- `localStorage` is used only for non-authoritative irrigation UI drafts.
+- `sessionStorage` is used only for local mock-auth flag.
+- KML text is static fixture provenance, not runtime source of truth.

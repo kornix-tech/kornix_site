@@ -1,0 +1,39 @@
+{
+  "finalStatus": "FRONTEND_BASELINE_CONFIRMED_ENV_LIMITED",
+  "endpointScan": {
+    "forbiddenProductionPatterns": [],
+    "documentationOnlyFindings": [
+      "Forbidden endpoint, DB, KML and Python mentions outside src are documentation, historical audit notes or explicit forbidden-pattern documentation."
+    ],
+    "testMockOnlyFindings": [
+      "src/features/auth/mockAuthClient.ts uses sessionStorage only for localhost/mock demo flag.",
+      "src/api/spasskoeIrrigatedFields.ts contains KML provenance text in static mock fixtures, not runtime KML loading."
+    ]
+  },
+  "apiWorkflow": {
+    "currentContext": "PASS",
+    "irrigationLayer": "PASS",
+    "approvalPost": "PASS",
+    "polling": "PASS",
+    "refetchAfterApply": "PASS"
+  },
+  "checks": {
+    "install": "PASS",
+    "typecheck": "PASS",
+    "lint": "NOT_RUN",
+    "tests": "NOT_RUN",
+    "build": "PASS",
+    "dockerBuild": "PASS"
+  },
+  "backendSmoke": {
+    "health": "PASS",
+    "currentContextUnauthenticatedBoundary": "FAIL",
+    "authenticatedSmoke": "NOT_RUN"
+  },
+  "remainingBlockers": [
+    "WSL node/npm unavailable; Dockerized npm install/typecheck/build path passed.",
+    "No lint/test scripts are defined in package.json.",
+    "Full authenticated backend/browser smoke was not run.",
+    "Local backend current-context returned 200 without an explicit browser session; backend auth-boundary behavior should be reviewed separately."
+  ]
+}

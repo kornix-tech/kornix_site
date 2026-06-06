@@ -1,0 +1,200 @@
+== package files ==
+package-lock.json
+package.json
+== node --version ==
+bash: line 1: node: command not found
+== npm --version ==
+bash: line 1: npm: command not found
+== package.json ==
+{
+  "name": "kornix-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.59.0",
+    "html-to-image": "^1.11.13",
+    "leaflet": "^1.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.14",
+    "@types/leaflet": "^1.9.12",
+    "@types/node": "^20.16.5",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "typescript": "^5.6.2",
+    "vite": "^7.3.3"
+  }
+}
+== npm ci ==
+bash: line 1: npm: command not found
+== npm run typecheck --if-present ==
+bash: line 1: npm: command not found
+== npm run lint --if-present ==
+bash: line 1: npm: command not found
+== npm test --if-present ==
+bash: line 1: npm: command not found
+== npm run build ==
+bash: line 1: npm: command not found
+== dockerized npm ci ==
+
+added 122 packages, and audited 123 packages in 8s
+
+13 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.16.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+npm notice To update run: npm install -g npm@11.16.0
+npm notice
+== dockerized npm run typecheck ==
+
+> kornix-frontend@0.1.0 typecheck
+> tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.16.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+npm notice To update run: npm install -g npm@11.16.0
+npm notice
+== dockerized npm run build ==
+
+> kornix-frontend@0.1.0 build
+> npm run typecheck && vite build
+
+
+> kornix-frontend@0.1.0 typecheck
+> tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false
+
+vite v7.3.3 building client environment for production...
+transforming...
+✓ 773 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.73 kB │ gzip:   0.34 kB
+dist/assets/vendor-map-CIGW-MKW.css            15.61 kB │ gzip:   6.46 kB
+dist/assets/index-nQ6MXr0w.css                 34.64 kB │ gzip:   7.52 kB
+dist/assets/FieldMap-DMIhRtcO.js                6.71 kB │ gzip:   2.91 kB
+dist/assets/index-VDAUHfGj.js                  13.00 kB │ gzip:   5.19 kB
+dist/assets/IrrigationInputTable-CNQNrywQ.js   15.35 kB │ gzip:   5.74 kB
+dist/assets/WaterRegimeChart-DtpAknj1.js       24.41 kB │ gzip:   7.12 kB
+dist/assets/vendor-query-B7GAe2XU.js           33.63 kB │ gzip:  10.13 kB
+dist/assets/index-C0fq3lWv.js                  40.07 kB │ gzip:  13.02 kB
+dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
+dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
+dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
+✓ built in 4.84s
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.16.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+npm notice To update run: npm install -g npm@11.16.0
+npm notice
+== docker build -t kornix-frontend-confirm-baseline . ==
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.03kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.9s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
+#3 resolve docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89 0.1s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#4 ...
+
+#5 [internal] load metadata for docker.io/library/node:20-alpine
+#5 DONE 1.0s
+
+#4 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#4 DONE 1.0s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 153B done
+#6 DONE 0.0s
+
+#7 [prod 1/3] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#7 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 0.1s done
+#7 DONE 0.1s
+
+#8 [build 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#8 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.1s done
+#8 DONE 0.1s
+
+#9 [internal] load build context
+#9 transferring context: 84.94kB 0.0s done
+#9 DONE 0.0s
+
+#10 [build 2/6] WORKDIR /app
+#10 CACHED
+
+#11 [build 3/6] COPY package*.json ./
+#11 CACHED
+
+#12 [build 4/6] RUN npm ci
+#12 CACHED
+
+#13 [build 5/6] COPY . .
+#13 DONE 0.1s
+
+#14 [build 6/6] RUN VITE_AUTH_MODE=bff     VITE_API_BASE_URL=/api     VITE_ENABLE_MOCK_API=false     VITE_ALLOW_PRIVATE_MOCK_RUNTIME=false     npm run build
+#14 0.575
+#14 0.575 > kornix-frontend@0.1.0 build
+#14 0.575 > npm run typecheck && vite build
+#14 0.575
+#14 0.710
+#14 0.710 > kornix-frontend@0.1.0 typecheck
+#14 0.710 > tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false
+#14 0.710
+#14 6.873 vite v7.3.3 building client environment for production...
+#14 6.934 transforming...
+#14 11.13 ✓ 773 modules transformed.
+#14 11.44 rendering chunks...
+#14 11.63 computing gzip size...
+#14 11.65 dist/index.html                                 0.73 kB │ gzip:   0.34 kB
+#14 11.65 dist/assets/vendor-map-CIGW-MKW.css            15.61 kB │ gzip:   6.46 kB
+#14 11.65 dist/assets/index-nQ6MXr0w.css                 34.64 kB │ gzip:   7.52 kB
+#14 11.65 dist/assets/FieldMap-DMIhRtcO.js                6.71 kB │ gzip:   2.91 kB
+#14 11.65 dist/assets/index-VDAUHfGj.js                  13.00 kB │ gzip:   5.19 kB
+#14 11.65 dist/assets/IrrigationInputTable-CNQNrywQ.js   15.35 kB │ gzip:   5.74 kB
+#14 11.65 dist/assets/WaterRegimeChart-DtpAknj1.js       24.41 kB │ gzip:   7.12 kB
+#14 11.65 dist/assets/vendor-query-B7GAe2XU.js           33.63 kB │ gzip:  10.13 kB
+#14 11.65 dist/assets/index-C0fq3lWv.js                  40.07 kB │ gzip:  13.02 kB
+#14 11.65 dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
+#14 11.65 dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
+#14 11.65 dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
+#14 11.65 ✓ built in 4.75s
+#14 DONE 11.7s
+
+#15 [prod 2/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#15 CACHED
+
+#16 [prod 3/3] COPY --from=build /app/dist /usr/share/nginx/html
+#16 CACHED
+
+#17 exporting to image
+#17 exporting layers done
+#17 exporting manifest sha256:741346a7460853f3ba49c69975cd15bcc89d6622ca7323aefb79df6fe797cb27 done
+#17 exporting config sha256:1e6ca2e696352144bae21f38479a52639f9b4f50591db201d4c0c18ab2886327 done
+#17 exporting attestation manifest sha256:88463ef66a32703633a69dea5be446497cfb9b22e81797a6b583b43e921d075a 0.1s done
+#17 exporting manifest list sha256:36a76704e4fc0d06beddbb06974d275586a7a67d2c9e4873aa53f3087fa3ed8c
+#17 exporting manifest list sha256:36a76704e4fc0d06beddbb06974d275586a7a67d2c9e4873aa53f3087fa3ed8c 0.0s done
+#17 naming to docker.io/library/kornix-frontend-confirm-baseline:latest done
+#17 unpacking to docker.io/library/kornix-frontend-confirm-baseline:latest 0.0s done
+#17 DONE 0.2s

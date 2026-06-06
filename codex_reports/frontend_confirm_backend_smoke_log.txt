@@ -1,0 +1,99 @@
+# Frontend Confirm Backend Smoke Log
+
+Date: 2026-06-06
+
+## GET /api/v1/health
+
+Command:
+
+```bash
+curl -sS http://localhost:8001/api/v1/health
+```
+
+Result:
+
+```text
+PASS 200 {"status":"ok"}
+```
+
+## GET /api/v2/kornix/current-context
+
+Command:
+
+```bash
+curl -i http://localhost:8001/api/v2/kornix/current-context
+```
+
+Result:
+
+```text
+PASS 200
+frontendMode: not_ready
+currentAppliedCalculationRunId: null
+submitAllowed: false
+submitBlockedReason: NO_BIG_BANG_CURRENT_OPERATIONAL_RUN,NO_BIG_BANG_CURRENT_APPLIED_RUN
+methods: returned
+managedScope: returned
+```
+
+Observation:
+
+```text
+Local backend returned current-context without an explicit authenticated browser session.
+This is recorded as a backend auth-boundary item for a backend/reverse-proxy pass.
+Frontend code still uses BFF/session auth and credentials: include.
+```
+
+## GET /api/v1/auth/csrf
+
+Command:
+
+```bash
+curl -i http://localhost:8001/api/v1/auth/csrf
+```
+
+Result:
+
+```text
+PASS 200
+CSRF token and cookie were returned and intentionally redacted from this committed log.
+```
+
+## GET /api/v2/kornix/methods
+
+Command:
+
+```bash
+curl -i http://localhost:8001/api/v2/kornix/methods
+```
+
+Result:
+
+```text
+PASS 200
+defaultMethodCode: simple_eto_single_layer_soil
+methods: returned
+```
+
+## GET /api/v2/kornix/irrigation-layer/current
+
+Command:
+
+```bash
+curl -i http://localhost:8001/api/v2/kornix/irrigation-layer/current
+```
+
+Result:
+
+```text
+PASS 200
+managedScope: returned
+irrigationLayer: returned
+projectionHash: returned
+```
+
+## Not Run
+
+Authenticated map/profile/approval smoke was not run. Approval POST is
+state-changing and no authenticated browser session or non-destructive approval
+harness was available.

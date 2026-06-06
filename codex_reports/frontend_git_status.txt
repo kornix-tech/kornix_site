@@ -1,3 +1,14 @@
- M codex_reports/frontend_baseline_audit_report.json
- M codex_reports/frontend_baseline_audit_report.md
- M codex_reports/frontend_git_status.txt
+M  codex_reports/frontend_blockers.md
+M  codex_reports/frontend_changed_files.txt
+A  codex_reports/frontend_confirm_api_workflow.md
+A  codex_reports/frontend_confirm_backend_smoke_log.txt
+A  codex_reports/frontend_confirm_baseline_report.json
+A  codex_reports/frontend_confirm_baseline_report.md
+A  codex_reports/frontend_confirm_compose_config.txt
+A  codex_reports/frontend_confirm_compose_dev_config.txt
+A  codex_reports/frontend_confirm_compose_prod_config.txt
+A  codex_reports/frontend_confirm_forbidden_pattern_audit.txt
+A  codex_reports/frontend_confirm_initial_state.txt
+A  codex_reports/frontend_confirm_smoke_summary.json
+A  codex_reports/frontend_confirm_test_log.txt
+MM codex_reports/frontend_git_status.txt

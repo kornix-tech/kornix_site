@@ -1,0 +1,26 @@
+name: site
+services:
+  frontend:
+    build:
+      context: /home/zenbook/site
+      dockerfile: Dockerfile
+      args:
+        KORNIX_ALLOW_PRIVATE_MOCK_RUNTIME: "false"
+        KORNIX_API_BASE_URL: http://localhost:8001
+        KORNIX_ENABLE_MOCK_API: "true"
+        KORNIX_SESSION_MODE: mock
+      target: prod
+    container_name: kornix-frontend
+    image: kornix-frontend:local
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 80
+        published: "8080"
+        protocol: tcp
+    restart: unless-stopped
+networks:
+  default:
+    name: site_default
