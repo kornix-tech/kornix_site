@@ -1,11 +1,4 @@
-## changed files before staging
-codex_reports/frontend_api_v2_sp37_build_log.txt
+## final report-only changed files
 codex_reports/frontend_api_v2_sp37_changed_files.txt
-codex_reports/frontend_api_v2_sp37_docker_build_log.txt
 codex_reports/frontend_api_v2_sp37_git_status.txt
 codex_reports/frontend_api_v2_sp37_live_report.json
-codex_reports/frontend_api_v2_sp37_live_report.md
-codex_reports/frontend_api_v2_sp37_nginx_smoke_log.txt
-codex_reports/frontend_api_v2_sp37_npm_ci_log.txt
-codex_reports/frontend_api_v2_sp37_secret_scan_log.txt
-codex_reports/frontend_api_v2_sp37_initial_inspection_log.txt

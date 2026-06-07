@@ -1,10 +1,4 @@
-## git status before staging
- M codex_reports/frontend_api_v2_sp37_build_log.txt
- M codex_reports/frontend_api_v2_sp37_docker_build_log.txt
+## git status after first push / before final report commit
+## main...origin/main
  M codex_reports/frontend_api_v2_sp37_git_status.txt
  M codex_reports/frontend_api_v2_sp37_live_report.json
- M codex_reports/frontend_api_v2_sp37_live_report.md
- M codex_reports/frontend_api_v2_sp37_nginx_smoke_log.txt
- M codex_reports/frontend_api_v2_sp37_npm_ci_log.txt
- M codex_reports/frontend_api_v2_sp37_secret_scan_log.txt
-?? codex_reports/frontend_api_v2_sp37_initial_inspection_log.txt
