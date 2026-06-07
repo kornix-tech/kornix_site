@@ -8,10 +8,12 @@
     "backendAdminExperimentsReady": true
   },
   "credentialsGate": {
-    "status": "FAIL",
-    "usernamePresent": false,
-    "passwordPresent": false,
-    "valuesRedacted": true
+    "status": "PASS",
+    "credentialSource": "ephemeral_backend_user",
+    "usernamePresentOrProvisioned": true,
+    "passwordPresentOrGenerated": true,
+    "valuesRedacted": true,
+    "ephemeralUserCleanup": "PASS"
   },
   "implementation": {
     "currentAppliedCalculationRunIdDisplayedRun": "PASS",
@@ -21,9 +23,13 @@
     "liveSmokeRunner": "PASS"
   },
   "liveApiSmoke": {
-    "status": "NOT_RUN",
+    "status": "FAIL",
     "apiBaseUrl": "http://localhost:8001",
     "authenticatedSession": "FAIL",
+    "me": {
+      "status": "NOT_RUN",
+      "organizationCode": null
+    },
     "currentContext": "NOT_RUN",
     "currentAppliedCalculationRunId": null,
     "mapFeatures": null,
@@ -41,6 +47,7 @@
     "contractTest": "PASS",
     "contractScan": "PASS",
     "securityScan": "PASS",
+    "secretScan": "PASS",
     "dockerBuild": "PASS",
     "gitDiffCheck": "PASS"
   },
@@ -52,6 +59,7 @@
     "pushFailureReason": null
   },
   "blockers": [
-    "KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed."
+    "Login failed with HTTP 500.",
+    "Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500."
   ]
 }

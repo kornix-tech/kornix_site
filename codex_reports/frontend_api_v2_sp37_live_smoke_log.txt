@@ -1,2 +1,6 @@
+  *
+  * If you need ICU with non-English locales and legacy charset support, install
+  * package icu-data-full.
+  *
 KORNIX frontend API v2 SP37 live smoke FAIL.
-- KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed.
+- Login failed with HTTP 500.

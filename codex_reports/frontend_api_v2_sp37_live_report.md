@@ -6,25 +6,19 @@ Generated at: 2026-06-08T00:00:00+03:00
 
 ## Credentials gate
 
-- KORNIX_FRONTEND_SMOKE_USERNAME present: false
-- KORNIX_FRONTEND_SMOKE_PASSWORD present: false
+- credential source: ephemeral_backend_user
+- KORNIX_FRONTEND_SMOKE_USERNAME external env present: false
+- KORNIX_FRONTEND_SMOKE_PASSWORD external env present: false
+- ephemeral backend user attempted: true
+- ephemeral backend user created/updated: PASS
+- ephemeral sessions revoked: PASS
+- ephemeral user deactivated: PASS
 - values redacted: true
-
-## Blockers
-
-- KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed.
-
-## Implementation
-
-- currentAppliedCalculationRunId displayed run: PASS
-- shortwave_radiation_daily_mj_m2 consumed: PASS
-- shortwave visible/exported: PASS
-- metric coverage check: PASS
-- live smoke runner: PASS
 
 ## Live API smoke
 
 - authenticated session: FAIL
+- /api/v1/me organization: null
 - current-context: NOT_RUN
 - currentAppliedCalculationRunId: null
 - map features: null
@@ -41,8 +35,14 @@ Generated at: 2026-06-08T00:00:00+03:00
 - contract test: PASS
 - contract scan: PASS
 - security scan: PASS
+- secret scan: PASS
 - docker build: PASS
 - git diff check: PASS
+
+## Blockers
+
+- Login failed with HTTP 500.
+- Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500.
 
 ## Reports
 

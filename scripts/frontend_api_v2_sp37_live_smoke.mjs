@@ -1,11 +1,19 @@
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 
 const apiBaseUrl = process.env.KORNIX_FRONTEND_SMOKE_API_BASE_URL || 'http://localhost:8001';
-const username = process.env.KORNIX_FRONTEND_SMOKE_USERNAME || '';
-const password = process.env.KORNIX_FRONTEND_SMOKE_PASSWORD || '';
 const expectedFields = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_FIELDS || 37);
 const expectedMetrics = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS || 13);
 const outputJson = process.env.KORNIX_FRONTEND_SMOKE_OUTPUT_JSON || 'codex_reports/frontend_api_v2_sp37_live_smoke.json';
+const backendRepo = process.env.KORNIX_FRONTEND_SMOKE_BACKEND_REPO || '/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack';
+const ephemeralUsername = process.env.KORNIX_FRONTEND_SMOKE_EPHEMERAL_USERNAME || 'frontend_sp37_live_smoke_user';
+const ephemeralEmail = process.env.KORNIX_FRONTEND_SMOKE_EPHEMERAL_EMAIL || 'frontend-sp37-live-smoke@example.local';
+const ephemeralOrganizationSlug = process.env.KORNIX_FRONTEND_SMOKE_EPHEMERAL_ORGANIZATION_SLUG || 'SP';
+const ephemeralRoles = ['viewer', 'farm_operator'];
+if (!/^[a-z0-9_]+$/.test(ephemeralUsername)) {
+  throw new Error('KORNIX_FRONTEND_SMOKE_EPHEMERAL_USERNAME must contain only lowercase latin letters, digits, and underscores.');
+}
 
 const requiredMetrics = [
   'air_temperature_daily_c',
@@ -25,15 +33,46 @@ const requiredMetrics = [
 
 const cookieJar = new Map();
 const blockers = [];
+let resolvedCredentials = {
+  username: process.env.KORNIX_FRONTEND_SMOKE_USERNAME || '',
+  password: process.env.KORNIX_FRONTEND_SMOKE_PASSWORD || '',
+  source: process.env.KORNIX_FRONTEND_SMOKE_USERNAME && process.env.KORNIX_FRONTEND_SMOKE_PASSWORD
+    ? 'external_env'
+    : 'not_available'
+};
+let shouldCleanupEphemeralUser = false;
 
 const report = {
   status: 'FAIL',
   apiBaseUrl,
+  credentialSource: resolvedCredentials.source,
+  credentialsGate: {
+    status: 'FAIL',
+    credentialSource: resolvedCredentials.source,
+    externalEnv: {
+      KORNIX_FRONTEND_SMOKE_USERNAME: Boolean(process.env.KORNIX_FRONTEND_SMOKE_USERNAME),
+      KORNIX_FRONTEND_SMOKE_PASSWORD: Boolean(process.env.KORNIX_FRONTEND_SMOKE_PASSWORD)
+    },
+    ephemeralBackendUser: {
+      attempted: false,
+      username: ephemeralUsername,
+      organizationSlug: ephemeralOrganizationSlug,
+      roles: ephemeralRoles,
+      createdOrUpdated: 'NOT_RUN',
+      passwordGeneratedInMemory: false,
+      passwordWrittenToReports: false,
+      cleanupSessionsRevoked: 'NOT_RUN',
+      cleanupUserDeactivated: 'NOT_RUN'
+    },
+    valuesRedacted: true,
+    blockers: []
+  },
   auth: {
     meBeforeLoginStatus: null,
     loginAttempted: false,
     loginSucceeded: false,
-    meAfterLoginStatus: null
+    meAfterLoginStatus: null,
+    organizationCode: null
   },
   currentContext: {
     statusCode: null,
@@ -43,6 +82,10 @@ const report = {
     defaultMethodCode: null,
     serverDate: null,
     forecastEndDate: null
+  },
+  calculationRun: {
+    statusCode: null,
+    pass: false
   },
   map: {
     statusCode: null,
@@ -63,6 +106,7 @@ const report = {
 };
 
 function saveReport() {
+  report.credentialsGate.blockers = [...blockers];
   writeFileSync(outputJson, `${JSON.stringify(report, null, 2)}\n`);
 }
 
@@ -132,15 +176,146 @@ function fail(message) {
   throw new Error(message);
 }
 
+function runBackendCommand(args, options = {}) {
+  return spawnSync('docker', ['compose', ...args], {
+    cwd: backendRepo,
+    env: {
+      ...process.env,
+      ...(options.env || {})
+    },
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024
+  });
+}
+
+function provisionEphemeralUser() {
+  report.credentialsGate.ephemeralBackendUser.attempted = true;
+  report.credentialsGate.ephemeralBackendUser.passwordGeneratedInMemory = true;
+  report.credentialSource = 'ephemeral_backend_user';
+  report.credentialsGate.credentialSource = 'ephemeral_backend_user';
+
+  if (!existsSync(backendRepo)) {
+    report.credentialsGate.ephemeralBackendUser.createdOrUpdated = 'FAIL';
+    fail(`Backend repo for ephemeral smoke user is unavailable: ${backendRepo}.`);
+  }
+
+  const generatedPassword = randomBytes(36).toString('base64url');
+  const result = runBackendCommand(
+    [
+      'exec',
+      '-T',
+      '-e',
+      'KORNIX_BOOTSTRAP_PASSWORD',
+      'app',
+      'python',
+      '-m',
+      'meteo_pipeline.ops.create_kornix_user',
+      '--organization-slug',
+      ephemeralOrganizationSlug,
+      '--username',
+      ephemeralUsername,
+      '--email',
+      ephemeralEmail,
+      '--roles',
+      ephemeralRoles.join(',')
+    ],
+    { env: { KORNIX_BOOTSTRAP_PASSWORD: generatedPassword } }
+  );
+
+  if (result.status !== 0) {
+    report.credentialsGate.ephemeralBackendUser.createdOrUpdated = 'FAIL';
+    const stderr = (result.stderr || '').trim();
+    fail(`Ephemeral backend user provisioning failed with exit ${result.status}${stderr ? `: ${stderr}` : '.'}`);
+  }
+
+  report.credentialsGate.ephemeralBackendUser.createdOrUpdated = 'PASS';
+  report.credentialsGate.status = 'PASS';
+  resolvedCredentials = {
+    username: ephemeralUsername,
+    password: generatedPassword,
+    source: 'ephemeral_backend_user'
+  };
+  shouldCleanupEphemeralUser = true;
+}
+
+function resolveCredentials() {
+  if (resolvedCredentials.source === 'external_env') {
+    report.credentialsGate.status = 'PASS';
+    return;
+  }
+  provisionEphemeralUser();
+}
+
+function cleanupEphemeralUser() {
+  if (!shouldCleanupEphemeralUser) {
+    return;
+  }
+
+  const sessionsResult = runBackendCommand([
+    'exec',
+    '-T',
+    'db',
+    'psql',
+    '-U',
+    'meteo_app',
+    '-d',
+    'meteo_pipeline',
+    '-Atc',
+    `
+WITH target AS (
+  SELECT user_id FROM meteo.kornix_users WHERE username = '${ephemeralUsername}'
+),
+deleted AS (
+  DELETE FROM meteo.kornix_user_sessions
+  WHERE user_id IN (SELECT user_id FROM target)
+  RETURNING 1
+)
+SELECT count(*) FROM deleted;
+`
+  ]);
+  report.credentialsGate.ephemeralBackendUser.cleanupSessionsRevoked = sessionsResult.status === 0 ? 'PASS' : 'FAIL';
+
+  const deactivateResult = runBackendCommand([
+    'exec',
+    '-T',
+    'db',
+    'psql',
+    '-U',
+    'meteo_app',
+    '-d',
+    'meteo_pipeline',
+    '-Atc',
+    `
+UPDATE meteo.kornix_users
+SET is_active = false,
+    updated_at = now()
+WHERE username = '${ephemeralUsername}';
+SELECT COALESCE(bool_and(is_active = false), false)
+FROM meteo.kornix_users
+WHERE username = '${ephemeralUsername}';
+`
+  ]);
+  report.credentialsGate.ephemeralBackendUser.cleanupUserDeactivated =
+    deactivateResult.status === 0 && (deactivateResult.stdout || '').trim().endsWith('t') ? 'PASS' : 'FAIL';
+
+  if (
+    report.credentialsGate.ephemeralBackendUser.cleanupSessionsRevoked !== 'PASS' ||
+    report.credentialsGate.ephemeralBackendUser.cleanupUserDeactivated !== 'PASS'
+  ) {
+    const cleanupMessage = 'Ephemeral backend smoke user cleanup failed; temporary user/session cleanup is not proven.';
+    if (!blockers.includes(cleanupMessage)) {
+      blockers.push(cleanupMessage);
+    }
+  }
+}
+
 try {
+  resolveCredentials();
+
   const meBefore = await request('/api/v1/me');
   report.auth.meBeforeLoginStatus = meBefore.status;
 
   if (meBefore.status === 401 || meBefore.status === 403) {
-    if (!username || !password) {
-      fail('KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed.');
-    }
-
     const csrfResponse = await request('/api/v1/auth/csrf');
     if (!csrfResponse.ok) {
       fail(`CSRF bootstrap failed with HTTP ${csrfResponse.status}.`);
@@ -158,7 +333,7 @@ try {
         'Content-Type': 'application/json',
         'X-CSRF-Token': csrfToken
       },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username: resolvedCredentials.username, password: resolvedCredentials.password })
     });
     report.auth.loginSucceeded = loginResponse.ok;
     if (!loginResponse.ok) {
@@ -168,8 +343,13 @@ try {
 
   const meAfter = await request('/api/v1/me');
   report.auth.meAfterLoginStatus = meAfter.status;
+  const meAfterBody = await jsonOrNull(meAfter);
+  report.auth.organizationCode = meAfterBody?.organizationCode || meAfterBody?.organization?.code || null;
   if (!meAfter.ok) {
     fail(`/api/v1/me did not return authenticated user: HTTP ${meAfter.status}.`);
+  }
+  if (report.auth.organizationCode && report.auth.organizationCode !== 'SP') {
+    fail(`/api/v1/me returned unexpected organization scope: ${report.auth.organizationCode}.`);
   }
 
   const contextResponse = await request('/api/v2/kornix/current-context');
@@ -189,6 +369,15 @@ try {
 
   if (!currentAppliedCalculationRunId) {
     fail('currentAppliedCalculationRunId is empty; published SP37 run is not visible to frontend API.');
+  }
+
+  const runResponse = await request(
+    `/api/v2/kornix/water-regime/calculation-runs/${encodeURIComponent(currentAppliedCalculationRunId)}`
+  );
+  report.calculationRun.statusCode = runResponse.status;
+  report.calculationRun.pass = runResponse.ok;
+  if (!report.calculationRun.pass) {
+    fail(`calculation-run detail failed with HTTP ${runResponse.status}.`);
   }
 
   const methodCode =
@@ -252,14 +441,29 @@ try {
     fail(`Profile smoke expected ${expectedMetrics} metrics with all required metrics; got ${metrics.length}, missing ${report.profileTimeseries.missingMetrics.join(', ') || 'none'}.`);
   }
 
-  report.status = 'PASS';
+  if (blockers.length === 0) {
+    report.status = 'PASS';
+  }
+  cleanupEphemeralUser();
+  if (blockers.length > 0) {
+    report.status = 'FAIL';
+    process.exitCode = 1;
+  }
   saveReport();
-  console.log('KORNIX frontend API v2 SP37 live smoke PASS.');
+  if (report.status === 'PASS') {
+    console.log('KORNIX frontend API v2 SP37 live smoke PASS.');
+  } else {
+    console.error('KORNIX frontend API v2 SP37 live smoke FAIL.');
+    for (const blocker of blockers) {
+      console.error(`- ${blocker}`);
+    }
+  }
 } catch (error) {
   report.status = 'FAIL';
   if (error instanceof Error && !blockers.includes(error.message)) {
     blockers.push(error.message);
   }
+  cleanupEphemeralUser();
   saveReport();
   console.error('KORNIX frontend API v2 SP37 live smoke FAIL.');
   for (const blocker of blockers) {

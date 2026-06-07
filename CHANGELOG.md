@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- Добавлен ephemeral auth mode для frontend API v2 SP37 live-smoke: при
+  отсутствии внешних smoke credentials runner создаёт временного backend
+  пользователя через существующий bootstrap helper, проходит обычный
+  CSRF/login/session flow и затем отзывает сессии и деактивирует пользователя
+  без записи пароля в отчёты.
 - Добавлен frontend API v2 SP37 live-smoke runner для проверки опубликованного
   `currentAppliedCalculationRunId`, 37 map features и 13 profile metrics без
   вывода cookies, CSRF token или пароля в отчёты.

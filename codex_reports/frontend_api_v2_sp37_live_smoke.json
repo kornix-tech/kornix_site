@@ -1,11 +1,40 @@
 {
   "status": "FAIL",
   "apiBaseUrl": "http://localhost:8001",
+  "credentialSource": "ephemeral_backend_user",
+  "credentialsGate": {
+    "status": "PASS",
+    "credentialSource": "ephemeral_backend_user",
+    "externalEnv": {
+      "KORNIX_FRONTEND_SMOKE_USERNAME": false,
+      "KORNIX_FRONTEND_SMOKE_PASSWORD": false
+    },
+    "ephemeralBackendUser": {
+      "attempted": true,
+      "username": "frontend_sp37_live_smoke_user",
+      "organizationSlug": "SP",
+      "roles": [
+        "viewer",
+        "farm_operator"
+      ],
+      "createdOrUpdated": "PASS",
+      "passwordGeneratedInMemory": true,
+      "passwordWrittenToReports": false,
+      "cleanupSessionsRevoked": "PASS",
+      "cleanupUserDeactivated": "PASS"
+    },
+    "valuesRedacted": true,
+    "blockers": [
+      "Login failed with HTTP 500.",
+      "Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500."
+    ]
+  },
   "auth": {
     "meBeforeLoginStatus": 401,
-    "loginAttempted": false,
+    "loginAttempted": true,
     "loginSucceeded": false,
-    "meAfterLoginStatus": null
+    "meAfterLoginStatus": null,
+    "organizationCode": null
   },
   "currentContext": {
     "statusCode": null,
@@ -15,6 +44,10 @@
     "defaultMethodCode": null,
     "serverDate": null,
     "forecastEndDate": null
+  },
+  "calculationRun": {
+    "statusCode": null,
+    "pass": false
   },
   "map": {
     "statusCode": null,
@@ -32,6 +65,7 @@
     "pass": false
   },
   "blockers": [
-    "KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed."
+    "Login failed with HTTP 500.",
+    "Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500."
   ]
 }

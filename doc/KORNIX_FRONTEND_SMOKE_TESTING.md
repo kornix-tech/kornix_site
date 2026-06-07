@@ -27,8 +27,14 @@ node scripts/frontend_api_v2_sp37_live_smoke.mjs
 
 If `/api/v1/me` requires authentication, provide
 `KORNIX_FRONTEND_SMOKE_USERNAME` and `KORNIX_FRONTEND_SMOKE_PASSWORD` through
-the environment. The smoke runner keeps cookies/CSRF tokens in memory, redacts
-secrets from logs, and fails unless current-context exposes a non-empty
+the environment. If they are absent in the local CODEX runtime, the smoke runner
+can create a temporary backend user through the existing backend bootstrap
+helper, use it for the normal CSRF/login/session flow, then revoke sessions and
+deactivate the temporary user. The generated password stays only in process
+memory and is not written to reports.
+
+The smoke runner keeps cookies/CSRF tokens in memory, redacts secrets from logs,
+and fails unless current-context exposes a non-empty
 `currentAppliedCalculationRunId`, the map endpoint returns 37 features, and
 profile-timeseries returns all 13 required metrics including
 `shortwave_radiation_daily_mj_m2`.

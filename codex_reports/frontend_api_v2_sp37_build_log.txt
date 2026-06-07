@@ -23,7 +23,7 @@ dist/assets/index-BCqw-eLD.js                  40.07 kB │ gzip:  13.03 kB
 dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
 dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
 dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
-✓ built in 2.98s
+✓ built in 3.51s
 npm notice
 npm notice New major version of npm available! 10.8.2 -> 11.16.0
 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
