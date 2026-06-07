@@ -1,4 +1,6 @@
-## git status after first push / before final report commit
+## git status before authenticated credentials gate commit
 ## main...origin/main
  M codex_reports/frontend_api_v2_sp37_git_status.txt
  M codex_reports/frontend_api_v2_sp37_live_report.json
+ M codex_reports/frontend_api_v2_sp37_live_report.md
+?? codex_reports/frontend_api_v2_sp37_credentials_gate.json

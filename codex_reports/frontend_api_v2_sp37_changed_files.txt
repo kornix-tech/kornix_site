@@ -1,4 +1,6 @@
-## final report-only changed files
+## changed files before authenticated credentials gate commit
 codex_reports/frontend_api_v2_sp37_changed_files.txt
 codex_reports/frontend_api_v2_sp37_git_status.txt
 codex_reports/frontend_api_v2_sp37_live_report.json
+codex_reports/frontend_api_v2_sp37_live_report.md
+codex_reports/frontend_api_v2_sp37_credentials_gate.json

@@ -2,9 +2,13 @@
 
 Status: **NOT_READY_FRONTEND_API_V2_SP37_GAP**
 
-Target status: KORNIX_FRONTEND_API_V2_SP37_LIVE_READY
+Generated at: 2026-06-08T00:00:00+03:00
 
-Generated at: 2026-06-07T20:50:00.000Z
+## Credentials gate
+
+- KORNIX_FRONTEND_SMOKE_USERNAME present: false
+- KORNIX_FRONTEND_SMOKE_PASSWORD present: false
+- values redacted: true
 
 ## Blockers
 
@@ -27,6 +31,7 @@ Generated at: 2026-06-07T20:50:00.000Z
 - profile metrics: null
 - required metrics present: NOT_RUN
 - shortwave present: NOT_RUN
+- mock mode used: false
 
 ## Checks
 
@@ -37,12 +42,11 @@ Generated at: 2026-06-07T20:50:00.000Z
 - contract scan: PASS
 - security scan: PASS
 - docker build: PASS
-- nginx/static smoke: PASS
 - git diff check: PASS
 
 ## Reports
 
 - codex_reports/frontend_api_v2_sp37_live_report.md
 - codex_reports/frontend_api_v2_sp37_live_report.json
-- codex_reports/frontend_api_v2_sp37_contract_map.json
 - codex_reports/frontend_api_v2_sp37_live_smoke.json
+- codex_reports/frontend_api_v2_sp37_credentials_gate.json
