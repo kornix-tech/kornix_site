@@ -1,27 +1,33 @@
 {
   "status": "NOT_READY_FRONTEND_API_V2_SP37_GAP",
-  "baseline": {
-    "frontendArchive": "kornix_site-main-23-12.zip",
-    "backendStatusAssumption": "KORNIX_OPERATIONAL_ACCELERATED_AUTOTEST_APPLY_PUBLISH_READY",
-    "oldReportsWereEnvLimited": true
-  },
+  "generatedAt": "2026-06-07T20:50:00.000Z",
+  "targetStatus": "KORNIX_FRONTEND_API_V2_SP37_LIVE_READY",
+  "blockers": [
+    "KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed."
+  ],
   "implementation": {
-    "currentAppliedCalculationRunIdUsedAsDisplayedRun": true,
-    "legacyKornixV1RuntimeEndpointsAbsent": true,
-    "adminRuntimeEndpointsAbsent": true,
-    "mockApiDisabledForSmoke": true,
-    "shortwaveMetricConsumed": true,
-    "shortwaveMetricVisibleOrExported": true,
-    "profileMetricsCoverageCheck": "PASS"
+    "currentAppliedCalculationRunIdDisplayedRun": "PASS",
+    "shortwaveRadiationDailyConsumed": "PASS",
+    "shortwaveVisibleExported": "PASS",
+    "metricCoverageCheck": "PASS",
+    "liveSmokeRunner": "PASS"
   },
-  "liveSmoke": {
-    "status": "FAIL",
-    "apiBaseUrl": "http://localhost:8001",
-    "authenticated": false,
+  "liveApiSmoke": {
+    "authenticatedSession": "FAIL",
+    "currentContext": "NOT_RUN",
     "currentAppliedCalculationRunId": null,
     "mapFeatures": null,
     "profileMetrics": null,
-    "shortwavePresent": null
+    "requiredMetricsPresent": "NOT_RUN",
+    "shortwavePresent": "NOT_RUN",
+    "rawStatus": "FAIL",
+    "auth": {
+      "meBeforeLoginStatus": 401,
+      "loginAttempted": false,
+      "loginSucceeded": false,
+      "meAfterLoginStatus": null
+    },
+    "apiBaseUrl": "http://localhost:8001"
   },
   "checks": {
     "npmCi": "PASS",
@@ -30,24 +36,23 @@
     "contractTest": "PASS",
     "contractScan": "PASS",
     "securityScan": "PASS",
-    "diffCheck": "PASS",
     "dockerBuild": "PASS",
-    "nginxSmoke": "PASS"
+    "nginxStaticSmoke": "PASS",
+    "gitDiffCheck": "PASS"
   },
-  "docs": {
-    "readmeUpdated": true,
-    "apiWorkflowUpdated": true,
-    "smokeTestingUpdated": true,
-    "changelogUpdated": true
-  },
+  "reports": [
+    "codex_reports/frontend_api_v2_sp37_live_report.md",
+    "codex_reports/frontend_api_v2_sp37_live_report.json",
+    "codex_reports/frontend_api_v2_sp37_contract_map.json",
+    "codex_reports/frontend_api_v2_sp37_live_smoke.json"
+  ],
   "git": {
-    "committed": true,
-    "pushed": true,
-    "commitSha": "reported_in_final_codex_response_after_push",
-    "worktreeClean": true,
-    "pushFailureReason": null
-  },
-  "blockers": [
-    "KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed."
-  ]
+    "committed": false,
+    "pushed": false,
+    "commitSha": null,
+    "branch": "main",
+    "worktreeClean": false,
+    "pushFailureReason": null,
+    "note": "Exact commit/push result is reported in final Codex response after git operations."
+  }
 }
