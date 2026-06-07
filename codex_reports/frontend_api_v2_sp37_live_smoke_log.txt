@@ -1,0 +1,2 @@
+KORNIX frontend API v2 SP37 live smoke FAIL.
+- KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed.

@@ -20,6 +20,12 @@ GET /api/v2/kornix/water-regime/profile-timeseries?calculationRunId=...&methodCo
 The frontend never sends the catalog placeholder as a map/profile
 `calculationRunId`.
 
+Profile-timeseries must preserve all enabled backend profile metrics declared
+in `src/config/metrics.ts`. The weather chart and CSV export include
+`shortwave_radiation_daily_mj_m2` (`Солнечная радиация`, `МДж/м²/сутки`), so
+the backend SP37 13-metric profile response is not silently reduced to 12
+metrics.
+
 ## Approval
 
 ```http
@@ -41,3 +47,17 @@ the approval endpoint.
 
 Only positive irrigation values are serialized. `0`, negative values, NaN and
 empty cells are not sent as irrigation events.
+
+## Contract Checks
+
+Run:
+
+```bash
+npm run test:contract
+```
+
+This combines `scripts/check-frontend-contract.sh` with
+`scripts/check-profile-metric-coverage.mjs`. The profile metric coverage check
+fails if an enabled backend metric is not consumed/exported by
+`WaterRegimeChart`, with an explicit guard for
+`shortwave_radiation_daily_mj_m2`.

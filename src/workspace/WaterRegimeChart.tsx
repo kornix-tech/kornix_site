@@ -38,6 +38,9 @@ type ProfileRow = {
   potentialEvaporationDaily: number | null;
   potentialEvaporationDailyFact: number | null;
   potentialEvaporationDailyForecast: number | null;
+  shortwaveRadiationDaily: number | null;
+  shortwaveRadiationDailyFact: number | null;
+  shortwaveRadiationDailyForecast: number | null;
   temperatureSum: number | null;
   temperatureSumFact: number | null;
   temperatureSumForecast: number | null;
@@ -98,8 +101,9 @@ const LEFT_AXIS_WIDTH = 44;
 const RIGHT_AXIS_HUMIDITY_WIDTH = 42;
 const RIGHT_AXIS_WIND_WIDTH = 46;
 const RIGHT_AXIS_EVAPORATION_WIDTH = 42;
+const RIGHT_AXIS_SHORTWAVE_WIDTH = 48;
 const RIGHT_AXIS_TOTAL_WIDTH =
-  RIGHT_AXIS_HUMIDITY_WIDTH + RIGHT_AXIS_WIND_WIDTH + RIGHT_AXIS_EVAPORATION_WIDTH;
+  RIGHT_AXIS_HUMIDITY_WIDTH + RIGHT_AXIS_WIND_WIDTH + RIGHT_AXIS_EVAPORATION_WIDTH + RIGHT_AXIS_SHORTWAVE_WIDTH;
 
 const BOTTOM_CHART_MARGIN = {
   ...CHART_MARGIN,
@@ -410,6 +414,7 @@ function buildProfileRows(
     const humidity = meanValue(series('relative_humidity_daily_pct'), day);
     const wind = meanValue(series('wind_daily_mps'), day);
     const potentialEvaporationDaily = scalarValue(series('eto_daily_mm'), day);
+    const shortwaveRadiationDaily = scalarValue(series('shortwave_radiation_daily_mj_m2'), day);
     const temperatureSum = scalarValue(series('positive_temperature_sum_from_sowing_c'), day);
     const cropTranspirationDaily = scalarValue(series('crop_transpiration_daily_mm'), day);
     const totalCapacity = scalarValue(series('soil_total_capacity_water_mm'), day);
@@ -443,6 +448,11 @@ function buildProfileRows(
       forecastStart,
       potentialEvaporationDaily
     );
+    const [shortwaveRadiationDailyFact, shortwaveRadiationDailyForecast] = splitForecastValue(
+      day,
+      forecastStart,
+      shortwaveRadiationDaily
+    );
     const [temperatureSumFact, temperatureSumForecast] = splitForecastValue(day, forecastStart, temperatureSum);
     const [cropTranspirationDailyFact, cropTranspirationDailyForecast] = splitForecastValue(
       day,
@@ -474,6 +484,9 @@ function buildProfileRows(
       potentialEvaporationDaily,
       potentialEvaporationDailyFact,
       potentialEvaporationDailyForecast,
+      shortwaveRadiationDaily,
+      shortwaveRadiationDailyFact,
+      shortwaveRadiationDailyForecast,
       temperatureSum,
       temperatureSumFact,
       temperatureSumForecast,
@@ -540,6 +553,7 @@ function buildProfileCsv(rows: ProfileRow[], forecastStart: string, methodCode: 
       'relative_humidity_daily_pct',
       'wind_daily_mps',
       'eto_daily_mm',
+      'shortwave_radiation_daily_mj_m2',
       'positive_temperature_sum_from_sowing_c',
       'crop_transpiration_daily_mm',
       'soil_total_capacity_water_mm',
@@ -559,6 +573,7 @@ function buildProfileCsv(rows: ProfileRow[], forecastStart: string, methodCode: 
       row.humidity,
       row.wind,
       row.potentialEvaporationDaily,
+      row.shortwaveRadiationDaily,
       row.temperatureSum,
       row.cropTranspirationDaily,
       row.totalCapacity,
@@ -1082,6 +1097,15 @@ function CompositeProfileChart({
               axisLine={false}
               tick={{ fill: '#8f4e18', fontSize: 11 }}
             />
+            <YAxis
+              yAxisId="shortwave"
+              orientation="right"
+              width={RIGHT_AXIS_SHORTWAVE_WIDTH}
+              unit="МДж"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: '#9b6b00', fontSize: 11 }}
+            />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
             <ForecastBoundary forecastX={forecastX} label yAxisId="temperature" />
             <SelectedDayMarker selectedX={selectedX} yAxisId="temperature" />
@@ -1169,6 +1193,29 @@ function CompositeProfileChart({
               dataKey="potentialEvaporationDailyForecast"
               name="Суточная потенциальная испаряемость, мм"
               stroke="#a75515"
+              strokeOpacity={0.34}
+              strokeDasharray="2 5"
+              strokeWidth={2}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              yAxisId="shortwave"
+              type="monotone"
+              dataKey="shortwaveRadiationDailyFact"
+              name="Солнечная радиация, МДж/м²/сутки"
+              stroke="#c28b00"
+              strokeDasharray="6 3"
+              strokeWidth={2}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              yAxisId="shortwave"
+              type="monotone"
+              dataKey="shortwaveRadiationDailyForecast"
+              name="Солнечная радиация, МДж/м²/сутки"
+              stroke="#c28b00"
               strokeOpacity={0.34}
               strokeDasharray="2 5"
               strokeWidth={2}

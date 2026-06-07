@@ -15,6 +15,24 @@
 - Profile endpoint with `currentAppliedCalculationRunId + methodCode`
 - Approval submit and polling
 
+For SP37 live API v2 proof run:
+
+```bash
+KORNIX_FRONTEND_SMOKE_API_BASE_URL=http://localhost:8001 \
+KORNIX_FRONTEND_SMOKE_EXPECTED_FIELDS=37 \
+KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS=13 \
+KORNIX_FRONTEND_SMOKE_OUTPUT_JSON=codex_reports/frontend_api_v2_sp37_live_smoke.json \
+node scripts/frontend_api_v2_sp37_live_smoke.mjs
+```
+
+If `/api/v1/me` requires authentication, provide
+`KORNIX_FRONTEND_SMOKE_USERNAME` and `KORNIX_FRONTEND_SMOKE_PASSWORD` through
+the environment. The smoke runner keeps cookies/CSRF tokens in memory, redacts
+secrets from logs, and fails unless current-context exposes a non-empty
+`currentAppliedCalculationRunId`, the map endpoint returns 37 features, and
+profile-timeseries returns all 13 required metrics including
+`shortwave_radiation_daily_mj_m2`.
+
 ## Browser Smoke
 
 - Open `http://localhost:5173/map`
@@ -32,3 +50,4 @@
 - No `/api/admin/v1` requests
 - `0 мм` is not submitted
 - Values outside `managedScope` are not editable or submitted
+- Profile metric coverage does not drop `shortwave_radiation_daily_mj_m2`

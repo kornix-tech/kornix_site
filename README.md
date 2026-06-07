@@ -239,6 +239,29 @@ frontend показывает каталог/состояние готовнос
 `CSRF_TOKEN_INVALID` unsafe-запрос повторно получает CSRF token и делает один
 безопасный повтор запроса.
 
+Проверка frontend API v2/SP37 live-smoke:
+
+```bash
+KORNIX_FRONTEND_SMOKE_API_BASE_URL=http://localhost:8001 \
+KORNIX_FRONTEND_SMOKE_EXPECTED_FIELDS=37 \
+KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS=13 \
+node scripts/frontend_api_v2_sp37_live_smoke.mjs
+```
+
+Если `/api/v1/me` требует авторизацию, задайте
+`KORNIX_FRONTEND_SMOKE_USERNAME` и `KORNIX_FRONTEND_SMOKE_PASSWORD` в окружении.
+Скрипт не печатает cookies, CSRF token или пароль и сохраняет JSON-результат в
+`codex_reports/frontend_api_v2_sp37_live_smoke.json`.
+
+Покрытие profile metrics проверяется командой:
+
+```bash
+npm run test:contract
+```
+
+Она блокирует регресс, при котором backend metric
+`shortwave_radiation_daily_mj_m2` перестаёт попадать в график или CSV export.
+
 Проверка `/api/v1/me` для будущего backend:
 
 ```bash

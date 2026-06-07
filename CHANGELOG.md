@@ -3,11 +3,20 @@
 ## [Unreleased]
 
 ### Added
+- Добавлен frontend API v2 SP37 live-smoke runner для проверки опубликованного
+  `currentAppliedCalculationRunId`, 37 map features и 13 profile metrics без
+  вывода cookies, CSRF token или пароля в отчёты.
+- Добавлена dependency-free проверка покрытия profile metrics, блокирующая
+  потерю backend metric `shortwave_radiation_daily_mj_m2` в графике или CSV.
 - Добавлен свежий baseline-аудит frontend-кодовой базы KORNIX с машинно-читаемыми
   отчётами в `codex_reports/` и ссылками на текущий security/documentation
   статус в README.
 
 ### Changed
+- График водного режима теперь потребляет и экспортирует солнечную радиацию
+  `shortwave_radiation_daily_mj_m2` (`МДж/м²/сутки`) как отдельную линию в
+  weather-зоне, чтобы backend SP37 profile response из 13 метрик не сжимался до
+  12 видимых/exported метрик.
 - Frontend calculation-run status helper переведён на production route
   `/api/v2/kornix/water-regime/calculation-runs/{calculationRunId}`; старый
   `/api/v2/kornix/calculation-runs/{calculationRunId}/status` удалён из

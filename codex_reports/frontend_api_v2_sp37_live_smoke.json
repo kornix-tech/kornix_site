@@ -1,0 +1,37 @@
+{
+  "status": "FAIL",
+  "apiBaseUrl": "http://localhost:8001",
+  "auth": {
+    "meBeforeLoginStatus": 401,
+    "loginAttempted": false,
+    "loginSucceeded": false,
+    "meAfterLoginStatus": null
+  },
+  "currentContext": {
+    "statusCode": null,
+    "currentAppliedCalculationRunId": null,
+    "frontendMode": null,
+    "submitAllowed": null,
+    "defaultMethodCode": null,
+    "serverDate": null,
+    "forecastEndDate": null
+  },
+  "map": {
+    "statusCode": null,
+    "features": null,
+    "expectedFeatures": 37,
+    "pass": false
+  },
+  "profileTimeseries": {
+    "statusCode": null,
+    "metrics": null,
+    "expectedMetrics": 13,
+    "requiredMetricsPresent": false,
+    "missingMetrics": [],
+    "shortwavePresent": false,
+    "pass": false
+  },
+  "blockers": [
+    "KORNIX_FRONTEND_SMOKE_USERNAME/KORNIX_FRONTEND_SMOKE_PASSWORD unavailable; authenticated live frontend/backend API smoke could not be executed."
+  ]
+}

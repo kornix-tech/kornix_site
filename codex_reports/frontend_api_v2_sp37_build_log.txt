@@ -1,0 +1,31 @@
+
+> kornix-frontend@0.1.0 build
+> npm run typecheck && vite build
+
+
+> kornix-frontend@0.1.0 typecheck
+> tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false
+
+vite v7.3.3 building client environment for production...
+transforming...
+✓ 773 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.73 kB │ gzip:   0.34 kB
+dist/assets/vendor-map-CIGW-MKW.css            15.61 kB │ gzip:   6.46 kB
+dist/assets/index-nQ6MXr0w.css                 34.64 kB │ gzip:   7.52 kB
+dist/assets/FieldMap-B6CnOUf-.js                6.71 kB │ gzip:   2.91 kB
+dist/assets/index-VDAUHfGj.js                  13.00 kB │ gzip:   5.19 kB
+dist/assets/IrrigationInputTable-7hj4xNoC.js   15.35 kB │ gzip:   5.74 kB
+dist/assets/WaterRegimeChart-8i1sJPcL.js       25.24 kB │ gzip:   7.28 kB
+dist/assets/vendor-query-B7GAe2XU.js           33.63 kB │ gzip:  10.13 kB
+dist/assets/index-BCqw-eLD.js                  40.07 kB │ gzip:  13.03 kB
+dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
+dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
+dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
+✓ built in 3.09s
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.16.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+npm notice To update run: npm install -g npm@11.16.0
+npm notice
