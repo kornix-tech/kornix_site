@@ -1,5 +1,5 @@
 {
-  "status": "FAIL",
+  "status": "PASS",
   "apiBaseUrl": "http://localhost:8001",
   "credentialSource": "ephemeral_backend_user",
   "credentialsGate": {
@@ -24,48 +24,42 @@
       "cleanupUserDeactivated": "PASS"
     },
     "valuesRedacted": true,
-    "blockers": [
-      "Login failed with HTTP 500.",
-      "Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500."
-    ]
+    "blockers": []
   },
   "auth": {
     "meBeforeLoginStatus": 401,
     "loginAttempted": true,
-    "loginSucceeded": false,
-    "meAfterLoginStatus": null,
-    "organizationCode": null
+    "loginSucceeded": true,
+    "meAfterLoginStatus": 200,
+    "organizationCode": "SP"
   },
   "currentContext": {
-    "statusCode": null,
-    "currentAppliedCalculationRunId": null,
-    "frontendMode": null,
-    "submitAllowed": null,
-    "defaultMethodCode": null,
-    "serverDate": null,
-    "forecastEndDate": null
+    "statusCode": 200,
+    "currentAppliedCalculationRunId": "kornix_api_c0c083c7d01951d88d00bb29ffe40b21",
+    "frontendMode": "stale_read_only",
+    "submitAllowed": false,
+    "defaultMethodCode": "simple_eto_single_layer_soil",
+    "serverDate": "2026-06-08",
+    "forecastEndDate": "2026-06-15"
   },
   "calculationRun": {
-    "statusCode": null,
-    "pass": false
+    "statusCode": 200,
+    "pass": true
   },
   "map": {
-    "statusCode": null,
-    "features": null,
+    "statusCode": 200,
+    "features": 37,
     "expectedFeatures": 37,
-    "pass": false
+    "pass": true
   },
   "profileTimeseries": {
-    "statusCode": null,
-    "metrics": null,
+    "statusCode": 200,
+    "metrics": 13,
     "expectedMetrics": 13,
-    "requiredMetricsPresent": false,
+    "requiredMetricsPresent": true,
     "missingMetrics": [],
-    "shortwavePresent": false,
-    "pass": false
+    "shortwavePresent": true,
+    "pass": true
   },
-  "blockers": [
-    "Login failed with HTTP 500.",
-    "Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500."
-  ]
+  "blockers": []
 }

@@ -1,8 +1,15 @@
 # Frontend API v2 SP37 live report
 
-Status: **NOT_READY_FRONTEND_API_V2_SP37_GAP**
+Status: **KORNIX_FRONTEND_API_V2_SP37_LIVE_READY**
 
 Generated at: 2026-06-08T00:00:00+03:00
+
+## Preflight
+
+- frontend commit before work: a000e7de635a9e2a2bc0d3e9878c2344cb6a3608
+- backend commit observed: 2a97f3e6fafc23c9d69b9157c75be691ed710460
+- backend runtime reachable: PASS
+- backend session secret fix observed: PASS_VIA_KORNIX_API_SESSION_SECRET_FILE
 
 ## Credentials gate
 
@@ -17,14 +24,14 @@ Generated at: 2026-06-08T00:00:00+03:00
 
 ## Live API smoke
 
-- authenticated session: FAIL
-- /api/v1/me organization: null
-- current-context: NOT_RUN
-- currentAppliedCalculationRunId: null
-- map features: null
-- profile metrics: null
-- required metrics present: NOT_RUN
-- shortwave present: NOT_RUN
+- authenticated session: PASS
+- /api/v1/me organization: SP
+- current-context: PASS
+- currentAppliedCalculationRunId: kornix_api_c0c083c7d01951d88d00bb29ffe40b21
+- map features: 37
+- profile metrics: 13
+- required metrics present: PASS
+- shortwave present: PASS
 - mock mode used: false
 
 ## Checks
@@ -41,8 +48,7 @@ Generated at: 2026-06-08T00:00:00+03:00
 
 ## Blockers
 
-- Login failed with HTTP 500.
-- Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500.
+- none
 
 ## Reports
 
@@ -50,3 +56,4 @@ Generated at: 2026-06-08T00:00:00+03:00
 - codex_reports/frontend_api_v2_sp37_live_report.json
 - codex_reports/frontend_api_v2_sp37_live_smoke.json
 - codex_reports/frontend_api_v2_sp37_credentials_gate.json
+- codex_reports/frontend_api_v2_sp37_final_preflight.json

@@ -1,11 +1,11 @@
 {
-  "status": "NOT_READY_FRONTEND_API_V2_SP37_GAP",
+  "status": "KORNIX_FRONTEND_API_V2_SP37_LIVE_READY",
   "generatedAt": "2026-06-08T00:00:00+03:00",
   "baseline": {
     "previousFrontendStatus": "NOT_READY_FRONTEND_API_V2_SP37_GAP",
-    "previousFrontendCommit": "1704ce4e56ad43a910d03e3ae263d9430f74150a",
-    "backendOperationalReady": true,
-    "backendAdminExperimentsReady": true
+    "previousFrontendCommit": "a000e7de635a9e2a2bc0d3e9878c2344cb6a3608",
+    "backendSessionRuntimeReady": true,
+    "backendCommit": "2a97f3e6fafc23c9d69b9157c75be691ed710460"
   },
   "credentialsGate": {
     "status": "PASS",
@@ -13,6 +13,7 @@
     "usernamePresentOrProvisioned": true,
     "passwordPresentOrGenerated": true,
     "valuesRedacted": true,
+    "ephemeralUserAttemptedWhenEnvMissing": true,
     "ephemeralUserCleanup": "PASS"
   },
   "implementation": {
@@ -23,21 +24,21 @@
     "liveSmokeRunner": "PASS"
   },
   "liveApiSmoke": {
-    "status": "FAIL",
+    "status": "PASS",
     "apiBaseUrl": "http://localhost:8001",
-    "authenticatedSession": "FAIL",
+    "authenticatedSession": "PASS",
     "me": {
-      "status": "NOT_RUN",
-      "organizationCode": null
+      "status": "PASS",
+      "organizationCode": "SP"
     },
-    "currentContext": "NOT_RUN",
-    "currentAppliedCalculationRunId": null,
-    "mapFeatures": null,
+    "currentContext": "PASS",
+    "currentAppliedCalculationRunId": "kornix_api_c0c083c7d01951d88d00bb29ffe40b21",
+    "mapFeatures": 37,
     "expectedMapFeatures": 37,
-    "profileMetrics": null,
+    "profileMetrics": 13,
     "expectedProfileMetrics": 13,
-    "requiredMetricsPresent": "NOT_RUN",
-    "shortwavePresent": "NOT_RUN",
+    "requiredMetricsPresent": "PASS",
+    "shortwavePresent": "PASS",
     "mockModeUsed": false
   },
   "checks": {
@@ -47,9 +48,9 @@
     "contractTest": "PASS",
     "contractScan": "PASS",
     "securityScan": "PASS",
-    "secretScan": "PASS",
     "dockerBuild": "PASS",
-    "gitDiffCheck": "PASS"
+    "gitDiffCheck": "PASS",
+    "secretScan": "PASS"
   },
   "git": {
     "committed": true,
@@ -58,8 +59,5 @@
     "worktreeClean": true,
     "pushFailureReason": null
   },
-  "blockers": [
-    "Login failed with HTTP 500.",
-    "Backend runtime KORNIX_API_SESSION_SECRET is not configured; authenticated session login returns HTTP 500."
-  ]
+  "blockers": []
 }
