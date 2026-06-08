@@ -1,5 +1,8 @@
 # KORNIX Frontend API v1.1
 
+> Archived/deprecated: это историческая спецификация `/api/v1/kornix/*`.
+> Актуальный frontend production/UAT contract для расчётов — `/api/v2/kornix/*`.
+
 Документ фиксирует контракт, под который адаптирован сайт KORNIX. Backend остаётся
 единственной границей доступа к данным: frontend не читает БД, KML, Open-Meteo,
 Python-модули расчёта и не передаёт `organizationId` или `organizationCode` как

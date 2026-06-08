@@ -482,7 +482,7 @@ export function IrrigationInputTable({
   const activeLayerQuery = useQuery({
     queryKey: ['current-irrigation-layer', seasonYear, context?.managedScope.scopeVersion],
     enabled: Boolean(context),
-    queryFn: () => kornixApi.getCurrentIrrigationLayerV2(),
+    queryFn: () => kornixApi.getCurrentIrrigationLayerV2({ seasonYear }),
     retry: 1
   });
   const backendIrrigationLayer = useMemo(

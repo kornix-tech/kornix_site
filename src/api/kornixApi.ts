@@ -45,6 +45,10 @@ const CALCULATION_REQUEST_TIMEOUT_MS =
     ? configuredCalculationTimeoutMs
     : DEFAULT_CALCULATION_REQUEST_TIMEOUT_MS;
 
+function seasonYearQuery(seasonYear: number): string {
+  return new URLSearchParams({ seasonYear: String(seasonYear) }).toString();
+}
+
 function delay<T>(value: T, ms = 200): Promise<T> {
   return new Promise((resolve) => window.setTimeout(() => resolve(value), ms));
 }
@@ -207,15 +211,17 @@ export const kornixApi = {
     return requestJson<CurrentUserDto>('/api/v1/me');
   },
 
-  async getCurrentContextV2(): Promise<KornixCurrentContextDto> {
+  async getCurrentContextV2(params: { seasonYear: number }): Promise<KornixCurrentContextDto> {
     if (mockEnabled) {
       return delay(getMockCurrentContext());
     }
-    return requestJson<KornixCurrentContextDto>(`${KORNIX_API_PREFIX}/current-context`);
+    return requestJson<KornixCurrentContextDto>(
+      `${KORNIX_API_PREFIX}/current-context?${seasonYearQuery(params.seasonYear)}`
+    );
   },
 
-  async getCurrentContext(): Promise<KornixCurrentContextDto> {
-    return this.getCurrentContextV2();
+  async getCurrentContext(params: { seasonYear: number }): Promise<KornixCurrentContextDto> {
+    return this.getCurrentContextV2(params);
   },
 
   async submitWaterRegimeApprovalV2(request: KornixApprovalRequestDto): Promise<KornixApprovalSubmitResponseDto> {
@@ -243,12 +249,14 @@ export const kornixApi = {
     );
   },
 
-  async getCurrentIrrigationLayerV2(): Promise<KornixCurrentIrrigationLayerDto> {
+  async getCurrentIrrigationLayerV2(params: { seasonYear: number }): Promise<KornixCurrentIrrigationLayerDto> {
     if (mockEnabled) {
       return delay(getMockCurrentIrrigationLayer());
     }
 
-    return requestJson<KornixCurrentIrrigationLayerDto>(`${KORNIX_API_PREFIX}/irrigation-layer/current`);
+    return requestJson<KornixCurrentIrrigationLayerDto>(
+      `${KORNIX_API_PREFIX}/irrigation-layer/current?${seasonYearQuery(params.seasonYear)}`
+    );
   },
 
   async getCalculationRunStatusV2(calculationRunId: string): Promise<KornixCalculationRunStatusDto> {
@@ -257,8 +265,10 @@ export const kornixApi = {
     );
   },
 
-  async getReadinessCurrentV2(): Promise<KornixReadinessSummaryDto> {
-    return requestJson<KornixReadinessSummaryDto>(`${KORNIX_API_PREFIX}/readiness/current`);
+  async getReadinessCurrentV2(params: { seasonYear: number }): Promise<KornixReadinessSummaryDto> {
+    return requestJson<KornixReadinessSummaryDto>(
+      `${KORNIX_API_PREFIX}/readiness/current?${seasonYearQuery(params.seasonYear)}`
+    );
   },
 
   async getMethodsV2(): Promise<KornixMethodsResponseDto> {

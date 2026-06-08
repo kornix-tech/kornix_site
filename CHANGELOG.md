@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- Добавлен pre-UAT same-origin browser/proxy smoke для проверки, что frontend
+  origin обслуживает SPA и проксирует `/api/*` в backend JSON/API, а не в
+  `index.html`.
 - Добавлен ephemeral auth mode для frontend API v2 SP37 live-smoke: при
   отсутствии внешних smoke credentials runner создаёт временного backend
   пользователя через существующий bootstrap helper, проходит обычный
@@ -18,6 +21,12 @@
   статус в README.
 
 ### Changed
+- Frontend API client теперь явно передаёт `seasonYear` в поддерживающие API v2
+  endpoints `current-context`, `readiness/current`, `irrigation-layer/current`
+  и `field-seasons/catalog`, чтобы URL/state сезона не зависел от backend
+  default.
+- Legacy `/api/v1/kornix/*` документы помечены как archived/deprecated; текущий
+  UAT/production contract для расчётных данных — `/api/v2/kornix/*`.
 - График водного режима теперь потребляет и экспортирует солнечную радиацию
   `shortwave_radiation_daily_mj_m2` (`МДж/м²/сутки`) как отдельную линию в
   weather-зоне, чтобы backend SP37 profile response из 13 метрик не сжимался до

@@ -1,5 +1,9 @@
 # KORNIX Frontend API Checklist v0.1
 
+> Archived/deprecated: чеклист ниже относится к раннему `/api/v1/kornix/*`
+> контракту. Текущий frontend runtime и UAT-проверки должны использовать
+> `/api/v2/kornix/*`.
+
 Статус документа: frontend-driven contract draft.
 Основано на текущем коде frontend: React + TypeScript + Vite, Leaflet, Recharts, mock API, `AuthProvider`, `kornixApi`, `KORNIX_METRICS`, `/map`, `/water-regime`.
 

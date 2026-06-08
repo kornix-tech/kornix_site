@@ -1,0 +1,2 @@
+Profile metric coverage check passed.
+Visible/exported metrics: 13/13

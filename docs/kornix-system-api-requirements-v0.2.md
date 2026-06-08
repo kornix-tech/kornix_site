@@ -1,5 +1,9 @@
 # KORNIX System API Requirements v0.2
 
+> Archived/deprecated for frontend runtime: sections with `/api/v1/kornix/*`
+> are historical requirements. Current frontend UAT/prod calculation contract is
+> `/api/v2/kornix/*`.
+
 Дата обновления: 2026-05-31
 Статус: frontend-driven requirements for backend implementation
 Система: KORNIX Water Intelligence frontend

@@ -156,6 +156,12 @@ VITE_ENABLE_MOCK_API=false
 API работает только через `/api/v2/kornix/*`. Legacy `/api/v1/kornix/*` и
 `/api/admin/v1/*` запрещены для пользовательского frontend.
 
+Для pre-UAT production-like проверки frontend origin должен обслуживать SPA и
+проксировать same-origin `/api/*` в backend JSON/API, а не в SPA fallback
+`index.html`. Standalone nginx-образ frontend проксирует `/api/*` в локальный
+backend через `host.docker.internal:8001`; в VDS-контуре тот же контракт может
+выполнять внешний reverse-proxy.
+
 ## Mock API
 
 Для локальной разработки в `.env.example` включён mock API:
@@ -229,6 +235,9 @@ GET  /api/v2/kornix/water-regime/profile-timeseries?calculationRunId=...&methodC
 `defaultMethodCode` и `currentAppliedCalculationRunId`. Именно
 `currentAppliedCalculationRunId` является отображаемым расчётом. Если его нет,
 frontend показывает каталог/состояние готовности и не вызывает map/profile.
+Если backend возвращает `frontendMode=stale_read_only`, UAT допускает
+display-only сценарий карты/графика. Редактирование и отправка approval
+доступны только при `frontendMode=current_editable` и `submitAllowed=true`.
 Активная проекция поливов загружается из `irrigation-layer/current` и является
 исходным состоянием таблицы. Локальное хранилище используется только как draft
 несохранённых правок. Утверждение поливов отправляет только положительные

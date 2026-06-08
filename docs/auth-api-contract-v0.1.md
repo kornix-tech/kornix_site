@@ -1,5 +1,9 @@
 # KORNIX Auth API Contract v0.1
 
+> Note: auth endpoints remain `/api/v1`, but historical `/api/v1/kornix/*`
+> examples in this document are archived. Current calculation data contract is
+> `/api/v2/kornix/*`.
+
 ## Целевой паттерн
 
 Production-авторизация строится через Backend-for-Frontend/session backend:

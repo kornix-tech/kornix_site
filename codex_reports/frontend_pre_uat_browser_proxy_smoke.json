@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "frontendBaseUrl": "http://localhost:8080",
+  "apiBaseUrl": "http://localhost:8080/api",
+  "staticFrontend": "PASS",
+  "sameOriginApiHealth": "PASS",
+  "apiRouteReturnedJsonNotHtml": true,
+  "credentialsGate": {
+    "credentialSource": "ephemeral_backend_user",
+    "externalEnv": {
+      "KORNIX_FRONTEND_SMOKE_USERNAME": false,
+      "KORNIX_FRONTEND_SMOKE_PASSWORD": false
+    },
+    "ephemeralBackendUser": {
+      "attempted": true,
+      "username": "frontend_sp37_live_smoke_user",
+      "organizationSlug": "SP",
+      "roles": [
+        "viewer",
+        "farm_operator"
+      ],
+      "createdOrUpdated": "PASS",
+      "passwordGeneratedInMemory": true,
+      "passwordWrittenToReports": false,
+      "cleanupSessionsRevoked": "PASS",
+      "cleanupUserDeactivated": "PASS"
+    },
+    "valuesRedacted": true
+  },
+  "auth": {
+    "loginAttempted": true,
+    "loginSucceeded": true,
+    "meStatusCode": 200,
+    "organizationCode": "SP"
+  },
+  "currentContext": {
+    "statusCode": 200,
+    "currentAppliedCalculationRunId": "kornix_api_c0c083c7d01951d88d00bb29ffe40b21",
+    "defaultMethodCode": "simple_eto_single_layer_soil",
+    "serverDate": "2026-06-08"
+  },
+  "map": {
+    "statusCode": 200,
+    "features": 37,
+    "expectedFeatures": 37
+  },
+  "profileTimeseries": {
+    "statusCode": 200,
+    "metrics": 13,
+    "expectedMetrics": 13,
+    "requiredMetricsPresent": true,
+    "shortwavePresent": true,
+    "missingMetrics": []
+  },
+  "mockModeUsed": false,
+  "blockers": []
+}

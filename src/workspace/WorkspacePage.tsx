@@ -63,7 +63,7 @@ export function WorkspacePage() {
 
   const contextQuery = useQuery({
     queryKey: ['kornix-current-context', state.seasonYear],
-    queryFn: () => kornixApi.getCurrentContext()
+    queryFn: () => kornixApi.getCurrentContext({ seasonYear: state.seasonYear })
   });
 
   const activeCalculationRunIdCandidate = contextQuery.data?.currentAppliedCalculationRunId ?? null;

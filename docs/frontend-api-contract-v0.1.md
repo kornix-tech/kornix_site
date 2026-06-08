@@ -1,5 +1,9 @@
 # KORNIX Frontend API Contract v0.1
 
+> Archived/deprecated: этот документ описывает исторический legacy-контракт
+> `/api/v1/kornix/*`. Актуальный пользовательский runtime frontend использует
+> `/api/v2/kornix/*`; auth/me и CSRF остаются на `/api/v1`.
+
 ## Принципы
 
 1. Frontend выбирает `fieldSeasonId`, а не только `fieldId`.
