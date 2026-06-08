@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- Добавлен финальный frontend editable approval UAT smoke для live BFF/proxy
+  режима: проверяются ephemeral auth, `current_editable`, 37 map features,
+  13 profile metrics с shortwave, approval POST/readback и негативные CSRF/scope
+  сценарии без записи секретов в отчёты.
 - Добавлен pre-UAT same-origin browser/proxy smoke для проверки, что frontend
   origin обслуживает SPA и проксирует `/api/*` в backend JSON/API, а не в
   `index.html`.
@@ -21,6 +25,9 @@
   статус в README.
 
 ### Changed
+- Таблица ввода поливов теперь блокирует редактирование при любом состоянии,
+  кроме `frontendMode=current_editable` и `submitAllowed=true`, чтобы UI не
+  оставлял активные поля при backend-issued запрете submit.
 - Frontend API client теперь явно передаёт `seasonYear` в поддерживающие API v2
   endpoints `current-context`, `readiness/current`, `irrigation-layer/current`
   и `field-seasons/catalog`, чтобы URL/state сезона не зависел от backend

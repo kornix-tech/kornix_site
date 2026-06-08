@@ -1,0 +1,2 @@
+Generic npm test script: NOT_CONFIGURED
+Project contract tests: PASS via npm run test:contract

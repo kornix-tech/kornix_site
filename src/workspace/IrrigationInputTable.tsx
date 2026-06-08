@@ -520,7 +520,8 @@ export function IrrigationInputTable({
     !baseCalculationRunId ||
     !selectedMethodCode ||
     isSavingApproval;
-  const isInputReadOnly = context?.frontendMode === 'stale_read_only' || context?.frontendMode === 'not_ready';
+  const isInputReadOnly =
+    !context || context.frontendMode !== 'current_editable' || !context.submitAllowed;
   const blockedReason =
     (activeLayerQuery.isError ? queryErrorMessage(activeLayerQuery.error, 'Не удалось загрузить активный слой поливов.') : null) ??
     context?.submitBlockedReason ??
