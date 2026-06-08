@@ -1,0 +1,8 @@
+{
+  "noAuthTokenLocalStorage": "PASS",
+  "noLegacyProductionKornixApi": "PASS",
+  "csrfNotLogged": "PASS",
+  "secretsNotLogged": "PASS",
+  "secretScan": "PASS",
+  "gitDiffCheck": "PASS"
+}

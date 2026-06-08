@@ -1,63 +1,82 @@
-# KORNIX Frontend Editable Approval UAT
+# KORNIX Frontend Editable Approval UAT After Backend Handoff
 
 ## Status
 
 KORNIX_FRONTEND_EDITABLE_APPROVAL_UAT_READY
 
-## Scope
+## Preflight
 
-- Frontend base URL: `http://localhost:5173`
-- API mode: live same-origin `/api`, `VITE_ENABLE_MOCK_API=false`, `VITE_AUTH_MODE=bff`
-- Organization: `SP`
-- Season: `2026`
-- Backend handoff commit observed: `8fa9fae814d7b1ac546a8f9c869293277e769603`
+- Frontend commit before work: `12f9b9d62a9541567b0aaf62e577a146eed4358c`
+- Backend commit observed: `63c699da5e2c30a6d31f6011384e4d748ab7dbdb`
+- Backend runtime reachable: PASS
+- Backend editable handoff observed: PASS
+- Frontend origin: `http://localhost:8080`
 
-## Evidence
+## Credentials Gate
 
-- `npm ci`: PASS
-- Syntax check for `scripts/frontend_editable_approval_uat_smoke.mjs`: PASS
-- Typecheck: PASS
-- Build: PASS via direct `vite build` after separate typecheck; WSL has no system `npm`, so temporary npm CLI was used for `npm ci` and script checks.
-- Contract test: PASS
-- Contract scan: PASS
-- Security scan: PASS
-- Secret scan: PASS, no literal credentials, cookies, CSRF values or temporary browser password found in committed reports.
-- Live smoke: PASS
-- Browser UI proof: PASS
+- Credential source: ephemeral_backend_user
+- External username present: false
+- External password present: false
+- Ephemeral backend user attempted: true
+- Ephemeral backend user created/updated: PASS
+- Ephemeral sessions revoked: PASS
+- Ephemeral user deactivated: PASS
+- Values redacted: true
 
-## Live Smoke Summary
+## UI Proof
 
-- Current context: `current_editable`, `submitAllowed=true`
+- Proof level: frontend_origin_api_plus_static_contract
+- Static frontend reachable: PASS
+- Workspace reachable: PASS
+- Editable controls enabled by source contract: PASS
+- Approval submit path exercised through frontend-origin client: PASS
+- Mock mode used: false
+
+## Live Editable Smoke
+
+- Same-origin API health: PASS
+- API route returned JSON not HTML: PASS
+- Authenticated session: PASS
+- Organization: SP
+- Current context: PASS
+- Current applied calculation run: `bb_user_93e5eee3544648a1acb9e2c5182055c4`
+- Frontend mode: current_editable
+- Submit allowed: true
+- Submit blocked reason: null
 - Map features: 37
 - Profile metrics: 13
-- `shortwave_radiation_daily_mj_m2`: present
-- Approval POST with session-bound CSRF: PASS
+- Required metrics present: PASS
+- Shortwave present: PASS
+- Approval POST: PASS
 - Approval readback: PASS
-- Missing CSRF rejected: PASS
-- Out-of-scope field rejected: PASS
-- Season mismatch rejected: PASS
-- Ephemeral backend smoke user deactivated and sessions revoked: PASS
+- Session-bound CSRF used: PASS
+- Season year propagated: PASS
+- Mock mode used: false
 
-## Browser UI Proof
+## Checks
 
-- Login used BFF session flow with no token storage.
-- Editable table loaded live backend context.
-- At least one editable irrigation cell was changed.
-- Approval action was triggered from the browser UI.
-- Readback switched the visible approval button to `irrigation-approve-approved` and showed a new live calculation run.
-- The `submitAllowed=false` UI branch is covered by implementation gating: inputs are readonly unless `frontendMode=current_editable` and `submitAllowed=true`.
+- npm ci: PASS
+- typecheck: PASS
+- build: PASS
+- unit/contract tests: PASS
+- contract scan: PASS
+- security scan: PASS
+- secret scan: PASS
+- docker build: PASS
+- git diff check: PASS
 
-## Artifacts
+## Reports
 
 - `codex_reports/frontend_editable_approval_uat_report.json`
 - `codex_reports/frontend_editable_approval_uat_smoke.json`
 - `codex_reports/frontend_editable_approval_uat_contract_map.json`
-- `codex_reports/frontend_editable_approval_uat_browser_ui_proof.json`
+- `codex_reports/frontend_editable_approval_uat_security_scan.json`
 - `codex_reports/frontend_editable_approval_uat_smoke_log.txt`
-- `codex_reports/frontend_editable_approval_uat_npm_ci_log.txt`
-- `codex_reports/frontend_editable_approval_uat_typecheck_log.txt`
+- `codex_reports/frontend_editable_approval_uat_test_log.txt`
 - `codex_reports/frontend_editable_approval_uat_build_log.txt`
-- `codex_reports/frontend_editable_approval_uat_contract_test_log.txt`
-- `codex_reports/frontend_editable_approval_uat_contract_scan_log.txt`
-- `codex_reports/frontend_editable_approval_uat_security_scan_log.txt`
-- `codex_reports/frontend_editable_approval_uat_secret_scan_log.txt`
+- `codex_reports/frontend_editable_approval_uat_git_status.txt`
+- `codex_reports/frontend_editable_approval_uat_changed_files.txt`
+
+## Blockers
+
+none

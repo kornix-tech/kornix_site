@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- Frontend editable approval UAT smoke обновлён под backend handoff
+  `63c699da5e2c30a6d31f6011384e4d748ab7dbdb`: READY теперь доказывает
+  production frontend origin `http://localhost:8080`, same-origin `/api/*`,
+  session auth, editable context, approval POST/readback и cleanup ephemeral
+  пользователя без записи секретов.
 - Добавлен финальный frontend editable approval UAT smoke для live BFF/proxy
   режима: проверяются ephemeral auth, `current_editable`, 37 map features,
   13 profile metrics с shortwave, approval POST/readback и негативные CSRF/scope

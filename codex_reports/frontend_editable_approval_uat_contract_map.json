@@ -1,38 +1,15 @@
 {
-  "auth": {
-    "csrf": "/api/v1/auth/csrf",
-    "login": "/api/v1/auth/login",
-    "me": "/api/v1/me",
-    "logout": "/api/v1/auth/logout",
-    "implementation": "src/features/auth/bffSessionAuthClient.ts + src/shared/api/httpClient.ts"
-  },
-  "currentContext": {
-    "endpoint": "/api/v2/kornix/current-context?seasonYear={seasonYear}",
-    "implementation": "src/api/kornixApi.ts:getCurrentContextV2",
-    "frontendModeReadAt": "src/workspace/IrrigationInputTable.tsx",
-    "submitAllowedReadAt": "src/workspace/IrrigationInputTable.tsx"
-  },
-  "displayRegression": {
-    "map": "/api/v2/kornix/field-seasons/map?calculationRunId={currentAppliedCalculationRunId}&methodCode={defaultMethodCode}&day={serverDate}",
-    "profileTimeseries": "/api/v2/kornix/water-regime/profile-timeseries?calculationRunId={currentAppliedCalculationRunId}&methodCode={defaultMethodCode}&fieldSeasonIds={ids}",
-    "currentAppliedSource": "src/workspace/WorkspacePage.tsx:contextQuery.data.currentAppliedCalculationRunId"
-  },
-  "irrigationApproval": {
-    "currentIrrigationLayer": "/api/v2/kornix/irrigation-layer/current?seasonYear={seasonYear}",
-    "approvals": "/api/v2/kornix/water-regime/approvals",
-    "payloadBuilder": "src/workspace/IrrigationInputTable.tsx:approveIrrigationEvents",
-    "seasonYearSource": "WorkspacePage state.seasonYear -> IrrigationInputTable seasonYear prop",
-    "baseCalculationRunIdSource": "WorkspacePage activeCalculationRunId from current-context.currentAppliedCalculationRunId",
-    "csrfSource": "src/shared/api/httpClient.ts:ensureCsrfToken + X-CSRF-Token for unsafe methods",
-    "redaction": "Smoke reports store booleans/statuses only; password, cookies and CSRF token are never serialized."
-  },
-  "uiGating": {
-    "submitDisabledWhen": "context missing, active layer loading/error, frontendMode != current_editable, submitAllowed=false, missing base run/method, saving",
-    "inputsDisabledWhen": "context missing, frontendMode != current_editable, submitAllowed=false, locked day or out-of-scope field"
-  },
-  "storage": {
-    "authTokens": "No auth/access/refresh token storage patterns in runtime src.",
-    "localStorage": "Only non-authoritative irrigation draft values keyed by organization/user/season.",
-    "sessionStorage": "Mock auth flag only and disabled in production runtime by runtimeSafety."
-  }
+  "uiProofLevel": "frontend_origin_api_plus_static_contract",
+  "frontendOrigin": "http://localhost:8080",
+  "sameOriginApiBase": "http://localhost:8080/api",
+  "nginxProxy": "PASS",
+  "currentContextEndpoint": "PASS",
+  "mapEndpoint": "PASS",
+  "profileEndpoint": "PASS",
+  "approvalEndpoint": "PASS",
+  "currentAppliedCalculationRunIdPropagation": "PASS",
+  "seasonYearPropagation": "FAIL",
+  "submitAllowedGating": "PASS",
+  "csrfForUnsafeRequests": "PASS",
+  "authStorage": "PASS"
 }

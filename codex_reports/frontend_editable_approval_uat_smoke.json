@@ -1,125 +1,65 @@
 {
   "status": "KORNIX_FRONTEND_EDITABLE_APPROVAL_UAT_READY",
-  "baseline": {
-    "frontendCommitBeforeWork": "42bc6bdcc216f5f0823b65ba067a3cc0ee2cc5fd",
-    "backendCommitObserved": "8fa9fae814d7b1ac546a8f9c869293277e769603",
-    "backendHandoffReportUsed": "/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack/codex_reports/backend_editable_approval_uat_report.json"
-  },
   "preflight": {
-    "frontendRuntimeReachable": "PASS",
-    "sameOriginApiJsonNotHtml": "PASS",
-    "backendEditableReadyObserved": "PASS",
-    "backendSessionSecretObserved": "PASS",
-    "frontendBaseUrl": "http://localhost:5173",
-    "apiBaseUrl": "http://localhost:5173/api",
-    "publicApiBaseUrl": "http://localhost:8001"
+    "frontendCommitBeforeWork": "12f9b9d62a9541567b0aaf62e577a146eed4358c",
+    "backendCommitObserved": "63c699da5e2c30a6d31f6011384e4d748ab7dbdb",
+    "backendRuntimeReachable": "PASS",
+    "backendEditableHandoffObserved": "PASS",
+    "frontendOrigin": "http://localhost:8080"
   },
-  "auth": {
+  "credentialsGate": {
     "credentialSource": "ephemeral_backend_user",
+    "externalUsernamePresent": false,
+    "externalPasswordPresent": false,
     "ephemeralBackendUserAttempted": true,
     "ephemeralBackendUserCreatedOrUpdated": "PASS",
     "ephemeralSessionsRevoked": "PASS",
     "ephemeralUserDeactivated": "PASS",
-    "authenticatedSession": "PASS",
-    "organization": "SP",
     "valuesRedacted": true
   },
-  "editableContext": {
-    "currentContext": "PASS",
-    "currentAppliedCalculationRunId": "bb_user_3ce6391f05714101b38ceecfc07c1b1f",
-    "frontendMode": "current_editable",
-    "submitAllowed": true,
-    "submitBlockedReason": null
-  },
-  "displayRegression": {
-    "mapFeatures": 37,
-    "profileMetrics": 13,
-    "shortwavePresent": "PASS",
+  "uiProof": {
+    "uiProofLevel": "frontend_origin_api_plus_static_contract",
+    "staticFrontendReachable": "PASS",
+    "workspaceReachable": "PASS",
+    "editableControlsEnabled": "PASS",
+    "approvalSubmitPathExercisedThroughUiOrFrontendClient": "PASS",
     "mockModeUsed": false
   },
-  "browserUiProof": {
-    "browserRunner": "PASS",
-    "uiLoaded": "PASS",
-    "editableModeVisible": "PASS",
-    "controlsEnabledWhenSubmitAllowed": "PASS",
-    "controlsDisabledWhenSubmitBlockedFixture": "PASS",
-    "draftChangeObserved": "PASS",
-    "approvalActionTriggered": "PASS",
-    "successOrReadbackVisible": "PASS",
-    "status": "PASS",
-    "runner": "browser+live_backend+implementation_fixture_contract",
-    "timestamp": "2026-06-08T00:00:00+03:00",
-    "baseUrl": "http://localhost:5173",
-    "seasonYear": 2026,
-    "mode": "live_no_mock",
-    "uiChecks": {
-      "liveFrontendLoaded": "PASS",
-      "bffLoginWithoutTokenStorage": "PASS",
-      "editableModeVisible": "PASS",
-      "controlsEnabledWhenSubmitAllowed": "PASS",
-      "draftChangeObserved": "PASS",
-      "approvalActionTriggered": "PASS",
-      "approvalReadbackVisible": "PASS",
-      "controlsDisabledWhenSubmitBlockedFixture": "PASS"
-    },
-    "observations": {
-      "editableContextText": "current_editable",
-      "submitAllowedUiEvidence": "approve button was enabled before approval",
-      "enabledInputCount": 1073,
-      "draftInputBefore": "",
-      "draftInputAfter": "4.2",
-      "approvalButtonBeforeClass": "irrigation-approve-button irrigation-approve-dirty",
-      "approvalButtonAfterClass": "irrigation-approve-button irrigation-approve-approved",
-      "urlBeforeApproval": "http://localhost:5173/irrigation?calculationRunId=bb_user_c6ed6d1aa2244361bf299b7b659c524e&methodCode=simple_eto_single_layer_soil&from=2026-04-01",
-      "urlAfterApproval": "http://localhost:5173/irrigation?calculationRunId=bb_user_a9c3a21365334d6081197e297b78d4c8&methodCode=simple_eto_single_layer_soil&from=2026-04-01",
-      "newRunVisible": "bb_user_a9c3a21365334d6081197e297b78d4c8",
-      "readbackState": "approved",
-      "errorVisible": false
-    },
-    "notes": [
-      "Browser smoke used the Vite dev server with VITE_ENABLE_MOCK_API=false, VITE_AUTH_MODE=bff and same-origin /api proxy.",
-      "The submitAllowed=false branch is covered by the IrrigationInputTable readonly implementation contract: inputs are readonly unless frontendMode is current_editable and submitAllowed is true.",
-      "No credentials, cookies, CSRF values or trace artifacts are stored in this proof."
-    ]
-  },
-  "frontendImplementation": {
-    "editableControlsEnabledWhenSubmitAllowed": "PASS",
-    "readOnlyControlsDisabledWhenSubmitBlocked": "PASS",
-    "approvalPayloadUsesCurrentAppliedCalculationRunId": "PASS",
-    "approvalPayloadIncludesSeasonYear": "PASS",
-    "csrfAttachedToUnsafeApprovalRequest": "PASS",
-    "noAuthTokenStorage": "PASS"
-  },
-  "approvalSmoke": {
-    "validCsrfApprovalPost": "PASS",
-    "approvalReadbackProof": "PASS",
+  "liveSmoke": {
+    "sameOriginApiHealth": "PASS",
+    "apiRouteReturnedJsonNotHtml": "PASS",
+    "authenticatedSession": "PASS",
+    "organization": "SP",
+    "currentContext": "PASS",
+    "currentAppliedCalculationRunId": "bb_user_93e5eee3544648a1acb9e2c5182055c4",
+    "frontendMode": "current_editable",
+    "submitAllowed": true,
+    "submitBlockedReason": null,
+    "mapFeatures": 37,
+    "profileMetrics": 13,
+    "requiredMetricsPresent": "PASS",
+    "shortwavePresent": "PASS",
+    "approvalPost": "PASS",
+    "approvalReadback": "PASS",
     "seasonYearPropagated": "PASS",
-    "missingCsrfRejected": "PASS",
-    "outOfScopeRejected": "PASS",
-    "seasonMismatchRejected": "PASS",
-    "approvalBatchId": "131086b4-b408-4af9-9752-49636d4824f5",
-    "approvalCalculationRunId": "bb_user_93e5eee3544648a1acb9e2c5182055c4",
-    "lastApprovalHttpStatus": 202,
-    "lastApprovalErrorCode": null,
-    "cookieNamesPresent": [
-      "kornix_csrf",
-      "kornix_session"
-    ],
-    "csrfSourceUsed": "login_body",
-    "csrfTokenLength": 43,
-    "csrfCookieMatchesResponseBody": true,
-    "sessionCookieLength": 43
+    "sessionBoundCsrfUsed": "PASS",
+    "mockModeUsed": false
+  },
+  "security": {
+    "noAuthTokenLocalStorage": "PASS",
+    "csrfNotLogged": "PASS",
+    "secretsNotLogged": "PASS",
+    "secretScan": "PASS"
   },
   "checks": {
     "npmCi": "PASS",
     "typecheck": "PASS",
     "build": "PASS",
-    "tests": "PASS",
-    "contractTest": "PASS",
+    "unitOrContractTests": "PASS",
     "contractScan": "PASS",
     "securityScan": "PASS",
-    "secretScan": "PASS",
-    "dockerBuild": "NOT_APPLICABLE"
+    "dockerBuild": "PASS",
+    "gitDiffCheck": "PASS"
   },
   "git": {
     "committed": false,

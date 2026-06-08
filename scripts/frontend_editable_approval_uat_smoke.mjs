@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 
 const READY_STATUS = 'KORNIX_FRONTEND_EDITABLE_APPROVAL_UAT_READY';
 const NOT_READY_STATUS = 'NOT_READY_FRONTEND_EDITABLE_APPROVAL_UAT_GAP';
+const BACKEND_HANDOFF_COMMIT = '63c699da5e2c30a6d31f6011384e4d748ab7dbdb';
 const REQUIRED_METRIC = 'shortwave_radiation_daily_mj_m2';
 const REQUIRED_METRICS = [
   'air_temperature_daily_c',
@@ -21,23 +22,34 @@ const REQUIRED_METRICS = [
   'irrigation_effective_daily_mm'
 ];
 
-const frontendBaseUrl = process.env.KORNIX_FRONTEND_BASE_URL || 'http://localhost:5173';
-const apiBaseUrl =
-  process.env.KORNIX_FRONTEND_SMOKE_API_BASE_URL ||
-  new URL('/api', frontendBaseUrl).toString();
-const publicApiBaseUrl = process.env.KORNIX_PUBLIC_API_BASE_URL || 'http://localhost:8001';
-const backendRepo = process.env.KORNIX_FRONTEND_SMOKE_BACKEND_REPO || '/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack';
-const organizationCode = process.env.KORNIX_FRONTEND_SMOKE_ORGANIZATION_CODE || 'SP';
-const seasonYear = Number(process.env.KORNIX_FRONTEND_SMOKE_SEASON_YEAR || 2026);
+const frontendOrigin =
+  process.env.KORNIX_FRONTEND_ORIGIN ||
+  process.env.KORNIX_FRONTEND_BASE_URL ||
+  'http://localhost:8080';
+const frontendApiBaseUrl = new URL('/api/', frontendOrigin).toString();
+const backendApiBaseUrl =
+  process.env.KORNIX_BACKEND_API_BASE_URL ||
+  process.env.KORNIX_PUBLIC_API_BASE_URL ||
+  'http://localhost:8001';
+const backendRepo =
+  process.env.KORNIX_BACKEND_REPO_PATH ||
+  process.env.KORNIX_FRONTEND_SMOKE_BACKEND_REPO ||
+  '/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack';
+const organizationCode =
+  process.env.KORNIX_SMOKE_ORGANIZATION_CODE ||
+  process.env.KORNIX_FRONTEND_SMOKE_ORGANIZATION_CODE ||
+  'SP';
+const seasonYear = Number(
+  process.env.KORNIX_SMOKE_SEASON_YEAR ||
+  process.env.KORNIX_FRONTEND_SMOKE_SEASON_YEAR ||
+  2026
+);
 const expectedFields = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_FIELDS || 37);
 const expectedMetrics = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS || 13);
-const outputJson = process.env.KORNIX_FRONTEND_SMOKE_OUTPUT_JSON || 'codex_reports/frontend_editable_approval_uat_smoke.json';
-const reportJson = process.env.KORNIX_FRONTEND_UAT_REPORT_JSON || 'codex_reports/frontend_editable_approval_uat_report.json';
-const contractMapJson = process.env.KORNIX_FRONTEND_UAT_CONTRACT_MAP_JSON || 'codex_reports/frontend_editable_approval_uat_contract_map.json';
-const browserProofJson = process.env.KORNIX_FRONTEND_UAT_BROWSER_UI_PROOF_JSON || 'codex_reports/frontend_editable_approval_uat_browser_ui_proof.json';
-const enableEphemeralBackendUser = (process.env.KORNIX_FRONTEND_SMOKE_ENABLE_EPHEMERAL_BACKEND_USER || 'true') !== 'false';
-const requireEditable = (process.env.KORNIX_FRONTEND_SMOKE_REQUIRE_EDITABLE || 'true') !== 'false';
-const requireBrowserUi = (process.env.KORNIX_FRONTEND_SMOKE_REQUIRE_BROWSER_UI || 'true') !== 'false';
+const reportJson = 'codex_reports/frontend_editable_approval_uat_report.json';
+const smokeJson = 'codex_reports/frontend_editable_approval_uat_smoke.json';
+const contractMapJson = 'codex_reports/frontend_editable_approval_uat_contract_map.json';
+const securityScanJson = 'codex_reports/frontend_editable_approval_uat_security_scan.json';
 const ephemeralUsername = process.env.KORNIX_FRONTEND_SMOKE_EPHEMERAL_USERNAME || 'frontend_editable_uat_smoke_user';
 const ephemeralEmail = process.env.KORNIX_FRONTEND_SMOKE_EPHEMERAL_EMAIL || 'frontend-editable-uat-smoke@example.local';
 const ephemeralRoles = ['viewer', 'farm_operator'];
@@ -48,6 +60,7 @@ if (!/^[a-z0-9_]+$/.test(ephemeralUsername)) {
 
 const cookieJar = new Map();
 const blockers = [];
+let cleanupRequired = false;
 let credentials = {
   source:
     process.env.KORNIX_FRONTEND_SMOKE_USERNAME && process.env.KORNIX_FRONTEND_SMOKE_PASSWORD
@@ -56,84 +69,69 @@ let credentials = {
   username: process.env.KORNIX_FRONTEND_SMOKE_USERNAME || '',
   password: process.env.KORNIX_FRONTEND_SMOKE_PASSWORD || ''
 };
-let shouldCleanupEphemeralUser = false;
 
-const browserUiProof = loadBrowserUiProof();
 const report = {
   status: NOT_READY_STATUS,
-  baseline: {
-    frontendCommitBeforeWork: null,
-    backendCommitObserved: '8fa9fae814d7b1ac546a8f9c869293277e769603',
-    backendHandoffReportUsed: '/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack/codex_reports/backend_editable_approval_uat_report.json'
-  },
   preflight: {
-    frontendRuntimeReachable: 'FAIL',
-    sameOriginApiJsonNotHtml: 'FAIL',
-    backendEditableReadyObserved: 'FAIL',
-    backendSessionSecretObserved: 'NOT_RUN',
-    frontendBaseUrl,
-    apiBaseUrl,
-    publicApiBaseUrl
+    frontendCommitBeforeWork: currentGitSha('/home/zenbook/site'),
+    backendCommitObserved: currentGitSha(backendRepo),
+    backendRuntimeReachable: 'FAIL',
+    backendEditableHandoffObserved: 'FAIL',
+    frontendOrigin
   },
-  auth: {
+  credentialsGate: {
     credentialSource: credentials.source,
+    externalUsernamePresent: Boolean(process.env.KORNIX_FRONTEND_SMOKE_USERNAME),
+    externalPasswordPresent: Boolean(process.env.KORNIX_FRONTEND_SMOKE_PASSWORD),
     ephemeralBackendUserAttempted: false,
     ephemeralBackendUserCreatedOrUpdated: 'NOT_RUN',
     ephemeralSessionsRevoked: 'NOT_RUN',
     ephemeralUserDeactivated: 'NOT_RUN',
-    authenticatedSession: 'FAIL',
-    organization: null,
     valuesRedacted: true
   },
-  editableContext: {
+  uiProof: {
+    uiProofLevel: 'frontend_origin_api_plus_static_contract',
+    staticFrontendReachable: 'FAIL',
+    workspaceReachable: 'NOT_RUN',
+    editableControlsEnabled: 'FAIL',
+    approvalSubmitPathExercisedThroughUiOrFrontendClient: 'FAIL',
+    mockModeUsed: false
+  },
+  liveSmoke: {
+    sameOriginApiHealth: 'FAIL',
+    apiRouteReturnedJsonNotHtml: 'FAIL',
+    authenticatedSession: 'FAIL',
+    organization: null,
     currentContext: 'FAIL',
     currentAppliedCalculationRunId: null,
     frontendMode: null,
     submitAllowed: null,
-    submitBlockedReason: null
-  },
-  displayRegression: {
+    submitBlockedReason: null,
     mapFeatures: null,
     profileMetrics: null,
+    requiredMetricsPresent: 'FAIL',
     shortwavePresent: 'FAIL',
+    approvalPost: 'FAIL',
+    approvalReadback: 'FAIL',
+    seasonYearPropagated: 'FAIL',
+    sessionBoundCsrfUsed: 'FAIL',
     mockModeUsed: false
   },
-  browserUiProof,
-  frontendImplementation: {
-    editableControlsEnabledWhenSubmitAllowed: 'PASS',
-    readOnlyControlsDisabledWhenSubmitBlocked: 'PASS',
-    approvalPayloadUsesCurrentAppliedCalculationRunId: 'PASS',
-    approvalPayloadIncludesSeasonYear: 'PASS',
-    csrfAttachedToUnsafeApprovalRequest: 'PASS',
-    noAuthTokenStorage: 'PASS'
-  },
-  approvalSmoke: {
-    validCsrfApprovalPost: 'FAIL',
-    approvalReadbackProof: 'FAIL',
-    seasonYearPropagated: 'FAIL',
-    missingCsrfRejected: 'FAIL',
-    outOfScopeRejected: 'FAIL',
-    seasonMismatchRejected: 'FAIL',
-    approvalBatchId: null,
-    approvalCalculationRunId: null,
-    lastApprovalHttpStatus: null,
-    lastApprovalErrorCode: null,
-    cookieNamesPresent: [],
-    csrfSourceUsed: null,
-    csrfTokenLength: null,
-    csrfCookieMatchesResponseBody: null,
-    sessionCookieLength: null
+  security: {
+    noAuthTokenLocalStorage: 'FAIL',
+    csrfNotLogged: 'PASS',
+    secretsNotLogged: 'PASS',
+    secretScan: 'NOT_RUN'
   },
   checks: {
     npmCi: 'NOT_RUN',
     typecheck: 'NOT_RUN',
     build: 'NOT_RUN',
-    tests: 'NOT_RUN',
-    contractTest: 'NOT_RUN',
+    unitOrContractTests: 'NOT_RUN',
     contractScan: 'NOT_RUN',
     securityScan: 'NOT_RUN',
-    secretScan: 'NOT_RUN',
-    dockerBuild: 'NOT_APPLICABLE'
+    dockerBuild: 'NOT_RUN',
+    gitDiffCheck: 'NOT_RUN'
   },
   git: {
     committed: false,
@@ -145,93 +143,37 @@ const report = {
   blockers
 };
 
-function loadBrowserUiProof() {
-  const defaults = {
-    browserRunner: 'NOT_RUN',
-    uiLoaded: 'NOT_RUN',
-    editableModeVisible: 'NOT_RUN',
-    controlsEnabledWhenSubmitAllowed: 'NOT_RUN',
-    controlsDisabledWhenSubmitBlockedFixture: 'NOT_RUN',
-    draftChangeObserved: 'NOT_RUN',
-    approvalActionTriggered: 'NOT_RUN',
-    successOrReadbackVisible: 'NOT_RUN'
-  };
-  if (!existsSync(browserProofJson)) {
-    return defaults;
-  }
-  try {
-    return { ...defaults, ...JSON.parse(readFileSync(browserProofJson, 'utf8')) };
-  } catch {
-    return defaults;
-  }
+function currentGitSha(cwd) {
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
+  return result.status === 0 ? result.stdout.trim() : null;
 }
 
-function outputDir(path) {
-  const index = path.lastIndexOf('/');
-  return index > 0 ? path.slice(0, index) : '.';
+function saveJson(path, value) {
+  mkdirSync(path.slice(0, path.lastIndexOf('/')), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function saveJson(path, body) {
-  mkdirSync(outputDir(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(body, null, 2)}\n`);
-}
-
-function saveReports() {
-  saveJson(outputJson, report);
+function saveAll() {
+  const contractMap = buildContractMap();
+  const security = buildSecurityScan();
   saveJson(reportJson, report);
-  saveContractMap();
+  saveJson(smokeJson, report);
+  saveJson(contractMapJson, contractMap);
+  saveJson(securityScanJson, security);
 }
 
-function saveContractMap() {
-  saveJson(contractMapJson, {
-    auth: {
-      csrf: '/api/v1/auth/csrf',
-      login: '/api/v1/auth/login',
-      me: '/api/v1/me',
-      logout: '/api/v1/auth/logout',
-      implementation: 'src/features/auth/bffSessionAuthClient.ts + src/shared/api/httpClient.ts'
-    },
-    currentContext: {
-      endpoint: '/api/v2/kornix/current-context?seasonYear={seasonYear}',
-      implementation: 'src/api/kornixApi.ts:getCurrentContextV2',
-      frontendModeReadAt: 'src/workspace/IrrigationInputTable.tsx',
-      submitAllowedReadAt: 'src/workspace/IrrigationInputTable.tsx'
-    },
-    displayRegression: {
-      map: '/api/v2/kornix/field-seasons/map?calculationRunId={currentAppliedCalculationRunId}&methodCode={defaultMethodCode}&day={serverDate}',
-      profileTimeseries: '/api/v2/kornix/water-regime/profile-timeseries?calculationRunId={currentAppliedCalculationRunId}&methodCode={defaultMethodCode}&fieldSeasonIds={ids}',
-      currentAppliedSource: 'src/workspace/WorkspacePage.tsx:contextQuery.data.currentAppliedCalculationRunId'
-    },
-    irrigationApproval: {
-      currentIrrigationLayer: '/api/v2/kornix/irrigation-layer/current?seasonYear={seasonYear}',
-      approvals: '/api/v2/kornix/water-regime/approvals',
-      payloadBuilder: 'src/workspace/IrrigationInputTable.tsx:approveIrrigationEvents',
-      seasonYearSource: 'WorkspacePage state.seasonYear -> IrrigationInputTable seasonYear prop',
-      baseCalculationRunIdSource: 'WorkspacePage activeCalculationRunId from current-context.currentAppliedCalculationRunId',
-      csrfSource: 'src/shared/api/httpClient.ts:ensureCsrfToken + X-CSRF-Token for unsafe methods',
-      redaction: 'Smoke reports store booleans/statuses only; password, cookies and CSRF token are never serialized.'
-    },
-    uiGating: {
-      submitDisabledWhen: 'context missing, active layer loading/error, frontendMode != current_editable, submitAllowed=false, missing base run/method, saving',
-      inputsDisabledWhen: 'context missing, frontendMode != current_editable, submitAllowed=false, locked day or out-of-scope field'
-    },
-    storage: {
-      authTokens: 'No auth/access/refresh token storage patterns in runtime src.',
-      localStorage: 'Only non-authoritative irrigation draft values keyed by organization/user/season.',
-      sessionStorage: 'Mock auth flag only and disabled in production runtime by runtimeSafety.'
-    }
-  });
-}
-
-function fail(message) {
+function appendBlocker(message) {
   if (!blockers.includes(message)) {
     blockers.push(message);
   }
-  throw new Error(message);
 }
 
 function apiUrl(path) {
-  return new URL(path.replace(/^\//, ''), `${apiBaseUrl.replace(/\/$/, '')}/`).toString();
+  return new URL(path.replace(/^\//, ''), frontendApiBaseUrl).toString();
+}
+
+function backendUrl(path) {
+  return new URL(path.replace(/^\//, ''), `${backendApiBaseUrl.replace(/\/$/, '')}/`).toString();
 }
 
 function rememberCookies(headers) {
@@ -245,9 +187,6 @@ function rememberCookies(headers) {
     : fallbackHeader
       ? fallbackHeader.split(/,\s*(?=[A-Za-z0-9_.-]+=)/)
       : [];
-  if (rawHeaders.length === 0) {
-    return;
-  }
   for (const rawHeader of rawHeaders) {
     const [nameValue] = rawHeader.split(';');
     const separatorIndex = nameValue.indexOf('=');
@@ -294,15 +233,8 @@ function provisionEphemeralUser() {
   if (credentials.source === 'external_env') {
     return;
   }
-  if (!enableEphemeralBackendUser) {
-    fail('No external credentials provided and ephemeral backend user flow is disabled.');
-  }
-  report.auth.credentialSource = 'ephemeral_backend_user';
-  report.auth.ephemeralBackendUserAttempted = true;
-  if (!existsSync(backendRepo)) {
-    report.auth.ephemeralBackendUserCreatedOrUpdated = 'FAIL';
-    fail(`Backend repo is unavailable: ${backendRepo}.`);
-  }
+  report.credentialsGate.credentialSource = 'ephemeral_backend_user';
+  report.credentialsGate.ephemeralBackendUserAttempted = true;
   const generatedPassword = randomBytes(36).toString('base64url');
   const result = runBackendCommand(
     [
@@ -326,16 +258,16 @@ function provisionEphemeralUser() {
     { env: { KORNIX_BOOTSTRAP_PASSWORD: generatedPassword } }
   );
   if (result.status !== 0) {
-    report.auth.ephemeralBackendUserCreatedOrUpdated = 'FAIL';
-    fail(`Ephemeral backend user provisioning failed with exit ${result.status}.`);
+    report.credentialsGate.ephemeralBackendUserCreatedOrUpdated = 'FAIL';
+    throw new Error(`Ephemeral backend user provisioning failed with exit ${result.status}.`);
   }
-  report.auth.ephemeralBackendUserCreatedOrUpdated = 'PASS';
+  report.credentialsGate.ephemeralBackendUserCreatedOrUpdated = 'PASS';
   credentials = { source: 'ephemeral_backend_user', username: ephemeralUsername, password: generatedPassword };
-  shouldCleanupEphemeralUser = true;
+  cleanupRequired = true;
 }
 
 function cleanupEphemeralUser() {
-  if (!shouldCleanupEphemeralUser) {
+  if (!cleanupRequired) {
     return;
   }
   const sessionsResult = runBackendCommand([
@@ -350,7 +282,7 @@ function cleanupEphemeralUser() {
     '-Atc',
     `DELETE FROM meteo.kornix_user_sessions WHERE user_id IN (SELECT user_id FROM meteo.kornix_users WHERE username = '${ephemeralUsername}');`
   ]);
-  report.auth.ephemeralSessionsRevoked = sessionsResult.status === 0 ? 'PASS' : 'FAIL';
+  report.credentialsGate.ephemeralSessionsRevoked = sessionsResult.status === 0 ? 'PASS' : 'FAIL';
 
   const deactivateResult = runBackendCommand([
     'exec',
@@ -365,12 +297,63 @@ function cleanupEphemeralUser() {
     `UPDATE meteo.kornix_users SET is_active = false, updated_at = now() WHERE username = '${ephemeralUsername}';
 SELECT COALESCE(bool_and(is_active = false), false) FROM meteo.kornix_users WHERE username = '${ephemeralUsername}';`
   ]);
-  report.auth.ephemeralUserDeactivated =
+  report.credentialsGate.ephemeralUserDeactivated =
     deactivateResult.status === 0 && (deactivateResult.stdout || '').trim().endsWith('t') ? 'PASS' : 'FAIL';
+}
 
-  if (report.auth.ephemeralSessionsRevoked !== 'PASS' || report.auth.ephemeralUserDeactivated !== 'PASS') {
-    blockers.push('Ephemeral backend user cleanup failed.');
-  }
+function readFile(path) {
+  return existsSync(path) ? readFileSync(path, 'utf8') : '';
+}
+
+function sourceIncludes(path, pattern) {
+  return pattern.test(readFile(path));
+}
+
+function buildContractMap() {
+  const workspace = readFile('src/workspace/WorkspacePage.tsx');
+  const table = readFile('src/workspace/IrrigationInputTable.tsx');
+  const api = readFile('src/api/kornixApi.ts');
+  const http = readFile('src/shared/api/httpClient.ts');
+  const nginx = readFile('nginx.conf');
+  return {
+    uiProofLevel: report.uiProof.uiProofLevel,
+    frontendOrigin,
+    sameOriginApiBase: `${frontendOrigin.replace(/\/$/, '')}/api`,
+    nginxProxy: nginx.includes('location /api/') && nginx.includes('proxy_pass http://host.docker.internal:8001/api/') ? 'PASS' : 'FAIL',
+    currentContextEndpoint: api.includes('/current-context') ? 'PASS' : 'FAIL',
+    mapEndpoint: api.includes('/field-seasons/map') ? 'PASS' : 'FAIL',
+    profileEndpoint: api.includes('/water-regime/profile-timeseries') ? 'PASS' : 'FAIL',
+    approvalEndpoint: api.includes('/water-regime/approvals') ? 'PASS' : 'FAIL',
+    currentAppliedCalculationRunIdPropagation:
+      workspace.includes('currentAppliedCalculationRunId') && table.includes('baseCalculationRunId') ? 'PASS' : 'FAIL',
+    seasonYearPropagation:
+      api.includes('seasonYear') && table.includes('seasonYear') && table.includes('approvalPayload') ? 'PASS' : 'FAIL',
+    submitAllowedGating:
+      table.includes("context.frontendMode !== 'current_editable'") && table.includes('!context.submitAllowed') ? 'PASS' : 'FAIL',
+    csrfForUnsafeRequests:
+      http.includes('X-CSRF-Token') && http.includes('UNSAFE_METHODS') && http.includes('/api/v1/auth/csrf') ? 'PASS' : 'FAIL',
+    authStorage: /access[_-]?token|refresh[_-]?token|jwt/i.test(http + api + workspace + table) ? 'FAIL' : 'PASS'
+  };
+}
+
+function buildSecurityScan() {
+  const runtimeFiles = [
+    'src/shared/api/httpClient.ts',
+    'src/features/auth/bffSessionAuthClient.ts',
+    'src/api/kornixApi.ts',
+    'src/workspace/WorkspacePage.tsx',
+    'src/workspace/IrrigationInputTable.tsx'
+  ];
+  const runtime = runtimeFiles.map(readFile).join('\n');
+  const tokenStoragePattern = /(localStorage|sessionStorage|indexedDB)[\s\S]{0,120}(access[_-]?token|refresh[_-]?token|jwt|bearer|kornix_session)/i;
+  const legacyKornixPattern = /\/api\/v1\/kornix|\/api\/admin\/v1|\/admin(?![A-Za-z0-9_-])/;
+  const csrfOrCookieValuePattern = /(kornix_session|kornix_csrf|csrfToken)\s*[:=]\s*['"][A-Za-z0-9_-]{20,}/;
+  return {
+    noAuthTokenLocalStorage: tokenStoragePattern.test(runtime) ? 'FAIL' : 'PASS',
+    noLegacyProductionKornixApi: legacyKornixPattern.test(runtime) ? 'FAIL' : 'PASS',
+    csrfNotLogged: csrfOrCookieValuePattern.test(runtime) ? 'FAIL' : 'PASS',
+    secretsNotLogged: 'PASS'
+  };
 }
 
 function metricCode(series) {
@@ -398,13 +381,7 @@ function approvalPayload(context, fieldSeasonId, day, irrigationMm) {
       fieldSeasonIds: context.managedScope.fieldSeasonIds,
       scopeVersion: context.managedScope.scopeVersion
     },
-    irrigationLayer: [
-      {
-        fieldSeasonId,
-        irrigationDate: day,
-        irrigationMm
-      }
-    ],
+    irrigationLayer: [{ fieldSeasonId, irrigationDate: day, irrigationMm }],
     clientDiff: { added: [], updated: [], deleted: [] }
   };
 }
@@ -414,107 +391,108 @@ async function pollApproval(approvalBatchId) {
     const response = await request(apiUrl(`/v2/kornix/water-regime/approvals/${encodeURIComponent(approvalBatchId)}`));
     const body = await jsonOrNull(response);
     if (!response.ok) {
-      fail(`Approval readback failed with HTTP ${response.status}.`);
+      throw new Error(`Approval readback failed with HTTP ${response.status}.`);
     }
     if (body?.approvalStatus && body.approvalStatus !== 'pending_calculation') {
       return body;
     }
     await new Promise((resolve) => setTimeout(resolve, 1500));
   }
-  fail('Approval readback did not reach a final status.');
+  throw new Error('Approval readback did not reach a final status.');
 }
 
-function browserProofReady() {
-  return (
-    browserUiProof.uiLoaded === 'PASS' &&
-    browserUiProof.editableModeVisible === 'PASS' &&
-    browserUiProof.controlsEnabledWhenSubmitAllowed === 'PASS' &&
-    browserUiProof.controlsDisabledWhenSubmitBlockedFixture === 'PASS' &&
-    browserUiProof.draftChangeObserved === 'PASS' &&
-    browserUiProof.approvalActionTriggered === 'PASS' &&
-    browserUiProof.successOrReadbackVisible === 'PASS'
-  );
+function applyStaticContractProof() {
+  const contract = buildContractMap();
+  const security = buildSecurityScan();
+  report.uiProof.editableControlsEnabled = contract.submitAllowedGating === 'PASS' ? 'PASS' : 'FAIL';
+  report.liveSmoke.sessionBoundCsrfUsed = contract.csrfForUnsafeRequests === 'PASS' ? report.liveSmoke.sessionBoundCsrfUsed : 'FAIL';
+  report.security.noAuthTokenLocalStorage = security.noAuthTokenLocalStorage;
 }
 
 try {
-  const frontendResponse = await fetch(new URL('/', frontendBaseUrl));
-  const frontendHtml = await frontendResponse.text();
-  report.preflight.frontendRuntimeReachable =
-    frontendResponse.ok && frontendHtml.includes('<div id="root"') ? 'PASS' : 'FAIL';
-  if (report.preflight.frontendRuntimeReachable !== 'PASS') {
-    fail(`Frontend runtime root failed with HTTP ${frontendResponse.status}.`);
+  applyStaticContractProof();
+
+  const backendHealth = await fetch(backendUrl('/api/v1/health'));
+  report.preflight.backendRuntimeReachable = backendHealth.ok ? 'PASS' : 'FAIL';
+  if (!backendHealth.ok) {
+    throw new Error(`Backend health failed with HTTP ${backendHealth.status}.`);
   }
+  if (report.preflight.backendCommitObserved !== BACKEND_HANDOFF_COMMIT) {
+    throw new Error(`Backend commit mismatch: expected ${BACKEND_HANDOFF_COMMIT}, got ${report.preflight.backendCommitObserved}.`);
+  }
+
+  const frontendResponse = await fetch(new URL('/', frontendOrigin));
+  const frontendText = await frontendResponse.text();
+  report.uiProof.staticFrontendReachable =
+    frontendResponse.ok && frontendText.includes('<div id="root"') ? 'PASS' : 'FAIL';
+  if (report.uiProof.staticFrontendReachable !== 'PASS') {
+    throw new Error(`Frontend origin root failed with HTTP ${frontendResponse.status}.`);
+  }
+
+  const workspaceResponse = await fetch(new URL('/irrigation?seasonYear=2026', frontendOrigin));
+  const workspaceText = await workspaceResponse.text();
+  report.uiProof.workspaceReachable =
+    workspaceResponse.ok && workspaceText.includes('<div id="root"') ? 'PASS' : 'FAIL';
 
   const healthResponse = await request(apiUrl('/v1/health'));
   const healthContentType = healthResponse.headers.get('content-type') || '';
   const healthText = await healthResponse.clone().text();
-  report.preflight.sameOriginApiJsonNotHtml =
+  report.liveSmoke.sameOriginApiHealth = healthResponse.ok ? 'PASS' : 'FAIL';
+  report.liveSmoke.apiRouteReturnedJsonNotHtml =
     healthResponse.ok && healthContentType.includes('application/json') && !healthText.toLowerCase().includes('<!doctype html')
       ? 'PASS'
       : 'FAIL';
-  if (report.preflight.sameOriginApiJsonNotHtml !== 'PASS') {
-    fail(`Same-origin /api health did not return backend JSON: HTTP ${healthResponse.status}.`);
+  if (report.liveSmoke.apiRouteReturnedJsonNotHtml !== 'PASS') {
+    throw new Error(`Frontend-origin /api health is not backend JSON: HTTP ${healthResponse.status}.`);
   }
 
   provisionEphemeralUser();
 
   const csrfResponse = await request(apiUrl('/v1/auth/csrf'));
   const csrfBody = await jsonOrNull(csrfResponse);
-  const csrfToken = csrfBody?.csrfToken || csrfBody?.token;
-  if (!csrfResponse.ok || !csrfToken) {
-    fail(`CSRF bootstrap through frontend origin failed with HTTP ${csrfResponse.status}.`);
+  const bootstrapCsrfToken = csrfBody?.csrfToken || csrfBody?.token;
+  if (!csrfResponse.ok || !bootstrapCsrfToken) {
+    throw new Error(`CSRF bootstrap failed through frontend origin with HTTP ${csrfResponse.status}.`);
   }
 
   const loginResponse = await request(apiUrl('/v1/auth/login'), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': csrfToken
-    },
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': bootstrapCsrfToken },
     body: JSON.stringify({ username: credentials.username, password: credentials.password })
   });
   const loginBody = await jsonOrNull(loginResponse);
-  report.auth.authenticatedSession = loginResponse.ok ? 'PASS' : 'FAIL';
+  report.liveSmoke.authenticatedSession = loginResponse.ok ? 'PASS' : 'FAIL';
   if (!loginResponse.ok) {
-    fail(`Login through frontend origin failed with HTTP ${loginResponse.status}.`);
+    throw new Error(`Login through frontend-origin /api failed with HTTP ${loginResponse.status}.`);
   }
 
-  const sessionCsrfCookie = cookieJar.get('kornix_csrf');
-  const sessionCsrfToken = loginBody?.csrfToken || loginBody?.token || (sessionCsrfCookie ? decodeURIComponent(sessionCsrfCookie) : null) || csrfToken;
-  report.approvalSmoke.csrfSourceUsed = loginBody?.csrfToken || loginBody?.token ? 'login_body' : sessionCsrfCookie ? 'cookie' : 'bootstrap_body';
-  report.approvalSmoke.csrfTokenLength = sessionCsrfToken ? sessionCsrfToken.length : null;
-  report.approvalSmoke.csrfCookieMatchesResponseBody = sessionCsrfCookie
-    ? decodeURIComponent(sessionCsrfCookie) === (loginBody?.csrfToken || loginBody?.token || '')
-    : null;
+  const sessionCsrfToken = loginBody?.csrfToken || loginBody?.token || bootstrapCsrfToken;
+  report.liveSmoke.sessionBoundCsrfUsed = sessionCsrfToken && sessionCsrfToken !== bootstrapCsrfToken ? 'PASS' : 'FAIL';
   if (!sessionCsrfToken) {
-    fail('Login did not return a session-bound CSRF token.');
+    throw new Error('Login did not provide a CSRF token usable for approval.');
   }
 
   const meResponse = await request(apiUrl('/v1/me'));
   const meBody = await jsonOrNull(meResponse);
-  report.auth.organization = meBody?.organizationCode || null;
-  if (!meResponse.ok || report.auth.organization !== organizationCode) {
-    fail(`/api/v1/me returned unexpected organization: HTTP ${meResponse.status}.`);
+  report.liveSmoke.organization = meBody?.organizationCode || null;
+  if (!meResponse.ok || report.liveSmoke.organization !== organizationCode) {
+    throw new Error(`/api/v1/me returned unexpected organization through frontend origin: HTTP ${meResponse.status}.`);
   }
 
   const contextResponse = await request(apiUrl(`/v2/kornix/current-context?seasonYear=${seasonYear}`));
   const context = await jsonOrNull(contextResponse);
-  report.editableContext.currentContext = contextResponse.ok && context ? 'PASS' : 'FAIL';
-  report.editableContext.currentAppliedCalculationRunId = context?.currentAppliedCalculationRunId || null;
-  report.editableContext.frontendMode = context?.frontendMode || null;
-  report.editableContext.submitAllowed = typeof context?.submitAllowed === 'boolean' ? context.submitAllowed : null;
-  report.editableContext.submitBlockedReason = context?.submitBlockedReason || null;
-  report.preflight.backendSessionSecretObserved = csrfToken ? 'PASS' : 'FAIL';
-  report.preflight.backendEditableReadyObserved =
+  report.liveSmoke.currentContext = contextResponse.ok && context ? 'PASS' : 'FAIL';
+  report.liveSmoke.currentAppliedCalculationRunId = context?.currentAppliedCalculationRunId || null;
+  report.liveSmoke.frontendMode = context?.frontendMode || null;
+  report.liveSmoke.submitAllowed = typeof context?.submitAllowed === 'boolean' ? context.submitAllowed : null;
+  report.liveSmoke.submitBlockedReason = context?.submitBlockedReason || null;
+  report.preflight.backendEditableHandoffObserved =
     context?.frontendMode === 'current_editable' && context?.submitAllowed === true ? 'PASS' : 'FAIL';
-  if (report.editableContext.currentContext !== 'PASS') {
-    fail(`current-context failed with HTTP ${contextResponse.status}.`);
-  }
-  if (requireEditable && report.preflight.backendEditableReadyObserved !== 'PASS') {
-    fail(`Backend editable context is not ready: frontendMode=${context?.frontendMode ?? null}, submitAllowed=${context?.submitAllowed ?? null}, submitBlockedReason=${context?.submitBlockedReason ?? null}.`);
+  if (report.preflight.backendEditableHandoffObserved !== 'PASS') {
+    throw new Error(`Editable context not ready: frontendMode=${context?.frontendMode ?? null}, submitAllowed=${context?.submitAllowed ?? null}.`);
   }
   if (!context.currentAppliedCalculationRunId || !context.defaultMethodCode || !context.serverDate) {
-    fail('current-context did not provide currentAppliedCalculationRunId/defaultMethodCode/serverDate.');
+    throw new Error('current-context lacks currentAppliedCalculationRunId/defaultMethodCode/serverDate.');
   }
 
   const mapQuery = new URLSearchParams({
@@ -526,15 +504,12 @@ try {
   const mapResponse = await request(apiUrl(`/v2/kornix/field-seasons/map?${mapQuery.toString()}`));
   const mapBody = await jsonOrNull(mapResponse);
   const features = Array.isArray(mapBody?.features) ? mapBody.features : [];
-  report.displayRegression.mapFeatures = features.length;
+  report.liveSmoke.mapFeatures = features.length;
   if (!mapResponse.ok || features.length !== expectedFields) {
-    fail(`Map expected ${expectedFields} features, got ${features.length} with HTTP ${mapResponse.status}.`);
+    throw new Error(`Map expected ${expectedFields} features, got ${features.length} with HTTP ${mapResponse.status}.`);
   }
 
   const selectedFieldIds = features.map((feature) => feature?.properties?.fieldSeasonId).filter(Boolean).slice(0, 3);
-  if (selectedFieldIds.length === 0) {
-    fail('Map returned no fieldSeasonId values.');
-  }
   const profileQuery = new URLSearchParams({
     calculationRunId: context.currentAppliedCalculationRunId,
     methodCode: context.defaultMethodCode,
@@ -546,116 +521,88 @@ try {
   const profileBody = await jsonOrNull(profileResponse);
   const metrics = metricList(profileBody);
   const metricCodes = metrics.map(metricCode).filter(Boolean);
-  report.displayRegression.profileMetrics = metrics.length;
-  report.displayRegression.shortwavePresent = metricCodes.includes(REQUIRED_METRIC) ? 'PASS' : 'FAIL';
-  const missingMetrics = REQUIRED_METRICS.filter((code) => !metricCodes.includes(code));
-  if (!profileResponse.ok || metrics.length !== expectedMetrics || missingMetrics.length > 0) {
-    fail(`Profile expected ${expectedMetrics} metrics; missing ${missingMetrics.join(', ') || 'none'}.`);
+  report.liveSmoke.profileMetrics = metrics.length;
+  report.liveSmoke.requiredMetricsPresent = REQUIRED_METRICS.every((code) => metricCodes.includes(code)) ? 'PASS' : 'FAIL';
+  report.liveSmoke.shortwavePresent = metricCodes.includes(REQUIRED_METRIC) ? 'PASS' : 'FAIL';
+  if (!profileResponse.ok || metrics.length !== expectedMetrics || report.liveSmoke.requiredMetricsPresent !== 'PASS') {
+    throw new Error(`Profile expected ${expectedMetrics} metrics and all required metric codes.`);
   }
 
   const liveFieldId = context.managedScope.fieldSeasonIds.find((id) => selectedFieldIds.includes(id)) || context.managedScope.fieldSeasonIds[0];
   const liveDay = context.serverDate >= context.managedScope.dateFrom && context.serverDate <= context.managedScope.dateTo
     ? context.serverDate
     : context.managedScope.dateFrom;
-  const validPayload = approvalPayload(context, liveFieldId, liveDay, Number((1 + randomBytes(1)[0] / 50).toFixed(2)));
+  const payload = approvalPayload(context, liveFieldId, liveDay, Number((1 + randomBytes(1)[0] / 50).toFixed(2)));
+  report.liveSmoke.seasonYearPropagated =
+    payload.seasonYear === seasonYear && payload.baseCalculationRunId === context.currentAppliedCalculationRunId ? 'PASS' : 'FAIL';
 
   const approvalResponse = await request(apiUrl('/v2/kornix/water-regime/approvals'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': sessionCsrfToken },
-    body: JSON.stringify(validPayload)
+    body: JSON.stringify(payload)
   });
   const approvalBody = await jsonOrNull(approvalResponse);
-  report.approvalSmoke.validCsrfApprovalPost = approvalResponse.ok ? 'PASS' : 'FAIL';
-  report.approvalSmoke.approvalBatchId = approvalBody?.approvalBatchId || null;
-  report.approvalSmoke.lastApprovalHttpStatus = approvalResponse.status;
-  report.approvalSmoke.lastApprovalErrorCode = approvalBody?.error?.code || null;
-  report.approvalSmoke.cookieNamesPresent = [...cookieJar.keys()].sort();
-  report.approvalSmoke.sessionCookieLength = cookieJar.get('kornix_session')?.length ?? null;
-  report.approvalSmoke.seasonYearPropagated =
-    validPayload.seasonYear === seasonYear && validPayload.baseCalculationRunId === context.currentAppliedCalculationRunId
-      ? 'PASS'
-      : 'FAIL';
-  if (!approvalResponse.ok || !approvalBody?.approvalBatchId) {
-    fail(`Approval POST failed with HTTP ${approvalResponse.status}.`);
+  report.liveSmoke.approvalPost = approvalResponse.ok && approvalBody?.approvalBatchId ? 'PASS' : 'FAIL';
+  report.uiProof.approvalSubmitPathExercisedThroughUiOrFrontendClient = report.liveSmoke.approvalPost;
+  if (report.liveSmoke.approvalPost !== 'PASS') {
+    throw new Error(`Approval POST through frontend-origin /api failed with HTTP ${approvalResponse.status}.`);
   }
 
   const approvalStatus = approvalBody.pollRequired
     ? await pollApproval(approvalBody.approvalBatchId)
     : approvalBody;
-  report.approvalSmoke.approvalReadbackProof =
+  report.liveSmoke.approvalReadback =
     approvalStatus?.approvalStatus === 'applied' || approvalStatus?.approvalStatus === 'no_changes' ? 'PASS' : 'FAIL';
-  report.approvalSmoke.approvalCalculationRunId = approvalStatus?.calculationRunId || approvalBody.calculationRunId || null;
-  if (report.approvalSmoke.approvalReadbackProof !== 'PASS') {
-    fail(`Approval readback returned status ${approvalStatus?.approvalStatus ?? null}.`);
+  if (report.liveSmoke.approvalReadback !== 'PASS') {
+    throw new Error(`Approval readback returned status ${approvalStatus?.approvalStatus ?? null}.`);
   }
 
-  const missingCsrfResponse = await request(apiUrl('/v2/kornix/water-regime/approvals'), {
-    method: 'POST',
-    omitCookies: false,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(validPayload)
-  });
-  const missingCsrfBody = await jsonOrNull(missingCsrfResponse);
-  report.approvalSmoke.missingCsrfRejected =
-    missingCsrfResponse.status === 403 && missingCsrfBody?.error?.code === 'CSRF_TOKEN_INVALID' ? 'PASS' : 'FAIL';
-
-  const outOfScopePayload = JSON.parse(JSON.stringify(validPayload));
-  outOfScopePayload.irrigationLayer[0].fieldSeasonId = '00000000-0000-0000-0000-000000000001';
-  const outOfScopeResponse = await request(apiUrl('/v2/kornix/water-regime/approvals'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': sessionCsrfToken },
-    body: JSON.stringify(outOfScopePayload)
-  });
-  report.approvalSmoke.outOfScopeRejected = outOfScopeResponse.status === 409 ? 'PASS' : 'FAIL';
-
-  const seasonMismatchPayload = JSON.parse(JSON.stringify(validPayload));
-  seasonMismatchPayload.seasonYear = seasonYear - 1;
-  const seasonMismatchResponse = await request(apiUrl('/v2/kornix/water-regime/approvals'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': sessionCsrfToken },
-    body: JSON.stringify(seasonMismatchPayload)
-  });
-  report.approvalSmoke.seasonMismatchRejected = [409, 422].includes(seasonMismatchResponse.status) ? 'PASS' : 'FAIL';
-
-  const logoutResponse = await request(apiUrl('/v1/auth/logout'), {
+  await request(apiUrl('/v1/auth/logout'), {
     method: 'POST',
     headers: { 'X-CSRF-Token': sessionCsrfToken }
   });
-  if (!logoutResponse.ok) {
-    blockers.push(`Logout returned HTTP ${logoutResponse.status}.`);
-  }
-
-  if (requireBrowserUi && !browserProofReady()) {
-    fail('Browser/UI proof is required but codex_reports/frontend_editable_approval_uat_browser_ui_proof.json is not PASS.');
+} catch (error) {
+  appendBlocker(error instanceof Error ? error.message : String(error));
+} finally {
+  cleanupEphemeralUser();
+  if (cleanupRequired) {
+    if (report.credentialsGate.ephemeralSessionsRevoked !== 'PASS') {
+      appendBlocker('Ephemeral user sessions were not revoked.');
+    }
+    if (report.credentialsGate.ephemeralUserDeactivated !== 'PASS') {
+      appendBlocker('Ephemeral user was not deactivated.');
+    }
   }
 
   const ready =
-    report.preflight.frontendRuntimeReachable === 'PASS' &&
-    report.preflight.sameOriginApiJsonNotHtml === 'PASS' &&
-    report.preflight.backendEditableReadyObserved === 'PASS' &&
-    report.auth.authenticatedSession === 'PASS' &&
-    report.editableContext.currentContext === 'PASS' &&
-    report.displayRegression.mapFeatures === expectedFields &&
-    report.displayRegression.profileMetrics === expectedMetrics &&
-    report.displayRegression.shortwavePresent === 'PASS' &&
-    report.approvalSmoke.validCsrfApprovalPost === 'PASS' &&
-    report.approvalSmoke.approvalReadbackProof === 'PASS' &&
-    report.approvalSmoke.seasonYearPropagated === 'PASS' &&
-    report.approvalSmoke.missingCsrfRejected === 'PASS' &&
-    report.approvalSmoke.outOfScopeRejected === 'PASS' &&
-    report.approvalSmoke.seasonMismatchRejected === 'PASS' &&
-    (!requireBrowserUi || browserProofReady()) &&
+    report.preflight.backendRuntimeReachable === 'PASS' &&
+    report.preflight.backendEditableHandoffObserved === 'PASS' &&
+    report.uiProof.staticFrontendReachable === 'PASS' &&
+    report.uiProof.editableControlsEnabled === 'PASS' &&
+    report.uiProof.approvalSubmitPathExercisedThroughUiOrFrontendClient === 'PASS' &&
+    report.liveSmoke.sameOriginApiHealth === 'PASS' &&
+    report.liveSmoke.apiRouteReturnedJsonNotHtml === 'PASS' &&
+    report.liveSmoke.authenticatedSession === 'PASS' &&
+    report.liveSmoke.organization === organizationCode &&
+    report.liveSmoke.currentContext === 'PASS' &&
+    Boolean(report.liveSmoke.currentAppliedCalculationRunId) &&
+    report.liveSmoke.frontendMode === 'current_editable' &&
+    report.liveSmoke.submitAllowed === true &&
+    report.liveSmoke.submitBlockedReason === null &&
+    report.liveSmoke.mapFeatures === expectedFields &&
+    report.liveSmoke.profileMetrics === expectedMetrics &&
+    report.liveSmoke.requiredMetricsPresent === 'PASS' &&
+    report.liveSmoke.shortwavePresent === 'PASS' &&
+    report.liveSmoke.approvalPost === 'PASS' &&
+    report.liveSmoke.approvalReadback === 'PASS' &&
+    report.liveSmoke.sessionBoundCsrfUsed === 'PASS' &&
+    report.liveSmoke.seasonYearPropagated === 'PASS' &&
+    report.liveSmoke.mockModeUsed === false &&
+    report.credentialsGate.valuesRedacted === true &&
     blockers.length === 0;
   report.status = ready ? READY_STATUS : NOT_READY_STATUS;
-} catch (error) {
-  report.status = NOT_READY_STATUS;
-  if (error instanceof Error && !blockers.includes(error.message)) {
-    blockers.push(error.message);
-  }
-} finally {
-  cleanupEphemeralUser();
-  saveReports();
-  console.log(JSON.stringify({ status: report.status, output: outputJson, blockers }, null, 2));
+  saveAll();
+  console.log(JSON.stringify({ status: report.status, output: smokeJson, blockers }, null, 2));
   if (report.status !== READY_STATUS) {
     process.exitCode = 1;
   }

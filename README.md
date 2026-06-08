@@ -262,6 +262,31 @@ node scripts/frontend_api_v2_sp37_live_smoke.mjs
 Скрипт не печатает cookies, CSRF token или пароль и сохраняет JSON-результат в
 `codex_reports/frontend_api_v2_sp37_live_smoke.json`.
 
+Финальная editable approval UAT-проверка после backend handoff запускается
+только через frontend origin и same-origin `/api/*`, а не напрямую в backend:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+
+KORNIX_FRONTEND_ORIGIN=http://localhost:8080 \
+KORNIX_BACKEND_API_BASE_URL=http://localhost:8001 \
+KORNIX_BACKEND_REPO_PATH=/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack \
+KORNIX_SMOKE_ORGANIZATION_CODE=SP \
+KORNIX_SMOKE_SEASON_YEAR=2026 \
+node scripts/frontend_editable_approval_uat_smoke.mjs
+```
+
+READY для этого smoke требует backend handoff mode
+`frontendMode=current_editable`, `submitAllowed=true`, 37 map features,
+13 profile metrics с `shortwave_radiation_daily_mj_m2`, frontend-origin
+approval POST/readback, session-bound CSRF и `mockModeUsed=false`. Если
+`KORNIX_FRONTEND_SMOKE_USERNAME/PASSWORD` не заданы, runner создаёт
+ephemeral backend user через существующий backend helper, генерирует пароль
+только в памяти, отзывает сессии и деактивирует пользователя в конце. Отчёты
+сохраняются в `codex_reports/frontend_editable_approval_uat_report.json`,
+`frontend_editable_approval_uat_smoke.json` и не содержат паролей, cookies или
+CSRF token values.
+
 Покрытие profile metrics проверяется командой:
 
 ```bash
