@@ -1,0 +1,7 @@
+
+> kornix-frontend@0.1.0 test:contract
+> bash scripts/check-frontend-contract.sh && node scripts/check-profile-metric-coverage.mjs
+
+Profile metric coverage check passed.
+Required FAO90 metrics: 44/44
+Presentation registry metrics: 44/44

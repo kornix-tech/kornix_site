@@ -1,22 +1,8 @@
- M CHANGELOG.md
- M README.md
- M scripts/check-profile-metric-coverage.mjs
- M src/api/timeseries.ts
- M src/config/metrics.ts
- M src/styles.css
- M src/types/kornix.ts
- M src/workspace/FieldTooltip.tsx
- M src/workspace/WaterRegimeChart.tsx
- M src/workspace/WorkspacePage.tsx
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_build_log.txt
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_changed_files.txt
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_contract_map.json
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_diff_check_log.txt
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_git_status.txt
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_report.json
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_report.md
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_secret_scan_log.txt
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_smoke.json
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_smoke_log.txt
-?? codex_reports/frontend_eto_single_layer_soil_fao90_metrics_test_log.txt
-?? scripts/frontend_eto_single_layer_soil_fao90_metrics_smoke.mjs
+PRE-COMMIT PROVENANCE FROM IMPLEMENTATION REPORT
+
+The original contents of this file captured the dirty worktree before commit
+3ce773f4bb140e5cbfc0ca08a142635b26197f94 was created and pushed.
+
+It is not a final delivery gate status.
+Final report-gate status is recorded in:
+codex_reports/frontend_eto_single_layer_soil_fao90_metrics_report_gate.json

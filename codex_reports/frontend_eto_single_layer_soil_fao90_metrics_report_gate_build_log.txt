@@ -1,0 +1,26 @@
+
+> kornix-frontend@0.1.0 build
+> npm run typecheck && vite build
+
+
+> kornix-frontend@0.1.0 typecheck
+> tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false
+
+vite v7.3.3 building client environment for production...
+transforming...
+✓ 773 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.73 kB │ gzip:   0.34 kB
+dist/assets/vendor-map-CIGW-MKW.css            15.61 kB │ gzip:   6.46 kB
+dist/assets/index-BbuqlJL5.css                 35.38 kB │ gzip:   7.66 kB
+dist/assets/FieldMap-vC2H_gUy.js                7.64 kB │ gzip:   3.15 kB
+dist/assets/index-VDAUHfGj.js                  13.00 kB │ gzip:   5.19 kB
+dist/assets/IrrigationInputTable-C2DBED1a.js   15.35 kB │ gzip:   5.72 kB
+dist/assets/WaterRegimeChart-DCNgkf6T.js       27.06 kB │ gzip:   7.90 kB
+dist/assets/vendor-query-B7GAe2XU.js           33.63 kB │ gzip:  10.13 kB
+dist/assets/vendor-map-3SCwb1bY.js            149.51 kB │ gzip:  43.30 kB
+dist/assets/vendor-react-Dtp2-oVi.js          161.22 kB │ gzip:  52.96 kB
+dist/assets/index-DdMYlIay.js                 165.56 kB │ gzip:  47.63 kB
+dist/assets/vendor-charts-C8Q1wtKQ.js         385.73 kB │ gzip: 113.94 kB
+✓ built in 4.69s

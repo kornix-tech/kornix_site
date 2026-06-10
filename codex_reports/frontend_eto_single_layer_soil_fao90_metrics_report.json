@@ -3,7 +3,7 @@
   "backendObserved": {
     "commitSha": "c8d20e740db9d7135538c8c8a7e832260e0323ce",
     "reachable": true,
-    "currentAppliedCalculationRunId": "bb_bootstrap_e85acda9b75745e09eb668da3b2e384c",
+    "currentAppliedCalculationRunId": "bb_user_95419d339f944253848961e65fb33e43",
     "mapFeatures": 37,
     "profileMetricCount": 44,
     "methodProfileCode": "potato_medium_fao90_single_layer_v1"
@@ -34,14 +34,20 @@
     "unitContractTests": "PASS",
     "securityScan": "PASS",
     "secretScan": "PASS",
-    "dockerBuild": "PASS"
+    "dockerBuild": "NOT_RUN_REPORT_ONLY_NO_SOURCE_BEHAVIOR_CHANGE"
   },
   "git": {
-    "committed": false,
-    "pushed": false,
-    "commitSha": null,
-    "worktreeClean": false,
-    "pushFailureReason": null
+    "implementationCommitShaFromCodexFinalLog": "3ce773f4bb140e5cbfc0ca08a142635b26197f94",
+    "reportGateCleanupRequired": true,
+    "finalDeliveryGate": "see codex_reports/frontend_eto_single_layer_soil_fao90_metrics_report_gate.json",
+    "note": "This report is superseded for delivery-gate metadata by the report-gate artifact to avoid stale pre-commit git status."
+  },
+  "reportConsistency": {
+    "previousReportGitBlockWasStale": true,
+    "existingReportJsonUpdatedOrSuperseded": "PASS",
+    "noFalseCommittedFalseInFinalReport": true,
+    "noFalsePushedFalseInFinalReport": true,
+    "noFalseWorktreeDirtyInFinalReport": true
   },
   "blockers": []
 }

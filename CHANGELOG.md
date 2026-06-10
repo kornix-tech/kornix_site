@@ -34,6 +34,9 @@
   статус в README.
 
 ### Changed
+- FAO90 frontend metrics report gate приведён к согласованному состоянию:
+  устаревший pre-commit git-блок больше не описывается как финальная delivery
+  metadata, добавлены отдельные `report_gate` JSON/MD отчёты.
 - Таблица ввода поливов теперь блокирует редактирование при любом состоянии,
   кроме `frontendMode=current_editable` и `submitAllowed=true`, чтобы UI не
   оставлял активные поля при backend-issued запрете submit.
