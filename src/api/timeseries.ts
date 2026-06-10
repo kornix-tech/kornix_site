@@ -1,26 +1,13 @@
-import { getMetricDefinition } from '../config/metrics';
+import { getMetricDefinition, REQUIRED_FAO90_METRIC_CODES } from '../config/metrics';
 import type {
   FieldSeasonMapFeatureCollection,
   KornixMetricSeriesDto,
+  MetricScalarValue,
   KornixProfileTimeseriesDto,
   RequiredBackendMetricLongName
 } from '../types/kornix';
 
-const PROFILE_METRICS: RequiredBackendMetricLongName[] = [
-  'air_temperature_daily_c',
-  'relative_humidity_daily_pct',
-  'wind_daily_mps',
-  'eto_daily_mm',
-  'shortwave_radiation_daily_mj_m2',
-  'soil_total_capacity_water_mm',
-  'soil_field_capacity_water_mm',
-  'soil_wilting_point_capacity_water_mm',
-  'soil_water_content_mm',
-  'positive_temperature_sum_from_sowing_c',
-  'crop_transpiration_daily_mm',
-  'precipitation_effective_daily_mm',
-  'irrigation_effective_daily_mm'
-];
+const PROFILE_METRICS = REQUIRED_FAO90_METRIC_CODES;
 
 function dateRange(from: string, to: string): string[] {
   const result: string[] = [];
@@ -87,10 +74,15 @@ function scalarMetricValue(
   index: number,
   seed: number,
   field: FieldSeasonMapFeatureCollection['features'][number]['properties']
-): number | null {
+): MetricScalarValue {
   if (seed % 13 === 0 && index % 11 === 0) {
     return null;
   }
+  const soilWater = field.soil_water_content_mm === null
+    ? null
+    : Math.max(0, field.soil_water_content_mm - index * 0.45 + dailyWave(index, seed, 5));
+  const taw = Math.max(1, (field.soil_field_capacity_water_mm ?? 110) - (field.soil_wilting_point_capacity_water_mm ?? 40));
+  const depletion = soilWater === null ? null : Math.max(0, (field.soil_field_capacity_water_mm ?? soilWater) - soilWater);
 
   switch (metric) {
     case 'eto_daily_mm':
@@ -104,17 +96,75 @@ function scalarMetricValue(
     case 'soil_wilting_point_capacity_water_mm':
       return field.soil_wilting_point_capacity_water_mm;
     case 'soil_water_content_mm':
-      return field.soil_water_content_mm === null
-        ? null
-        : Math.max(0, field.soil_water_content_mm - index * 0.45 + dailyWave(index, seed, 5));
+      return soilWater;
+    case 'soil_water_start_mm':
+      return soilWater === null ? null : soilWater + 0.4;
+    case 'soil_water_end_mm':
+      return soilWater;
+    case 'soil_water_available_mm':
+      return soilWater === null ? null : Math.max(0, soilWater - (field.soil_wilting_point_capacity_water_mm ?? 40));
+    case 'soil_water_available_pct_taw':
+      return soilWater === null ? null : Math.max(0, Math.min(100, ((soilWater - (field.soil_wilting_point_capacity_water_mm ?? 40)) / taw) * 100));
+    case 'soil_water_depletion_mm':
+      return depletion;
+    case 'soil_water_depletion_pct_taw':
+      return depletion === null ? null : Math.max(0, Math.min(100, (depletion / taw) * 100));
+    case 'soil_water_productive_mm':
+      return soilWater === null ? null : Math.max(0, soilWater - (field.soil_wilting_point_capacity_water_mm ?? 40));
+    case 'total_available_water_mm':
+      return taw;
+    case 'readily_available_water_mm':
+      return taw * 0.45;
+    case 'root_zone_depth_m':
+      return Math.min(0.6, 0.3 + index * 0.004);
     case 'positive_temperature_sum_from_sowing_c':
       return (field.positive_temperature_sum_from_sowing_c ?? 650) + index * 12 + dailyWave(index, seed, 3);
     case 'crop_transpiration_daily_mm':
       return Math.max(0, 3.1 + dailyWave(index, seed, 1.1));
+    case 'crop_coefficient_kc':
+      return Math.min(1.15, 0.5 + index * 0.012);
+    case 'basal_crop_coefficient_kcb':
+      return Math.min(1.1, 0.15 + index * 0.015);
+    case 'soil_evaporation_coefficient_ke':
+      return Math.max(0, 0.45 - index * 0.002 + dailyWave(index, seed, 0.04));
+    case 'surface_evaporation_reduction_kr':
+      return Math.max(0.2, Math.min(1, 1 - index * 0.006));
+    case 'potential_crop_evapotranspiration_mm':
+      return Math.max(0, 4.2 + dailyWave(index, seed, 0.8));
+    case 'potential_transpiration_mm':
+      return Math.max(0, 3.4 + dailyWave(index, seed, 0.7));
+    case 'potential_soil_evaporation_mm':
+      return Math.max(0, 0.8 + dailyWave(index, seed, 0.2));
+    case 'actual_transpiration_mm':
+      return Math.max(0, 2.9 + dailyWave(index, seed, 0.7));
+    case 'actual_soil_evaporation_mm':
+      return Math.max(0, 0.5 + dailyWave(index, seed, 0.18));
+    case 'actual_evapotranspiration_mm':
+      return Math.max(0, 3.4 + dailyWave(index, seed, 0.8));
+    case 'actual_evapotranspiration_cumulative_mm':
+      return Math.max(0, index * 3.4);
+    case 'water_stress_coefficient':
+      return Math.max(0.35, Math.min(1, 1 - (depletion ?? 0) / Math.max(1, taw * 1.4)));
+    case 'crop_stage_code':
+      return index < 17 ? 'initial' : index < 38 ? 'development' : index < 69 ? 'mid' : 'late';
+    case 'days_after_sowing':
+      return index;
     case 'precipitation_effective_daily_mm':
+    case 'effective_precipitation_daily_mm':
       return index % 5 === seed % 5 ? Math.max(0, 3 + dailyWave(index, seed, 3)) : 0;
+    case 'precipitation_raw_daily_mm':
+      return index % 5 === seed % 5 ? Math.max(0, 4 + dailyWave(index, seed, 3)) : 0;
     case 'irrigation_effective_daily_mm':
+    case 'effective_irrigation_daily_mm':
       return index % 13 === seed % 13 ? 12 : 0;
+    case 'irrigation_raw_daily_mm':
+      return index % 13 === seed % 13 ? 15 : 0;
+    case 'drainage_runoff_daily_mm':
+      return index % 9 === seed % 9 ? 1.5 : 0;
+    case 'calculation_diagnostics_json':
+      return { residual_mm: 0, continuity_error_mm: 0 };
+    case 'calculation_warnings_json':
+      return [];
     default:
       return null;
   }
@@ -211,10 +261,21 @@ export function buildMockProfileTimeseries(params: {
       valueKind: 'scalar',
       chartKind: metric.chartKind,
       points: days.map((day, index) => {
+        const firstValue = scalarMetricValue(longName, index, hashString(`${seriesFields[0]?.properties.fieldSeasonId ?? 'mock'}:${params.calculationRunId}`), seriesFields[0]?.properties ?? params.fields.features[0].properties);
+        if (typeof firstValue !== 'number') {
+          return {
+            day,
+            value: firstValue,
+            coverage: 1,
+            contributingAreaHa: seriesFields.reduce((sum, feature) => sum + (feature.properties.areaHa ?? 0), 0),
+            totalAreaHa: seriesFields.reduce((sum, feature) => sum + (feature.properties.areaHa ?? 0), 0)
+          };
+        }
         const rows = seriesFields.map((feature) => {
           const seed = hashString(`${feature.properties.fieldSeasonId}:${params.calculationRunId}`);
+          const value = scalarMetricValue(longName, index, seed, feature.properties);
           return {
-            value: scalarMetricValue(longName, index, seed, feature.properties),
+            value: typeof value === 'number' ? value : null,
             areaHa: feature.properties.areaHa
           };
         });

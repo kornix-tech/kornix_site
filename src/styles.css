@@ -1025,6 +1025,65 @@ input[type='checkbox'] {
   color: var(--color-muted);
 }
 
+.fao90-metric-summary {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgb(23 65 38 / 12%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 72%);
+  font-size: 12px;
+}
+
+.fao90-metric-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fao90-metric-pass {
+  color: #1f7a3a;
+  font-weight: 800;
+}
+
+.fao90-metric-warning {
+  color: #9f1d20;
+  font-weight: 800;
+}
+
+.fao90-metric-summary details {
+  color: #405248;
+}
+
+.fao90-metric-summary summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.fao90-metric-summary dl {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.fao90-metric-summary dl div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 8px;
+}
+
+.fao90-metric-summary dt {
+  color: #5f6f64;
+}
+
+.fao90-metric-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #17311f;
+  font-weight: 800;
+}
+
 .diagnostic-warning-list {
   display: grid;
   gap: 5px;

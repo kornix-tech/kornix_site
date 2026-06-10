@@ -44,6 +44,37 @@ export type FieldSeasonMapPropertiesDto = {
   koef_lower_limit: number | null;
   precipitation_effective_daily_mm: number | null;
   irrigation_effective_daily_mm: number | null;
+  soil_water_start_mm?: number | null;
+  soil_water_end_mm?: number | null;
+  soil_water_available_mm?: number | null;
+  soil_water_available_pct_taw?: number | null;
+  soil_water_depletion_mm?: number | null;
+  soil_water_depletion_pct_taw?: number | null;
+  soil_water_productive_mm?: number | null;
+  total_available_water_mm?: number | null;
+  readily_available_water_mm?: number | null;
+  root_zone_depth_m?: number | null;
+  precipitation_raw_daily_mm?: number | null;
+  effective_precipitation_daily_mm?: number | null;
+  irrigation_raw_daily_mm?: number | null;
+  effective_irrigation_daily_mm?: number | null;
+  drainage_runoff_daily_mm?: number | null;
+  crop_coefficient_kc?: number | null;
+  basal_crop_coefficient_kcb?: number | null;
+  soil_evaporation_coefficient_ke?: number | null;
+  surface_evaporation_reduction_kr?: number | null;
+  potential_crop_evapotranspiration_mm?: number | null;
+  potential_transpiration_mm?: number | null;
+  potential_soil_evaporation_mm?: number | null;
+  actual_transpiration_mm?: number | null;
+  actual_soil_evaporation_mm?: number | null;
+  actual_evapotranspiration_mm?: number | null;
+  actual_evapotranspiration_cumulative_mm?: number | null;
+  water_stress_coefficient?: number | null;
+  crop_stage_code?: string | null;
+  days_after_sowing?: number | null;
+  calculation_diagnostics_json?: unknown;
+  calculation_warnings_json?: unknown;
   positive_temperature_sum_from_sowing_c: number | null;
   crop_transpiration_daily_mm: number | null;
   recommended_irrigation_date: string | null;
@@ -104,10 +135,42 @@ export type RequiredBackendMetricLongName =
   | 'positive_temperature_sum_from_sowing_c'
   | 'crop_transpiration_daily_mm'
   | 'precipitation_effective_daily_mm'
-  | 'irrigation_effective_daily_mm';
+  | 'irrigation_effective_daily_mm'
+  | 'soil_water_start_mm'
+  | 'soil_water_end_mm'
+  | 'soil_water_available_mm'
+  | 'soil_water_available_pct_taw'
+  | 'soil_water_depletion_mm'
+  | 'soil_water_depletion_pct_taw'
+  | 'soil_water_productive_mm'
+  | 'total_available_water_mm'
+  | 'readily_available_water_mm'
+  | 'root_zone_depth_m'
+  | 'precipitation_raw_daily_mm'
+  | 'effective_precipitation_daily_mm'
+  | 'irrigation_raw_daily_mm'
+  | 'effective_irrigation_daily_mm'
+  | 'drainage_runoff_daily_mm'
+  | 'crop_coefficient_kc'
+  | 'basal_crop_coefficient_kcb'
+  | 'soil_evaporation_coefficient_ke'
+  | 'surface_evaporation_reduction_kr'
+  | 'potential_crop_evapotranspiration_mm'
+  | 'potential_transpiration_mm'
+  | 'potential_soil_evaporation_mm'
+  | 'actual_transpiration_mm'
+  | 'actual_soil_evaporation_mm'
+  | 'actual_evapotranspiration_mm'
+  | 'actual_evapotranspiration_cumulative_mm'
+  | 'water_stress_coefficient'
+  | 'crop_stage_code'
+  | 'days_after_sowing'
+  | 'calculation_diagnostics_json'
+  | 'calculation_warnings_json';
 
+export type MetricScalarValue = number | string | boolean | Record<string, unknown> | unknown[] | null;
 export type MetricValueKind = 'scalar' | 'min_mean_max' | 'mean_max_gust';
-export type MetricChartKind = 'line' | 'bar';
+export type MetricChartKind = 'line' | 'bar' | 'table' | 'diagnostics';
 
 export type KornixMetricDefinition = {
   long_name_for_code: RequiredBackendMetricLongName;
@@ -115,7 +178,7 @@ export type KornixMetricDefinition = {
   unit: string;
   valueKind: MetricValueKind;
   chartKind: MetricChartKind;
-  group: 'water_balance' | 'weather' | 'plant' | 'irrigation';
+  group: 'water_balance' | 'weather' | 'plant' | 'irrigation' | 'diagnostics';
   isDefaultVisible: boolean;
   isEnabled: boolean;
 };
@@ -222,8 +285,8 @@ export type ScalarMetricSeriesDto = {
   label: string;
   unit: string;
   valueKind: 'scalar';
-  chartKind: 'line' | 'bar';
-  points: Array<MetricPointBase & { value: number | null }>;
+  chartKind: MetricChartKind;
+  points: Array<MetricPointBase & { value: MetricScalarValue }>;
 };
 
 export type MinMeanMaxMetricSeriesDto = {
@@ -352,6 +415,12 @@ export type KornixCalculationRunStatusDto = {
   calculationRunId: string;
   calculationStatus: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'reused_existing';
   methodCode?: string;
+  methodProfileMetadata?: {
+    profileCode?: string | null;
+    model?: string | null;
+    isOfficialAquaCrop?: boolean | null;
+    [key: string]: unknown;
+  } | null;
   warnings?: Array<{ code: string; message: string }>;
   error?: {
     code: string;

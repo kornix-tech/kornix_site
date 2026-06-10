@@ -13,9 +13,11 @@ import {
   YAxis
 } from 'recharts';
 import { kornixApi } from '../api/kornixApi';
+import { getMetricDefinition, REQUIRED_FAO90_METRIC_CODES } from '../config/metrics';
 import type {
   FieldSeasonMapFeature,
   KornixMetricSeriesDto,
+  MetricScalarValue,
   KornixProfileTimeseriesDto,
   RequiredBackendMetricLongName
 } from '../types/kornix';
@@ -342,6 +344,14 @@ function scalarValue(series: KornixMetricSeriesDto | undefined, day: string): nu
     return null;
   }
 
+  const value = series.points.find((point) => point.day === day)?.value ?? null;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function scalarRawValue(series: KornixMetricSeriesDto | undefined, day: string): MetricScalarValue {
+  if (!series || series.valueKind !== 'scalar') {
+    return null;
+  }
   return series.points.find((point) => point.day === day)?.value ?? null;
 }
 
@@ -542,47 +552,69 @@ function waterReserveDomain(rows: ProfileRow[], saturation: number | null): [num
   return [visibleMinimum, visibleMaximum];
 }
 
-function buildProfileCsv(rows: ProfileRow[], forecastStart: string, methodCode: string, methodLabel: string): string {
+function serializeMetricValue(value: unknown): string | number | boolean | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+    return value;
+  }
+  return JSON.stringify(value);
+}
+
+function metricCsvColumns(metric: KornixMetricSeriesDto): string[] {
+  if (metric.valueKind === 'min_mean_max') {
+    return [`${metric.long_name_for_code}_min`, `${metric.long_name_for_code}_mean`, `${metric.long_name_for_code}_max`];
+  }
+  if (metric.valueKind === 'mean_max_gust') {
+    return [`${metric.long_name_for_code}_mean`, `${metric.long_name_for_code}_max_gust`];
+  }
+  return [metric.long_name_for_code];
+}
+
+function metricCsvValues(metric: KornixMetricSeriesDto, day: string): Array<string | number | boolean | null> {
+  const point = metric.points.find((item) => item.day === day);
+  if (!point) {
+    return metricCsvColumns(metric).map(() => null);
+  }
+  if (metric.valueKind === 'min_mean_max') {
+    return [
+      'min' in point ? point.min : null,
+      'mean' in point ? point.mean : null,
+      'max' in point ? point.max : null
+    ];
+  }
+  if (metric.valueKind === 'mean_max_gust') {
+    return [
+      'mean' in point ? point.mean : null,
+      'maxGust' in point ? point.maxGust : null
+    ];
+  }
+  return [serializeMetricValue('value' in point ? point.value : null)];
+}
+
+function buildProfileCsv(
+  profile: KornixProfileTimeseriesDto,
+  rows: ProfileRow[],
+  forecastStart: string,
+  methodCode: string,
+  methodLabel: string
+): string {
+  const metricColumns = profile.metrics.flatMap(metricCsvColumns);
   return buildCsv([
     [
       'day',
       'method_code',
       'method_label',
       'period',
-      'air_temperature_daily_c',
-      'relative_humidity_daily_pct',
-      'wind_daily_mps',
-      'eto_daily_mm',
-      'shortwave_radiation_daily_mj_m2',
-      'positive_temperature_sum_from_sowing_c',
-      'crop_transpiration_daily_mm',
-      'soil_total_capacity_water_mm',
-      'available_water_lower_mm',
-      'optimum_water_mm',
-      'available_water_upper_mm',
-      'soil_water_content_mm',
-      'precipitation_effective_daily_mm',
-      'irrigation_effective_daily_mm'
+      ...metricColumns
     ],
     ...rows.map((row) => [
       row.day,
       methodCode,
       methodLabel,
       row.day >= forecastStart ? 'forecast' : 'fact',
-      row.temperature,
-      row.humidity,
-      row.wind,
-      row.potentialEvaporationDaily,
-      row.shortwaveRadiationDaily,
-      row.temperatureSum,
-      row.cropTranspirationDaily,
-      row.totalCapacity,
-      row.availableLower,
-      row.optimumWater,
-      row.availableUpper,
-      row.currentWater,
-      row.precipitation,
-      row.irrigation
+      ...profile.metrics.flatMap((metric) => metricCsvValues(metric, row.day))
     ])
   ]);
 }
@@ -744,7 +776,19 @@ function ChartBody({
         .filter(Boolean)
         .join(' · ')
     : null;
-  const profileCsv = buildProfileCsv(rows, forecastStart, methodCode, methodLabel);
+  const profileCsv = buildProfileCsv(profile, rows, forecastStart, methodCode, methodLabel);
+  const metricCodes = useMemo(
+    () => new Set(profile.metrics.map((metric) => metric.long_name_for_code)),
+    [profile.metrics]
+  );
+  const missingRequiredMetrics = useMemo(
+    () => REQUIRED_FAO90_METRIC_CODES.filter((code) => !metricCodes.has(code)),
+    [metricCodes]
+  );
+  const selectedDayDiagnostics = useMemo(
+    () => buildSelectedDayDiagnostics(profile, selectedDayInRange),
+    [profile, selectedDayInRange]
+  );
 
   useEffect(() => {
     onCsvChange(profileCsv);
@@ -811,6 +855,13 @@ function ChartBody({
           Прогноз: {forecastStart} — {forecastEnd}
         </div>
 
+        <Fao90MetricSummary
+          metricCount={profile.metrics.length}
+          missingRequiredMetrics={missingRequiredMetrics}
+          selectedDay={selectedDayInRange}
+          diagnostics={selectedDayDiagnostics}
+        />
+
         {profile.warnings.length > 0 && (
           <div className="diagnostic-warning-list" aria-label="Предупреждения графика">
             {profile.warnings.map((warning) => (
@@ -841,6 +892,79 @@ function LegendStrip() {
           {item.label}
         </span>
       ))}
+    </div>
+  );
+}
+
+function formatDisplayValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return 'нет данных';
+  }
+  if (typeof value === 'number') {
+    return Number(value.toFixed(2)).toString();
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  return JSON.stringify(value);
+}
+
+function buildSelectedDayDiagnostics(profile: KornixProfileTimeseriesDto, day: string) {
+  const diagnosticsCodes: RequiredBackendMetricLongName[] = [
+    'crop_stage_code',
+    'days_after_sowing',
+    'root_zone_depth_m',
+    'water_stress_coefficient',
+    'drainage_runoff_daily_mm',
+    'calculation_diagnostics_json',
+    'calculation_warnings_json'
+  ];
+  return diagnosticsCodes.map((code) => {
+    const definition = getMetricDefinition(code);
+    return {
+      code,
+      label: definition.label,
+      value: scalarRawValue(findSeries(profile, code), day)
+    };
+  });
+}
+
+function Fao90MetricSummary({
+  metricCount,
+  missingRequiredMetrics,
+  selectedDay,
+  diagnostics
+}: {
+  metricCount: number;
+  missingRequiredMetrics: RequiredBackendMetricLongName[];
+  selectedDay: string;
+  diagnostics: Array<{ code: RequiredBackendMetricLongName; label: string; value: MetricScalarValue }>;
+}) {
+  return (
+    <div className="fao90-metric-summary" aria-label="FAO90 метрики профиля">
+      <div className="fao90-metric-summary-header">
+        <strong>FAO90 chain</strong>
+        <span>{metricCount} метрик</span>
+      </div>
+      {missingRequiredMetrics.length === 0 ? (
+        <span className="fao90-metric-pass">44/44 backend метрики доступны</span>
+      ) : (
+        <span className="fao90-metric-warning">
+          Нет метрик: {missingRequiredMetrics.slice(0, 4).join(', ')}
+          {missingRequiredMetrics.length > 4 ? ` +${missingRequiredMetrics.length - 4}` : ''}
+        </span>
+      )}
+      <details>
+        <summary>Фаза, stress и diagnostics за {formatDateShortLabel(selectedDay)}</summary>
+        <dl>
+          {diagnostics.map((item) => (
+            <div key={item.code}>
+              <dt>{item.label}</dt>
+              <dd>{formatDisplayValue(item.value)}</dd>
+            </div>
+          ))}
+        </dl>
+      </details>
     </div>
   );
 }

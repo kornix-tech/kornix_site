@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- Добавлена frontend-поддержка 44 метрик FAO90 single-layer soil chain для
+  `simple_eto_single_layer_soil`: динамический CSV/export всех profile metrics,
+  grouped FAO90 summary/diagnostics в графике, расширенный map tooltip/export
+  и live smoke `scripts/frontend_eto_single_layer_soil_fao90_metrics_smoke.mjs`.
 - Frontend editable approval UAT smoke обновлён под backend handoff
   `63c699da5e2c30a6d31f6011384e4d748ab7dbdb`: READY теперь доказывает
   production frontend origin `http://localhost:8080`, same-origin `/api/*`,

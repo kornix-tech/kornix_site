@@ -3,11 +3,12 @@ import { readFileSync } from 'node:fs';
 const metricsSource = readFileSync('src/config/metrics.ts', 'utf8');
 const chartSource = readFileSync('src/workspace/WaterRegimeChart.tsx', 'utf8');
 
-const metricBlocks = [...metricsSource.matchAll(/\{\s*long_name_for_code:\s*'([^']+)'[\s\S]*?\n\s*\}/g)];
-const metricCodes = metricBlocks.map((match) => match[1]);
-const disabledMetricCodes = metricBlocks
-  .filter((match) => /isEnabled:\s*false/.test(match[0]))
-  .map((match) => match[1]);
+const requiredArrayMatch = metricsSource.match(/REQUIRED_FAO90_METRIC_CODES:[\s\S]*?=\s*\[([\s\S]*?)\];/);
+const requiredMetricCodes = requiredArrayMatch
+  ? [...requiredArrayMatch[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
+  : [];
+const metricCodes = [...metricsSource.matchAll(/long_name_for_code:\s*'([^']+)'/g)].map((match) => match[1]);
+const disabledMetricCodes = [];
 const metadataOnlyMetricCodes = new Set(disabledMetricCodes);
 const requiredVisibleMetricCodes = metricCodes.filter((code) => !metadataOnlyMetricCodes.has(code));
 
@@ -17,10 +18,13 @@ if (metricCodes.length === 0) {
   failures.push('No KORNIX_METRICS entries were found in src/config/metrics.ts.');
 }
 
-for (const code of requiredVisibleMetricCodes) {
-  const occurrences = chartSource.match(new RegExp(code, 'g')) ?? [];
-  if (occurrences.length < 2) {
-    failures.push(`${code} is not both consumed and exported by WaterRegimeChart.`);
+if (requiredMetricCodes.length !== 44) {
+  failures.push(`Expected 44 REQUIRED_FAO90_METRIC_CODES, got ${requiredMetricCodes.length}.`);
+}
+
+for (const code of requiredMetricCodes) {
+  if (!metricCodes.includes(code)) {
+    failures.push(`${code} is missing from KORNIX_METRICS presentation registry.`);
   }
 }
 
@@ -29,10 +33,14 @@ for (const requiredSnippet of [
   'shortwaveRadiationDailyFact',
   'shortwaveRadiationDailyForecast',
   'shortwave_radiation_daily_mj_m2',
-  'Солнечная радиация, МДж/м²/сутки'
+  'metricCsvColumns',
+  'metricCsvValues',
+  'Fao90MetricSummary',
+  'calculation_diagnostics_json',
+  'crop_stage_code'
 ]) {
   if (!chartSource.includes(requiredSnippet)) {
-    failures.push(`Missing shortwave chart/export snippet: ${requiredSnippet}`);
+    failures.push(`Missing FAO90 chart/export snippet: ${requiredSnippet}`);
   }
 }
 
@@ -45,4 +53,5 @@ if (failures.length > 0) {
 }
 
 console.log('Profile metric coverage check passed.');
-console.log(`Visible/exported metrics: ${requiredVisibleMetricCodes.length}/${metricCodes.length}`);
+console.log(`Required FAO90 metrics: ${requiredMetricCodes.length}/44`);
+console.log(`Presentation registry metrics: ${requiredVisibleMetricCodes.length}/${metricCodes.length}`);

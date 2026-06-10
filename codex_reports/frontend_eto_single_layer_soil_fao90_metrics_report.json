@@ -1,0 +1,47 @@
+{
+  "status": "KORNIX_FRONTEND_ETO_SINGLE_LAYER_SOIL_FAO90_METRICS_READY",
+  "backendObserved": {
+    "commitSha": "c8d20e740db9d7135538c8c8a7e832260e0323ce",
+    "reachable": true,
+    "currentAppliedCalculationRunId": "bb_bootstrap_e85acda9b75745e09eb668da3b2e384c",
+    "mapFeatures": 37,
+    "profileMetricCount": 44,
+    "methodProfileCode": "potato_medium_fao90_single_layer_v1"
+  },
+  "implementation": {
+    "dynamicProfileMetricsConsumed": "PASS",
+    "all44MetricsKnownOrDynamic": "PASS",
+    "chartRenderingUpdated": "PASS",
+    "tableCsvExportUpdated": "PASS",
+    "mapTooltipUpdated": "PASS",
+    "diagnosticsJsonHandled": "PASS",
+    "cropStageHandledAsCategory": "PASS",
+    "editableApprovalRegressionPreserved": "PASS"
+  },
+  "smoke": {
+    "authenticatedSession": "PASS",
+    "sameOriginApi": "PASS",
+    "mapFeatures": 37,
+    "profileMetricCount": 44,
+    "requiredMetricsPresent": true,
+    "shortwavePresent": true,
+    "mockModeUsed": false
+  },
+  "checks": {
+    "npmCi": "PASS",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "unitContractTests": "PASS",
+    "securityScan": "PASS",
+    "secretScan": "PASS",
+    "dockerBuild": "PASS"
+  },
+  "git": {
+    "committed": false,
+    "pushed": false,
+    "commitSha": null,
+    "worktreeClean": false,
+    "pushFailureReason": null
+  },
+  "blockers": []
+}
