@@ -37,11 +37,11 @@ export function LoginPage() {
             <img src="/brand/kornix-logo.png" alt="" />
           </span>
           <span>
-            <strong>KORNIX</strong>
-            <small>WATER INTELLIGENCE</small>
+            <strong>КОРНИКС</strong>
+            <small>Технологии</small>
           </span>
         </div>
-        <h1>KORNIX</h1>
+        <h1>КОРНИКС</h1>
         <p>Вход в систему мониторинга водного режима</p>
         <label className="login-field">
           <span>Логин</span>

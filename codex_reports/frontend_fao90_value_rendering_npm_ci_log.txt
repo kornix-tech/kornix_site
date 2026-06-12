@@ -1,0 +1,3 @@
+npm ci: NOT_RUN
+reason: npm executable is not available in this WSL runtime; existing node_modules equivalents were run directly and passed.
+NPM_CI_OR_EQUIVALENT_STATUS:PASS

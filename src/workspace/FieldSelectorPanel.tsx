@@ -1,7 +1,18 @@
 import { useMemo, useState } from 'react';
-import type { FieldSeasonMapFeatureCollection } from '../types/kornix';
+import type { FieldSeasonMapFeatureCollection, FieldWaterRegimeStatusCode } from '../types/kornix';
 import { fieldStatusClassName, fieldStatusLabel } from './fieldStatusPresentation';
 import { formatArea } from './format';
+
+type FieldSearchableProperties = FieldSeasonMapFeatureCollection['features'][number]['properties'] & {
+  cropVariety?: string | null;
+  crop_variety?: string | null;
+  cultivar?: string | null;
+  cultivarName?: string | null;
+  cultivar_name?: string | null;
+  variety?: string | null;
+  varietyName?: string | null;
+  variety_name?: string | null;
+};
 
 function getFieldSortParts(fieldKey: string): number[] {
   const primaryKey = fieldKey.split(';')[0].trim();
@@ -25,12 +36,54 @@ export function compareFieldKeys(leftKey: string, rightKey: string): number {
   return leftKey.localeCompare(rightKey, 'ru', { numeric: true });
 }
 
+function formatFieldKey(fieldKey: string): string {
+  return fieldKey.replace(/^[A-Za-zА-Яа-я]{2,}\s*[:.-]\s*/u, '').trim() || fieldKey;
+}
+
+function formatCropName(cropName: string | null | undefined): string {
+  if (!cropName) {
+    return 'нет культуры';
+  }
+
+  return cropName
+    .replace(/\s*\b\d{2}г\./g, '')
+    .replace(/\s*;\s*/g, '; ')
+    .replace(/;\s*$/g, '')
+    .trim() || 'нет культуры';
+}
+
+function cropVarietyName(field: FieldSearchableProperties): string | null {
+  return (
+    field.varietyName ??
+    field.variety_name ??
+    field.cropVariety ??
+    field.crop_variety ??
+    field.cultivarName ??
+    field.cultivar_name ??
+    field.variety ??
+    field.cultivar ??
+    null
+  );
+}
+
+function fieldCropLabel(field: FieldSearchableProperties): string {
+  const cropName = formatCropName(field.cropName);
+  const varietyName = cropVarietyName(field)?.trim();
+  if (!varietyName || cropName.toLowerCase().includes(varietyName.toLowerCase())) {
+    return cropName;
+  }
+
+  return `${cropName} ${varietyName}`;
+}
+
 export function FieldSelectorPanel({
   fields,
+  forecastStatuses,
   selectedFieldSeasonIds,
   onChange
 }: {
   fields: FieldSeasonMapFeatureCollection;
+  forecastStatuses?: ReadonlyMap<string, FieldWaterRegimeStatusCode>;
   selectedFieldSeasonIds: string[];
   onChange: (ids: string[]) => void;
 }) {
@@ -54,7 +107,16 @@ export function FieldSelectorPanel({
     if (!needle) {
       return true;
     }
-    return `${feature.properties.fieldName} ${feature.properties.fieldKey}`.toLowerCase().includes(needle);
+    const field = feature.properties;
+    return [
+      field.fieldName,
+      field.fieldKey,
+      formatFieldKey(field.fieldKey),
+      fieldCropLabel(field)
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(needle);
   });
 
   function toggle(id: string) {
@@ -92,6 +154,8 @@ export function FieldSelectorPanel({
       <div className="field-list">
         {filtered.map((feature) => {
           const field = feature.properties;
+          const displayFieldKey = formatFieldKey(field.fieldKey);
+          const forecastStatus = forecastStatuses?.get(field.fieldSeasonId) ?? field.latestStatus;
           return (
             <label
               key={field.fieldSeasonId}
@@ -104,11 +168,16 @@ export function FieldSelectorPanel({
                 onChange={() => toggle(field.fieldSeasonId)}
               />
               <span className="field-list-main">
-                <span className="field-list-title">{field.fieldKey}</span>
+                <span className="field-list-title">{displayFieldKey}</span>
                 <span className="field-list-meta">
-                  {formatArea(field.areaHa)} · {field.cropName ?? 'нет культуры'}
+                  {formatArea(field.areaHa)} · {fieldCropLabel(field)}
                 </span>
               </span>
+              <span
+                className={`field-forecast-dot field-forecast-dot-${forecastStatus}`}
+                title={`Прогноз today+7: ${fieldStatusLabel(forecastStatus)}`}
+                aria-label={`Прогноз today+7: ${fieldStatusLabel(forecastStatus)}`}
+              />
             </label>
           );
         })}

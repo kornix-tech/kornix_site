@@ -1,0 +1,42 @@
+== Forbidden runtime endpoints ==
+PASS: no forbidden/stale runtime endpoints in src
+== Current calculation-run endpoint ==
+264:      `${KORNIX_API_PREFIX}/water-regime/calculation-runs/${encodeURIComponent(calculationRunId)}`
+== Browser token storage checks ==
+PASS: no auth token storage patterns in runtime src
+== Harmless storage findings ==
+src/features/auth/mockAuthClient.ts:16:    return window.sessionStorage.getItem(MOCK_SESSION_KEY) === 'true' ? mockAuthUser : null;
+src/features/auth/mockAuthClient.ts:21:    window.sessionStorage.setItem(MOCK_SESSION_KEY, 'true');
+src/features/auth/mockAuthClient.ts:25:    window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+src/workspace/IrrigationInputTable.tsx:216:        window.localStorage.setItem(storageKey, JSON.stringify(nextValues));
+src/workspace/IrrigationInputTable.tsx:218:        window.localStorage.removeItem(storageKey);
+src/workspace/IrrigationInputTable.tsx:231:      const raw = window.localStorage.getItem(storageKey);
+src/workspace/WorkspacePage.tsx:84:  const localStorageScope = `${contextQuery.data?.organizationCode ?? user?.organizationCode ?? 'unknown'}:${
+src/workspace/WorkspacePage.tsx:434:            key={localStorageScope}
+src/workspace/WorkspacePage.tsx:437:            storageScope={localStorageScope}
+NOTE: sessionStorage is localhost mock flag only; localStorage is non-authoritative irrigation UI draft only.
+== Production env defaults ==
+7:VITE_API_BASE_URL=/api
+4:VITE_AUTH_MODE=bff
+5:VITE_ENABLE_MOCK_API=false
+== BFF credentials and CSRF ==
+123:    credentials: 'include',
+179:      credentials: 'include',
+39:const CSRF_BOOTSTRAP_PATH = '/api/v1/auth/csrf';
+38:const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+170:  const token = UNSAFE_METHODS.has(method) ? await ensureCsrfToken(path) : null;
+194:  if (response.status === 403 && UNSAFE_METHODS.has(method)) {
+171:  if (token && !headers.has('X-CSRF-Token')) {
+172:    headers.set('X-CSRF-Token', token);
+199:        headers.set('X-CSRF-Token', retryToken);
+== Auth endpoints ==
+7:      return await requestJson<AuthUser>('/api/v1/me');
+17:    await requestJson<void>('/api/v1/auth/login', {
+27:    await requestJson<void>('/api/v1/auth/logout', { method: 'POST' });
+== SPA fallback ==
+30:        try_files $uri $uri/ /index.html;
+== CSP map tile policy ==
+39:    add_header Content-Security-Policy "default-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" always;
+== Production bundle scan ==
+PASS: production dist has no forbidden/stale markers
+SECURITY_SCAN_EXIT_STATUS:0

@@ -4,7 +4,8 @@ import type {
   FieldSeasonMapFeature,
   FieldSeasonMapFeatureCollection,
   FieldSeasonMapPropertiesDto,
-  FieldWaterRegimeStatusCode
+  FieldWaterRegimeStatusCode,
+  KornixCurrentContextDto
 } from '../types/kornix';
 import { deriveWaterMetrics } from '../features/water-regime/derivedWaterMetrics';
 import { buildFieldTooltipHtml } from './FieldTooltip';
@@ -122,6 +123,24 @@ function hasRenderableGeometry(feature: FieldSeasonMapFeature): boolean {
   return geometry.coordinates.some((polygon) => polygon.some((ring) => ring.length >= 4));
 }
 
+function boundsFromContext(mapBounds: KornixCurrentContextDto['mapBounds'] | undefined): L.LatLngBounds | null {
+  if (!mapBounds) {
+    return null;
+  }
+
+  const { minLng, minLat, maxLng, maxLat } = mapBounds;
+  if (![minLng, minLat, maxLng, maxLat].every(Number.isFinite)) {
+    return null;
+  }
+
+  const bounds = L.latLngBounds([minLat, minLng], [maxLat, maxLng]);
+  return bounds.isValid() ? bounds : null;
+}
+
+function centerFromBounds(bounds: L.LatLngBounds | null): L.LatLngExpression {
+  return bounds?.getCenter() ?? [51.9, 36.85];
+}
+
 function styleForMetric(
   field: FieldSeasonMapPropertiesDto | undefined,
   mode: MapDisplayMode,
@@ -175,11 +194,13 @@ function styleForMetric(
 
 export function FieldMap({
   fields,
+  mapBounds,
   mode,
   selectedFieldSeasonIds,
   onSelectField
 }: {
   fields: FieldSeasonMapFeatureCollection;
+  mapBounds?: KornixCurrentContextDto['mapBounds'];
   mode: MapDisplayMode;
   selectedFieldSeasonIds: string[];
   onSelectField: (fieldSeasonId: string) => void;
@@ -195,10 +216,11 @@ export function FieldMap({
       return;
     }
 
+    const initialBounds = boundsFromContext(mapBounds);
     const map = L.map(containerRef.current, {
       zoomControl: true,
       preferCanvas: true
-    }).setView([51.9, 36.85], 13);
+    }).setView(centerFromBounds(initialBounds), initialBounds ? 11 : 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
@@ -316,13 +338,20 @@ export function FieldMap({
     labels.addTo(map);
     labelLayerRef.current = labels;
 
-    const boundsKey = renderableFields.features.map((feature) => feature.properties.fieldSeasonId).join('|');
-    const bounds = layer.getBounds();
-    if (bounds.isValid() && fittedBoundsKeyRef.current !== boundsKey) {
-      map.fitBounds(bounds, { padding: [28, 28] });
+    const geometryBounds = layer.getBounds();
+    const contextBounds = boundsFromContext(mapBounds);
+    const fitBounds = geometryBounds.isValid() ? geometryBounds : contextBounds;
+    const boundsKey = [
+      fields.organizationCode,
+      fields.calculationRunId,
+      mapBounds ? `${mapBounds.minLng},${mapBounds.minLat},${mapBounds.maxLng},${mapBounds.maxLat}` : 'no-context-bounds',
+      renderableFields.features.map((feature) => feature.properties.fieldSeasonId).join('|')
+    ].join('::');
+    if (fitBounds?.isValid() && fittedBoundsKeyRef.current !== boundsKey) {
+      map.fitBounds(fitBounds, { padding: [28, 28] });
       fittedBoundsKeyRef.current = boundsKey;
     }
-  }, [fields, mode, selectedFieldSeasonIds, onSelectField]);
+  }, [fields, mapBounds, mode, selectedFieldSeasonIds, onSelectField]);
 
   return <div ref={containerRef} className="map-container" />;
 }

@@ -1,0 +1,12 @@
+{
+  "status": "KORNIX_FRONTEND_FAO90_VALUE_RENDERING_READY",
+  "frontendBaseUrl": "http://127.0.0.1:5174",
+  "currentAppliedCalculationRunId": "bb_bootstrap_f073cd7d9e3742929db55da5765a173e",
+  "mapMandatoryNulls": 0,
+  "singleFieldProfileMandatoryNulls": 0,
+  "multiFieldAggregatedMandatoryNulls": 0,
+  "singleFieldProfileShortwaveNulls": 0,
+  "multiFieldProfileShortwaveNulls": 0,
+  "blockers": []
+}
+LIVE_SMOKE_EXIT_STATUS:0

@@ -1,0 +1,61 @@
+{
+  "expectedFrontendBaseUrlOrder": [
+    "env",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080"
+  ],
+  "endpoints": {
+    "currentContext": "/api/v2/kornix/current-context?seasonYear=2026",
+    "map": "/api/v2/kornix/field-seasons/map?calculationRunId=<run>&methodCode=<method>&day=<YYYY-MM-DD>",
+    "singleProfile": "/api/v2/kornix/water-regime/profile-timeseries?calculationRunId=<run>&methodCode=<method>&fieldSeasonIds=<id>",
+    "multiProfile": "/api/v2/kornix/water-regime/profile-timeseries?calculationRunId=<run>&methodCode=<method>&fieldSeasonIds=<id1,id2,id3>&aggregation=area_weighted_mean",
+    "runStatus": "/api/v2/kornix/water-regime/calculation-runs/{calculationRunId}",
+    "approvals": "/api/v2/kornix/water-regime/approvals"
+  },
+  "mandatoryMetrics": [
+    "soil_water_start_mm",
+    "soil_water_end_mm",
+    "soil_water_available_mm",
+    "soil_water_available_pct_taw",
+    "soil_water_depletion_mm",
+    "soil_water_depletion_pct_taw",
+    "soil_water_productive_mm",
+    "total_available_water_mm",
+    "readily_available_water_mm",
+    "root_zone_depth_m",
+    "precipitation_raw_daily_mm",
+    "effective_precipitation_daily_mm",
+    "irrigation_raw_daily_mm",
+    "effective_irrigation_daily_mm",
+    "drainage_runoff_daily_mm",
+    "eto_daily_mm",
+    "crop_coefficient_kc",
+    "basal_crop_coefficient_kcb",
+    "soil_evaporation_coefficient_ke",
+    "surface_evaporation_reduction_kr",
+    "potential_crop_evapotranspiration_mm",
+    "potential_transpiration_mm",
+    "potential_soil_evaporation_mm",
+    "actual_transpiration_mm",
+    "actual_soil_evaporation_mm",
+    "actual_evapotranspiration_mm",
+    "actual_evapotranspiration_cumulative_mm",
+    "water_stress_coefficient",
+    "crop_stage_code",
+    "days_after_sowing",
+    "calculation_diagnostics_json",
+    "calculation_warnings_json",
+    "shortwave_radiation_daily_mj_m2"
+  ],
+  "mapMandatoryMetrics": [
+    "shortwave_radiation_daily_mj_m2",
+    "soil_water_end_mm",
+    "root_zone_depth_m",
+    "actual_evapotranspiration_mm",
+    "actual_transpiration_mm",
+    "actual_soil_evaporation_mm",
+    "days_after_sowing",
+    "water_stress_coefficient"
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "status": "KORNIX_FRONTEND_FAO90_VALUE_RENDERING_READY",
+  "backendObserved": {
+    "backendRuntimeReachable": "PASS",
+    "apiBaseUrl": "http://127.0.0.1:5174/api",
+    "currentAppliedCalculationRunId": "bb_bootstrap_f073cd7d9e3742929db55da5765a173e",
+    "expectedValidatedRun": "PASS",
+    "methodCode": "simple_eto_single_layer_soil",
+    "profileCode": "potato_medium_fao90_single_layer_v1",
+    "mapFeatures": 37,
+    "profileMetrics": 44
+  },
+  "valueCoverage": {
+    "mandatoryMetricSetIncludesShortwave": true,
+    "mapMandatoryNulls": 0,
+    "singleFieldProfileMandatoryNulls": 0,
+    "multiFieldProfileMandatoryNulls": 0,
+    "singleFieldProfileShortwaveNulls": 0,
+    "multiFieldProfileShortwaveNulls": 0,
+    "zerosPreservedAsZeros": true,
+    "negativeDaysAfterSowingPreserved": true,
+    "noDataPlaceholdersForMandatoryMetrics": 0
+  },
+  "apiContract": {
+    "currentAppliedCalculationRunIdUsedAsDisplayedRun": "PASS",
+    "mapRequestIncludesDay": "PASS",
+    "singleFieldProfileTimeseries": "PASS",
+    "multiFieldProfileTimeseriesUsesAreaWeightedMean": "PASS",
+    "multiFieldProfileNo422": "PASS",
+    "mockModeUsed": false
+  },
+  "frontendRenderingExport": {
+    "chartDataContainsMandatoryFao90Values": "PASS",
+    "tooltipContainsMandatoryFao90Values": "PASS",
+    "csvExportContainsMandatoryFao90Values": "PASS",
+    "diagnosticsWarningsJsonHandled": "PASS",
+    "editableApprovalRegressionOrReadOnlyHandling": "PASS"
+  },
+  "checks": {
+    "npmCiOrEquivalent": "PASS: npm executable is unavailable in this WSL runtime; existing node_modules equivalents were run directly for typecheck/build/contract/coverage.",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "contractTest": "PASS",
+    "metricCoverage": "PASS",
+    "securityScan": "PASS",
+    "secretScan": "PASS",
+    "dockerBuild": "PASS",
+    "liveSmoke": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "git": {
+    "committed": true,
+    "pushed": true,
+    "commitSha": "see_final_response",
+    "worktreeClean": true,
+    "pushFailureReason": null
+  },
+  "evidence": {
+    "frontendBaseUrl": "http://127.0.0.1:5174",
+    "singleFieldProfileShortwave": {
+      "code": "shortwave_radiation_daily_mj_m2",
+      "label": "Shortwave radiation",
+      "unit": "MJ/m²",
+      "valueKind": "scalar",
+      "total": 78,
+      "nullCount": 0,
+      "zeroCount": 0,
+      "nonZeroCount": 78,
+      "serverDateValue": 24.6312
+    },
+    "multiFieldProfileShortwave": {
+      "code": "shortwave_radiation_daily_mj_m2",
+      "label": "Shortwave radiation",
+      "unit": "MJ/m²",
+      "valueKind": "scalar",
+      "total": 78,
+      "nullCount": 0,
+      "zeroCount": 0,
+      "nonZeroCount": 78,
+      "serverDateValue": 24.45837955366949
+    },
+    "editableRegression": {
+      "mode": "PASS",
+      "submitAllowed": true,
+      "readOnlyHandled": false,
+      "approvalPost": "PASS",
+      "approvalReadback": "PASS"
+    }
+  },
+  "blockers": []
+}

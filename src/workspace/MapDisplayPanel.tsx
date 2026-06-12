@@ -1,4 +1,5 @@
 import type { MapDisplayMode } from './FieldMap';
+import { visibleUserWarnings } from './warningPresentation';
 
 type LegendItem = {
   label: string;
@@ -54,6 +55,8 @@ export function MapDisplayPanel({
   warnings?: Array<{ code: string; message: string }>;
   children?: React.ReactNode;
 }) {
+  const userWarnings = visibleUserWarnings(warnings);
+
   return (
     <aside className="map-help">
       <h2>Карта</h2>
@@ -95,9 +98,9 @@ export function MapDisplayPanel({
           </div>
         )}
       </div>
-      {warnings.length > 0 && (
+      {userWarnings.length > 0 && (
         <div className="diagnostic-warning-list" aria-label="Предупреждения карты">
-          {warnings.map((warning) => (
+          {userWarnings.map((warning) => (
             <span key={`${warning.code}-${warning.message}`}>
               <strong>{warning.code}</strong>: {warning.message}
             </span>

@@ -141,12 +141,12 @@ button:active {
 
 .brand-lockup small {
   display: block;
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--color-muted);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
   letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .brand-mark {
@@ -274,8 +274,8 @@ button:active {
 }
 
 .workspace .brand-lockup small {
-  margin-top: 4px;
-  font-size: 10px;
+  margin-top: 2px;
+  font-size: 15px;
 }
 
 .header-meta {
@@ -360,26 +360,27 @@ button:active {
   box-shadow: 0 10px 24px rgb(12 48 31 / 20%);
 }
 
-.workspace-status-panel {
-  grid-area: status;
+.workspace-method-panel {
   display: grid;
   gap: 6px;
-  padding-top: 2px;
+  margin-top: auto;
   color: var(--color-muted);
   font-size: 11px;
 }
 
-.workspace-status-panel label {
-  display: flex;
+.workspace-method-panel label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
+  min-width: 0;
   color: var(--color-green-800);
   font-weight: 800;
 }
 
-.workspace-status-panel select {
-  max-width: min(100%, 420px);
+.workspace-method-panel select {
+  width: 100%;
+  min-width: 0;
   min-height: 30px;
   padding: 5px 28px 5px 10px;
   border: 1px solid rgb(23 65 38 / 18%);
@@ -389,15 +390,8 @@ button:active {
   font: inherit;
 }
 
-.workspace-status-grid {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 5px 12px;
-}
-
-.workspace-status-grid span {
-  white-space: nowrap;
+.workspace-method-panel + .export-actions {
+  margin-top: 8px;
 }
 
 .export-actions {
@@ -421,6 +415,13 @@ button:active {
   font-weight: 700;
 }
 
+.export-error {
+  color: #9f1d20;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .map-layout,
 .chart-layout {
   display: grid;
@@ -438,6 +439,11 @@ button:active {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 10px;
+}
+
+.map-export-frame {
+  min-height: 0;
+  display: grid;
 }
 
 .chart-layout {
@@ -835,7 +841,7 @@ input[type='checkbox'] {
 .field-list-item {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) 12px;
   gap: 7px;
   align-items: center;
   min-height: 46px;
@@ -912,10 +918,40 @@ input[type='checkbox'] {
 
 .field-list-meta {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-muted);
   font-size: 10px;
   line-height: 1.15;
   margin-top: 2px;
+}
+
+.field-forecast-dot {
+  width: 9px;
+  height: 9px;
+  justify-self: end;
+  border-radius: 999px;
+  border: 1px solid rgb(23 65 38 / 20%);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 70%);
+}
+
+.field-forecast-dot-ok {
+  background: #4caf50;
+}
+
+.field-forecast-dot-warning {
+  background: #ffc107;
+}
+
+.field-forecast-dot-critical {
+  background: #e53935;
+}
+
+.field-forecast-dot-no_data,
+.field-forecast-dot-not_calculated,
+.field-forecast-dot-calculation_failed {
+  background: #b0b4b8;
 }
 
 .status-badge,
@@ -1081,7 +1117,16 @@ input[type='checkbox'] {
   margin: 0;
   overflow-wrap: anywhere;
   color: #17311f;
-  font-weight: 800;
+  font-weight: 700;
+}
+
+.fao90-metric-summary dd span {
+  display: block;
+}
+
+.fao90-metric-summary-json-row {
+  grid-template-columns: 1fr !important;
+  gap: 3px !important;
 }
 
 .diagnostic-warning-list {

@@ -45,7 +45,13 @@ export async function downloadPagePng(element: HTMLElement, fileName: string): P
     pixelRatio: 2,
     width: element.scrollWidth,
     height: element.scrollHeight,
-    filter: (node: HTMLElement) => node.dataset.exportHidden !== 'true'
+    filter: (node) => {
+      if (!node || !('getAttribute' in node)) {
+        return true;
+      }
+
+      return node.getAttribute('data-export-hidden') !== 'true';
+    }
   });
 
   const link = document.createElement('a');

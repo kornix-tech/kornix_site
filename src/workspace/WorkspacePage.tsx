@@ -4,13 +4,13 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { kornixApi } from '../api/kornixApi';
 import { useAuth } from '../features/auth/AuthProvider';
 import { ApiError } from '../shared/api/httpClient';
-import type { KornixMethodDto } from '../types/kornix';
 import type { MapDisplayMode } from './FieldMap';
 import { ExportActions } from './ExportActions';
 import { FieldSelectorPanel } from './FieldSelectorPanel';
 import { MapDisplayPanel } from './MapDisplayPanel';
 import { MapTimeRuler } from './MapTimeRuler';
 import { buildCsv, downloadCsv, downloadPagePng } from './exportUtils';
+import { isServiceWarningCode, visibleUserWarnings } from './warningPresentation';
 import {
   DEFAULT_WORKSPACE_STATE,
   parseWorkspaceState,
@@ -30,7 +30,7 @@ const IrrigationInputTable = lazy(() =>
 const RESERVED_CALCULATION_RUN_IDS = new Set(['catalog']);
 
 export function WorkspacePage() {
-  const workspaceRef = useRef<HTMLElement | null>(null);
+  const mapGraphicsRef = useRef<HTMLDivElement | null>(null);
   const [searchParams] = useSearchParams();
   const [mapDisplayMode, setMapDisplayMode] = useState<MapDisplayMode>('status');
   const [chartCsv, setChartCsv] = useState<string | null>(null);
@@ -100,6 +100,17 @@ export function WorkspacePage() {
       }),
     placeholderData: (previousData) => previousData
   });
+  const forecastFieldsQuery = useQuery({
+    queryKey: ['field-season-map-forecast-end', activeCalculationRunId, selectedMethodCode, forecastEndDate],
+    enabled: Boolean(activeCalculationRunId && selectedMethodCode),
+    queryFn: () =>
+      kornixApi.getFieldSeasonMap({
+        calculationRunId: activeCalculationRunId ?? '',
+        methodCode: selectedMethodCode ?? '',
+        day: forecastEndDate
+      }),
+    placeholderData: (previousData) => previousData
+  });
   const catalogQuery = useQuery({
     queryKey: ['field-season-catalog', state.seasonYear],
     enabled: Boolean(contextQuery.data && !activeCalculationRunId),
@@ -108,6 +119,18 @@ export function WorkspacePage() {
   });
   const calculatedFields = activeCalculationRunId ? fieldsQuery.data : undefined;
   const workspaceFields = calculatedFields ?? catalogQuery.data;
+  const forecastStatusByFieldSeasonId = useMemo(() => {
+    if (!forecastFieldsQuery.data) {
+      return undefined;
+    }
+
+    return new Map(
+      forecastFieldsQuery.data.features.map((feature) => [
+        feature.properties.fieldSeasonId,
+        feature.properties.latestStatus
+      ])
+    );
+  }, [forecastFieldsQuery.data]);
   const chartFieldSeasonIds = useMemo(() => {
     const availableFieldSeasonIds = new Set(
       workspaceFields?.features.map((feature) => feature.properties.fieldSeasonId) ?? []
@@ -179,12 +202,12 @@ export function WorkspacePage() {
     navigate('/login', { replace: true });
   }
 
-  async function handleExportGraphics() {
-    if (!workspaceRef.current) {
+  async function handleExportMapGraphics() {
+    if (!mapGraphicsRef.current) {
       return;
     }
 
-    await downloadPagePng(workspaceRef.current, `kornix-${state.tab}-${new Date().toISOString().slice(0, 10)}`);
+    await downloadPagePng(mapGraphicsRef.current, `kornix-map-${effectiveMapDay}-${mapDisplayMode}`);
   }
 
   function handleExportMapData() {
@@ -265,7 +288,7 @@ export function WorkspacePage() {
   }
 
   return (
-    <main ref={workspaceRef} className="workspace">
+    <main className="workspace">
       <header className="workspace-header">
         <div className="header-brand">
           <div className="brand-lockup">
@@ -273,8 +296,8 @@ export function WorkspacePage() {
               <img src="/brand/kornix-logo.png" alt="" />
             </span>
             <span>
-              <strong>KORNIX</strong>
-              <small>water intelligence</small>
+              <strong>КОРНИКС</strong>
+              <small>Технологии</small>
             </span>
           </div>
         </div>
@@ -285,11 +308,9 @@ export function WorkspacePage() {
             <h1>Водный режим <span>полей</span></h1>
             <p>
               {contextQuery.data?.organizationName ?? user?.organizationName ?? 'Хозяйство'} · сезон {state.seasonYear}
-              {activeCalculationRunId ? ` · расчёт ${activeCalculationRunId}` : ''}
             </p>
           </div>
           <div className="header-actions">
-            <ReadinessSummary context={contextQuery.data} selectedMethod={selectedMethod} />
             <button type="button" onClick={() => void handleLogout()}>
               Выйти
             </button>
@@ -317,13 +338,6 @@ export function WorkspacePage() {
               Ввод поливов
             </button>
           </nav>
-          <WorkspaceStatusPanel
-            context={contextQuery.data}
-            selectedMethodCode={selectedMethodCode}
-            selectedMethod={selectedMethod}
-            invalidUrlMethodCode={state.methodCode && !isUrlMethodValid ? state.methodCode : null}
-            onMethodChange={(methodCode) => updateState({ methodCode })}
-          />
         </div>
       </header>
 
@@ -348,14 +362,17 @@ export function WorkspacePage() {
       {activeCalculationRunId && calculatedFields && state.tab === 'map' && (
         <section className="map-layout">
           <div className="map-main">
-            <Suspense fallback={<div className="empty-state">Загрузка карты…</div>}>
-              <FieldMap
-                fields={calculatedFields}
-                mode={mapDisplayMode}
-                selectedFieldSeasonIds={state.fieldSeasonIds}
-                onSelectField={selectFieldFromMap}
-              />
-            </Suspense>
+            <div ref={mapGraphicsRef} className="map-export-frame">
+              <Suspense fallback={<div className="empty-state">Загрузка карты…</div>}>
+                <FieldMap
+                  fields={calculatedFields}
+                  mapBounds={contextQuery.data?.mapBounds ?? null}
+                  mode={mapDisplayMode}
+                  selectedFieldSeasonIds={state.fieldSeasonIds}
+                  onSelectField={selectFieldFromMap}
+                />
+              </Suspense>
+            </div>
             <MapTimeRuler
               day={effectiveMapDay}
               serverDate={serverDate}
@@ -369,7 +386,13 @@ export function WorkspacePage() {
             onModeChange={setMapDisplayMode}
             warnings={calculatedFields.warnings ?? []}
           >
-            <ExportActions onExportGraphics={handleExportGraphics} onExportData={handleExportMapData} />
+            <WorkspaceMethodPanel
+              context={contextQuery.data}
+              selectedMethodCode={selectedMethodCode}
+              invalidUrlMethodCode={state.methodCode && !isUrlMethodValid ? state.methodCode : null}
+              onMethodChange={(methodCode) => updateState({ methodCode })}
+            />
+            <ExportActions onExportGraphics={handleExportMapGraphics} onExportData={handleExportMapData} />
           </MapDisplayPanel>
         </section>
       )}
@@ -378,6 +401,7 @@ export function WorkspacePage() {
         <section className="chart-layout">
           <FieldSelectorPanel
             fields={calculatedFields}
+            forecastStatuses={forecastStatusByFieldSeasonId}
             selectedFieldSeasonIds={chartFieldSeasonIds}
             onChange={(fieldSeasonIds) =>
               updateState({ fieldSeasonIds, fieldsExplicitlyCleared: fieldSeasonIds.length === 0 })
@@ -398,7 +422,6 @@ export function WorkspacePage() {
               onFromChange={(from) => updateState({ from })}
               onToChange={(to) => updateState({ to })}
               onCsvChange={setChartCsv}
-              onExportGraphics={handleExportGraphics}
               onExportData={handleExportChartData}
             />
           </Suspense>
@@ -430,34 +453,14 @@ export function WorkspacePage() {
   );
 }
 
-function ReadinessSummary({
-  context,
-  selectedMethod
-}: {
-  context: Awaited<ReturnType<typeof kornixApi.getCurrentContext>> | undefined;
-  selectedMethod: KornixMethodDto | null;
-}) {
-  if (!context) {
-    return <span className="readiness readiness-unknown">готовность: загрузка</span>;
-  }
-
-  return (
-    <span className={`readiness readiness-${context.readinessSummary.status}`}>
-      {context.frontendMode} · {context.dataFreshnessStatus} · {selectedMethod?.label ?? context.defaultMethodCode}
-    </span>
-  );
-}
-
-function WorkspaceStatusPanel({
+function WorkspaceMethodPanel({
   context,
   selectedMethodCode,
-  selectedMethod,
   invalidUrlMethodCode,
   onMethodChange
 }: {
   context: Awaited<ReturnType<typeof kornixApi.getCurrentContext>> | undefined;
   selectedMethodCode: string | null;
-  selectedMethod: KornixMethodDto | null;
   invalidUrlMethodCode: string | null;
   onMethodChange: (methodCode: string) => void;
 }) {
@@ -465,7 +468,7 @@ function WorkspaceStatusPanel({
     return null;
   }
 
-  const warnings = [
+  const warnings = visibleUserWarnings([
     ...(context.warnings ?? []),
     ...(context.readinessSummary.warnings ?? []),
     ...(invalidUrlMethodCode
@@ -476,10 +479,13 @@ function WorkspaceStatusPanel({
           }
         ]
       : [])
-  ];
+  ]);
+  const shouldShowSubmitBlockedReason = Boolean(
+    context.submitBlockedReason && !isServiceWarningCode(context.submitBlockedReason)
+  );
 
   return (
-    <div className="workspace-status-panel">
+    <div className="workspace-method-panel">
       <label>
         Метод
         <select
@@ -489,23 +495,12 @@ function WorkspaceStatusPanel({
         >
           {context.availableMethods.map((method) => (
             <option key={method.methodCode} value={method.methodCode}>
-              {method.label} ({method.methodCode})
+              {method.label}
             </option>
           ))}
         </select>
       </label>
-      <div className="workspace-status-grid">
-        <span>Дата backend: {context.serverDate}</span>
-        <span>
-          Окно: {context.calculationWindow.from} — {context.calculationWindow.to}
-        </span>
-        <span>Режим: {context.frontendMode}</span>
-        <span>Свежесть: {context.dataFreshnessStatus}</span>
-        <span>Run: {context.currentAppliedCalculationRunId ?? 'нет'}</span>
-        <span>Готовность: {context.readinessSummary.status}</span>
-        <span>Метод: {selectedMethod?.methodCode ?? context.defaultMethodCode}</span>
-      </div>
-      {context.submitBlockedReason && (
+      {shouldShowSubmitBlockedReason && (
         <div className="diagnostic-warning-list">
           <span>
             <strong>{context.submitBlockedReason}</strong>: утверждение сейчас заблокировано backend.

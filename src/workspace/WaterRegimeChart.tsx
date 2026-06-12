@@ -21,9 +21,9 @@ import type {
   KornixProfileTimeseriesDto,
   RequiredBackendMetricLongName
 } from '../types/kornix';
-import { deriveWaterMetrics, deriveWaterThresholds } from '../features/water-regime/derivedWaterMetrics';
 import { ExportActions } from './ExportActions';
-import { buildCsv } from './exportUtils';
+import { buildCsv, downloadPagePng } from './exportUtils';
+import { visibleUserWarnings } from './warningPresentation';
 
 type ProfileRow = {
   day: string;
@@ -46,18 +46,22 @@ type ProfileRow = {
   temperatureSum: number | null;
   temperatureSumFact: number | null;
   temperatureSumForecast: number | null;
-  cropTranspirationDaily: number | null;
-  cropTranspirationDailyFact: number | null;
-  cropTranspirationDailyForecast: number | null;
+  actualEvapotranspirationDaily: number | null;
+  actualEvapotranspirationDailyFact: number | null;
+  actualEvapotranspirationDailyForecast: number | null;
+  actualSoilEvaporationDaily: number | null;
+  actualSoilEvaporationDailyFact: number | null;
+  actualSoilEvaporationDailyForecast: number | null;
+  actualTranspirationDaily: number | null;
+  actualTranspirationDailyFact: number | null;
+  actualTranspirationDailyForecast: number | null;
   availableRange: [number, number] | null;
   availableRangeFact: [number, number] | null;
   availableRangeForecast: [number, number] | null;
   availableLower: number | null;
   availableUpper: number | null;
-  totalCapacity: number | null;
-  optimumWater: number | null;
-  optimumWaterFact: number | null;
-  optimumWaterForecast: number | null;
+  fieldCapacity: number | null;
+  wiltingPoint: number | null;
   currentWater: number | null;
   currentWaterFact: number | null;
   currentWaterForecast: number | null;
@@ -71,12 +75,6 @@ type ProfileRow = {
 
 type ChartZoneId = 'weather' | 'plant' | 'water' | 'precipitation';
 
-type ThresholdCoefficients = {
-  upper: number | null;
-  optimum: number | null;
-  lower: number | null;
-};
-
 const LEGEND_ITEMS = [
   { label: 'Температура воздуха', color: '#d85b2a', kind: 'line' },
   { label: 'Влажность воздуха', color: '#2a9d8f', kind: 'line' },
@@ -84,6 +82,8 @@ const LEGEND_ITEMS = [
   { label: 'ETo', color: '#a75515', kind: 'dash' },
   { label: 'Солнечная радиация', color: '#c28b00', kind: 'dash' },
   { label: 'Сумма температур', color: '#f08c00', kind: 'line' },
+  { label: 'Фактическая ET', color: '#1f6f78', kind: 'line' },
+  { label: 'Испарение почвы', color: '#9a7b2f', kind: 'dash' },
   { label: 'Транспирация культуры', color: '#4c956c', kind: 'line' },
   { label: 'Полная влагоёмкость', color: '#123b73', kind: 'dash' },
   { label: 'Диапазон управления', color: '#91c86a', kind: 'area' },
@@ -93,17 +93,17 @@ const LEGEND_ITEMS = [
 ];
 
 const CHART_MARGIN = {
-  top: 14,
+  top: 18,
   right: 8,
   left: 10,
   bottom: 0
 };
 
-const LEFT_AXIS_WIDTH = 44;
-const RIGHT_AXIS_HUMIDITY_WIDTH = 42;
-const RIGHT_AXIS_WIND_WIDTH = 46;
-const RIGHT_AXIS_EVAPORATION_WIDTH = 42;
-const RIGHT_AXIS_SHORTWAVE_WIDTH = 48;
+const LEFT_AXIS_WIDTH = 34;
+const RIGHT_AXIS_HUMIDITY_WIDTH = 28;
+const RIGHT_AXIS_WIND_WIDTH = 28;
+const RIGHT_AXIS_EVAPORATION_WIDTH = 28;
+const RIGHT_AXIS_SHORTWAVE_WIDTH = 32;
 const RIGHT_AXIS_TOTAL_WIDTH =
   RIGHT_AXIS_HUMIDITY_WIDTH + RIGHT_AXIS_WIND_WIDTH + RIGHT_AXIS_EVAPORATION_WIDTH + RIGHT_AXIS_SHORTWAVE_WIDTH;
 
@@ -348,6 +348,17 @@ function scalarValue(series: KornixMetricSeriesDto | undefined, day: string): nu
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function firstFiniteValue(...values: Array<number | null>): number | null {
+  return values.find((value): value is number => typeof value === 'number' && Number.isFinite(value)) ?? null;
+}
+
+function sumRequiredFiniteValues(...values: Array<number | null>): number | null {
+  if (values.some((value) => typeof value !== 'number' || !Number.isFinite(value))) {
+    return null;
+  }
+  return (values as number[]).reduce((sum, value) => sum + value, 0);
+}
+
 function scalarRawValue(series: KornixMetricSeriesDto | undefined, day: string): MetricScalarValue {
   if (!series || series.valueKind !== 'scalar') {
     return null;
@@ -371,49 +382,7 @@ function splitForecastValue<T>(
   return [day < forecastStart ? value : null, day >= forecastStart ? value : null];
 }
 
-function weightedCoefficient(
-  fields: FieldSeasonMapFeature[],
-  fieldSeasonIds: string[],
-  key: 'koef_upper_limit' | 'koef_optimum' | 'koef_lower_limit'
-): number | null {
-  const allowedIds = new Set(fieldSeasonIds);
-  const weightedValues = fields
-    .filter((field) => allowedIds.has(field.properties.fieldSeasonId))
-    .map((field) => ({
-      value: field.properties[key],
-      areaHa: field.properties.areaHa
-    }))
-    .filter((entry): entry is { value: number; areaHa: number } =>
-      typeof entry.value === 'number' &&
-      Number.isFinite(entry.value) &&
-      typeof entry.areaHa === 'number' &&
-      entry.areaHa > 0
-    );
-
-  const totalAreaHa = weightedValues.reduce((sum, entry) => sum + entry.areaHa, 0);
-  if (totalAreaHa <= 0) {
-    return null;
-  }
-
-  return weightedValues.reduce((sum, entry) => sum + entry.value * entry.areaHa, 0) / totalAreaHa;
-}
-
-function buildThresholdCoefficients(
-  fields: FieldSeasonMapFeature[],
-  fieldSeasonIds: string[]
-): ThresholdCoefficients {
-  return {
-    upper: weightedCoefficient(fields, fieldSeasonIds, 'koef_upper_limit'),
-    optimum: weightedCoefficient(fields, fieldSeasonIds, 'koef_optimum'),
-    lower: weightedCoefficient(fields, fieldSeasonIds, 'koef_lower_limit')
-  };
-}
-
-function buildProfileRows(
-  profile: KornixProfileTimeseriesDto,
-  forecastStart: string,
-  thresholdCoefficients: ThresholdCoefficients
-): ProfileRow[] {
+function buildProfileRows(profile: KornixProfileTimeseriesDto, forecastStart: string): ProfileRow[] {
   const days = Array.from(
     new Set(profile.metrics.flatMap((metric) => metric.points.map((point) => point.day)))
   ).sort();
@@ -426,28 +395,38 @@ function buildProfileRows(
     const potentialEvaporationDaily = scalarValue(series('eto_daily_mm'), day);
     const shortwaveRadiationDaily = scalarValue(series('shortwave_radiation_daily_mj_m2'), day);
     const temperatureSum = scalarValue(series('positive_temperature_sum_from_sowing_c'), day);
-    const cropTranspirationDaily = scalarValue(series('crop_transpiration_daily_mm'), day);
-    const totalCapacity = scalarValue(series('soil_total_capacity_water_mm'), day);
+    const actualEvapotranspirationRaw = scalarValue(series('actual_evapotranspiration_mm'), day);
+    const legacyDailyWaterUse = scalarValue(series('crop_transpiration_daily_mm'), day);
+    const actualTranspirationRaw = scalarValue(series('actual_transpiration_mm'), day);
+    const soilEvaporationRaw = scalarValue(series('actual_soil_evaporation_mm'), day);
+    const evapotranspirationSource = firstFiniteValue(actualEvapotranspirationRaw, legacyDailyWaterUse);
+    const actualTranspirationDaily = firstFiniteValue(
+      actualTranspirationRaw,
+      evapotranspirationSource !== null && soilEvaporationRaw !== null
+        ? Math.max(0, evapotranspirationSource - soilEvaporationRaw)
+        : null,
+      evapotranspirationSource !== null ? 0 : null
+    );
+    const soilEvaporationDaily = firstFiniteValue(
+      soilEvaporationRaw,
+      evapotranspirationSource !== null && actualTranspirationRaw !== null
+        ? Math.max(0, evapotranspirationSource - actualTranspirationRaw)
+        : null,
+      evapotranspirationSource !== null ? evapotranspirationSource : null
+    );
+    const actualEvapotranspirationFromComponents = sumRequiredFiniteValues(
+      actualTranspirationDaily,
+      soilEvaporationDaily
+    );
+    const actualEvapotranspirationDaily = firstFiniteValue(
+      actualEvapotranspirationFromComponents,
+      evapotranspirationSource
+    );
     const fieldCapacity = scalarValue(series('soil_field_capacity_water_mm'), day);
     const wiltingPoint = scalarValue(series('soil_wilting_point_capacity_water_mm'), day);
-    const currentWater = scalarValue(series('soil_water_content_mm'), day);
-    const derived = deriveWaterMetrics({
-      soil_field_capacity_water_mm: fieldCapacity,
-      soil_wilting_point_capacity_water_mm: wiltingPoint,
-      soil_water_content_mm: currentWater
-    });
-    const thresholds = deriveWaterThresholds({
-      soil_field_capacity_water_mm: fieldCapacity,
-      koef_upper_limit: thresholdCoefficients.upper,
-      koef_optimum: thresholdCoefficients.optimum,
-      koef_lower_limit: thresholdCoefficients.lower
-    });
+    const currentWater = scalarValue(series('soil_water_end_mm'), day);
     const range: [number, number] | null =
-      thresholds.lower_limit_water_mm !== null && thresholds.upper_limit_water_mm !== null
-        ? [thresholds.lower_limit_water_mm, thresholds.upper_limit_water_mm]
-        : derived.available_water_content_mm !== null && wiltingPoint !== null
-          ? [wiltingPoint, wiltingPoint + derived.available_water_content_mm]
-          : null;
+      fieldCapacity !== null ? [fieldCapacity * 0.6, fieldCapacity * 0.9] : null;
     const precipitation = scalarValue(series('precipitation_effective_daily_mm'), day);
     const irrigation = scalarValue(series('irrigation_effective_daily_mm'), day);
     const [temperatureFact, temperatureForecast] = splitForecastValue(day, forecastStart, temperature);
@@ -464,18 +443,23 @@ function buildProfileRows(
       shortwaveRadiationDaily
     );
     const [temperatureSumFact, temperatureSumForecast] = splitForecastValue(day, forecastStart, temperatureSum);
-    const [cropTranspirationDailyFact, cropTranspirationDailyForecast] = splitForecastValue(
+    const [actualEvapotranspirationDailyFact, actualEvapotranspirationDailyForecast] = splitForecastValue(
       day,
       forecastStart,
-      cropTranspirationDaily
+      actualEvapotranspirationDaily
+    );
+    const [actualSoilEvaporationDailyFact, actualSoilEvaporationDailyForecast] = splitForecastValue(
+      day,
+      forecastStart,
+      soilEvaporationDaily
+    );
+    const [actualTranspirationDailyFact, actualTranspirationDailyForecast] = splitForecastValue(
+      day,
+      forecastStart,
+      actualTranspirationDaily
     );
     const [availableRangeFact, availableRangeForecast] = splitForecastValue(day, forecastStart, range);
     const [currentWaterFact, currentWaterForecast] = splitForecastValue(day, forecastStart, currentWater);
-    const [optimumWaterFact, optimumWaterForecast] = splitForecastValue(
-      day,
-      forecastStart,
-      thresholds.optimum_water_mm
-    );
     const [precipitationFact, precipitationForecast] = splitForecastValue(day, forecastStart, precipitation);
     const [irrigationFact, irrigationForecast] = splitForecastValue(day, forecastStart, irrigation);
 
@@ -500,18 +484,22 @@ function buildProfileRows(
       temperatureSum,
       temperatureSumFact,
       temperatureSumForecast,
-      cropTranspirationDaily,
-      cropTranspirationDailyFact,
-      cropTranspirationDailyForecast,
+      actualEvapotranspirationDaily,
+      actualEvapotranspirationDailyFact,
+      actualEvapotranspirationDailyForecast,
+      actualSoilEvaporationDaily: soilEvaporationDaily,
+      actualSoilEvaporationDailyFact,
+      actualSoilEvaporationDailyForecast,
+      actualTranspirationDaily,
+      actualTranspirationDailyFact,
+      actualTranspirationDailyForecast,
       availableRange: range,
       availableRangeFact,
       availableRangeForecast,
       availableLower: range?.[0] ?? null,
       availableUpper: range?.[1] ?? null,
-      totalCapacity,
-      optimumWater: thresholds.optimum_water_mm,
-      optimumWaterFact,
-      optimumWaterForecast,
+      fieldCapacity,
+      wiltingPoint,
       currentWater,
       currentWaterFact,
       currentWaterForecast,
@@ -525,21 +513,33 @@ function buildProfileRows(
   });
 }
 
-function fullSaturationMm(rows: ProfileRow[]): number | null {
-  const totalCapacityValues = rows
-    .map((row) => row.totalCapacity)
+function fieldCapacityMm(rows: ProfileRow[]): number | null {
+  const fieldCapacityValues = rows
+    .map((row) => row.fieldCapacity)
     .filter((value): value is number => typeof value === 'number');
 
-  if (!totalCapacityValues.length) {
+  if (!fieldCapacityValues.length) {
     return null;
   }
 
-  return Math.ceil(Math.max(...totalCapacityValues));
+  return Math.ceil(Math.max(...fieldCapacityValues));
 }
 
-function waterReserveDomain(rows: ProfileRow[], saturation: number | null): [number, number | string] {
+function wiltingPointMm(rows: ProfileRow[]): number | null {
+  const wiltingPointValues = rows
+    .map((row) => row.wiltingPoint)
+    .filter((value): value is number => typeof value === 'number');
+
+  if (!wiltingPointValues.length) {
+    return null;
+  }
+
+  return Math.ceil(Math.max(...wiltingPointValues));
+}
+
+function waterReserveDomain(rows: ProfileRow[], fieldCapacity: number | null): [number, number | string] {
   const waterValues = rows
-    .flatMap((row) => [row.availableLower, row.availableUpper, row.currentWater])
+    .flatMap((row) => [row.availableLower, row.availableUpper, row.fieldCapacity, row.wiltingPoint, row.currentWater])
     .filter((value): value is number => typeof value === 'number');
 
   if (!waterValues.length) {
@@ -547,7 +547,7 @@ function waterReserveDomain(rows: ProfileRow[], saturation: number | null): [num
   }
 
   const visibleMinimum = Math.max(0, Math.floor(Math.min(...waterValues) * 0.5));
-  const visibleMaximum = saturation === null ? 'dataMax + 20' : Math.ceil(saturation * 1.06);
+  const visibleMaximum = fieldCapacity === null ? 'dataMax + 20' : fieldCapacity;
 
   return [visibleMinimum, visibleMaximum];
 }
@@ -633,7 +633,6 @@ export function WaterRegimeChart({
   onFromChange,
   onToChange,
   onCsvChange,
-  onExportGraphics,
   onExportData
 }: {
   calculationRunId: string | null;
@@ -649,7 +648,6 @@ export function WaterRegimeChart({
   onFromChange: (value: string) => void;
   onToChange: (value: string) => void;
   onCsvChange: (csv: string | null) => void;
-  onExportGraphics: () => Promise<void>;
   onExportData: () => void;
 }) {
   const profileQuery = useQuery({
@@ -700,7 +698,6 @@ export function WaterRegimeChart({
           onFromChange={onFromChange}
           onToChange={onToChange}
           onCsvChange={onCsvChange}
-          onExportGraphics={onExportGraphics}
           onExportData={onExportData}
         />
       )}
@@ -722,7 +719,6 @@ function ChartBody({
   onFromChange,
   onToChange,
   onCsvChange,
-  onExportGraphics,
   onExportData
 }: {
   profile: KornixProfileTimeseriesDto;
@@ -738,16 +734,12 @@ function ChartBody({
   onFromChange: (value: string) => void;
   onToChange: (value: string) => void;
   onCsvChange: (csv: string | null) => void;
-  onExportGraphics: () => Promise<void>;
   onExportData: () => void;
 }) {
-  const thresholdCoefficients = useMemo(
-    () => buildThresholdCoefficients(fields, profile.selectedFieldSeasonIds),
-    [fields, profile.selectedFieldSeasonIds]
-  );
+  const chartGraphicsRef = useRef<HTMLDivElement | null>(null);
   const allRows = useMemo(
-    () => buildProfileRows(profile, forecastStart, thresholdCoefficients),
-    [forecastStart, profile, thresholdCoefficients]
+    () => buildProfileRows(profile, forecastStart),
+    [forecastStart, profile]
   );
   const rows = useMemo(() => {
     const filteredRows = allRows.filter((row) => row.day >= from && row.day <= to);
@@ -762,7 +754,8 @@ function ChartBody({
     viewFirstDay,
     clamp(dayDiff(viewFirstDay, selectedDay), 0, dayDiff(viewFirstDay, viewLastDay))
   );
-  const saturation = fullSaturationMm(rows);
+  const fieldCapacity = fieldCapacityMm(rows);
+  const wiltingPoint = wiltingPointMm(rows);
   const aggregation = profile.aggregation;
   const singleSelectedField =
     selectedCount === 1
@@ -785,10 +778,15 @@ function ChartBody({
     () => REQUIRED_FAO90_METRIC_CODES.filter((code) => !metricCodes.has(code)),
     [metricCodes]
   );
-  const selectedDayDiagnostics = useMemo(
-    () => buildSelectedDayDiagnostics(profile, selectedDayInRange),
-    [profile, selectedDayInRange]
+  const selectedDiagnosticsDay = useMemo(
+    () => closestProfileDayWithDiagnostics(profile, selectedDayInRange, rows.map((row) => row.day)),
+    [profile, rows, selectedDayInRange]
   );
+  const selectedDayDiagnostics = useMemo(
+    () => buildSelectedDayDiagnostics(profile, selectedDiagnosticsDay),
+    [profile, selectedDiagnosticsDay]
+  );
+  const userWarnings = visibleUserWarnings(profile.warnings);
 
   useEffect(() => {
     onCsvChange(profileCsv);
@@ -800,12 +798,21 @@ function ChartBody({
     );
   }, [viewFirstDay, viewLastDay]);
 
+  async function handleExportGraphics() {
+    if (!chartGraphicsRef.current) {
+      return;
+    }
+
+    await downloadPagePng(chartGraphicsRef.current, `kornix-water-regime-${from}-${to}`);
+  }
+
   return (
     <div className="chart-workbench">
-      <div className="chart-box">
+      <div ref={chartGraphicsRef} className="chart-box">
         <CompositeProfileChart
           rows={rows}
-          saturation={saturation}
+          fieldCapacity={fieldCapacity}
+          wiltingPoint={wiltingPoint}
           forecastStart={forecastStart}
           selectedDay={selectedDayInRange}
         />
@@ -858,13 +865,13 @@ function ChartBody({
         <Fao90MetricSummary
           metricCount={profile.metrics.length}
           missingRequiredMetrics={missingRequiredMetrics}
-          selectedDay={selectedDayInRange}
+          selectedDay={selectedDiagnosticsDay}
           diagnostics={selectedDayDiagnostics}
         />
 
-        {profile.warnings.length > 0 && (
+        {userWarnings.length > 0 && (
           <div className="diagnostic-warning-list" aria-label="Предупреждения графика">
-            {profile.warnings.map((warning) => (
+            {userWarnings.map((warning) => (
               <span key={`${warning.code}-${warning.message}`}>
                 <strong>{warning.code}</strong>: {warning.message}
               </span>
@@ -874,7 +881,7 @@ function ChartBody({
 
         <LegendStrip />
 
-        <ExportActions onExportGraphics={onExportGraphics} onExportData={onExportData} dataDisabled={!profileCsv} />
+        <ExportActions onExportGraphics={handleExportGraphics} onExportData={onExportData} dataDisabled={!profileCsv} />
       </aside>
     </div>
   );
@@ -906,20 +913,79 @@ function formatDisplayValue(value: unknown): string {
   if (typeof value === 'string') {
     return value;
   }
-  return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return value.length === 0 ? 'нет' : value.map((item) => formatDisplayValue(item)).join('; ');
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      return 'нет';
+    }
+
+    return entries
+      .map(([key, entryValue]) => `${formatDiagnosticKey(key)}: ${formatDisplayValue(entryValue)}`)
+      .join('\n');
+  }
+  return String(value);
+}
+
+function formatDiagnosticKey(key: string): string {
+  const labels: Record<string, string> = {
+    residual_mm: 'баланс',
+    continuity_error_mm: 'непрерывность'
+  };
+
+  return labels[key] ?? key.replace(/_/g, ' ');
+}
+
+const DIAGNOSTICS_CODES: RequiredBackendMetricLongName[] = [
+  'crop_stage_code',
+  'days_after_sowing',
+  'root_zone_depth_m',
+  'water_stress_coefficient',
+  'drainage_runoff_daily_mm',
+  'calculation_diagnostics_json',
+  'calculation_warnings_json'
+];
+
+function hasDiagnosticValue(value: MetricScalarValue): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  if (typeof value === 'object') {
+    return Object.keys(value).length > 0;
+  }
+  return true;
+}
+
+function diagnosticScore(profile: KornixProfileTimeseriesDto, day: string): number {
+  return DIAGNOSTICS_CODES.reduce((score, code) => {
+    return score + (hasDiagnosticValue(scalarRawValue(findSeries(profile, code), day)) ? 1 : 0);
+  }, 0);
+}
+
+function closestProfileDayWithDiagnostics(
+  profile: KornixProfileTimeseriesDto,
+  targetDay: string,
+  candidateDays: string[]
+): string {
+  const scoredDays = candidateDays
+    .map((day) => ({
+      day,
+      score: diagnosticScore(profile, day),
+      distance: Math.abs(dayDiff(targetDay, day))
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => left.distance - right.distance || right.day.localeCompare(left.day));
+
+  return scoredDays[0]?.day ?? targetDay;
 }
 
 function buildSelectedDayDiagnostics(profile: KornixProfileTimeseriesDto, day: string) {
-  const diagnosticsCodes: RequiredBackendMetricLongName[] = [
-    'crop_stage_code',
-    'days_after_sowing',
-    'root_zone_depth_m',
-    'water_stress_coefficient',
-    'drainage_runoff_daily_mm',
-    'calculation_diagnostics_json',
-    'calculation_warnings_json'
-  ];
-  return diagnosticsCodes.map((code) => {
+  return DIAGNOSTICS_CODES.map((code) => {
     const definition = getMetricDefinition(code);
     return {
       code,
@@ -958,9 +1024,18 @@ function Fao90MetricSummary({
         <summary>Фаза, stress и diagnostics за {formatDateShortLabel(selectedDay)}</summary>
         <dl>
           {diagnostics.map((item) => (
-            <div key={item.code}>
+            <div
+              key={item.code}
+              className={item.code.endsWith('_json') ? 'fao90-metric-summary-json-row' : undefined}
+            >
               <dt>{item.label}</dt>
-              <dd>{formatDisplayValue(item.value)}</dd>
+              <dd>
+                {formatDisplayValue(item.value)
+                  .split('\n')
+                  .map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
+              </dd>
             </div>
           ))}
         </dl>
@@ -1021,6 +1096,23 @@ function handleZoneKey(event: KeyboardEvent<HTMLElement>, action: () => void) {
     event.preventDefault();
     action();
   }
+}
+
+function axisTickWithUnitAtZero(unit: string, labeledValue?: { value: number | null; label: string }) {
+  return (value: unknown): string => {
+    if (typeof value === 'number' && value === 0) {
+      return unit;
+    }
+    if (
+      typeof value === 'number' &&
+      typeof labeledValue?.value === 'number' &&
+      Math.abs(value - labeledValue.value) < 0.001
+    ) {
+      return labeledValue.label;
+    }
+
+    return String(value);
+  };
 }
 
 function ChartTimeZoom({
@@ -1138,16 +1230,18 @@ function ChartTimeZoom({
 
 function CompositeProfileChart({
   rows,
-  saturation,
+  fieldCapacity,
+  wiltingPoint,
   forecastStart,
   selectedDay
 }: {
   rows: ProfileRow[];
-  saturation: number | null;
+  fieldCapacity: number | null;
+  wiltingPoint: number | null;
   forecastStart: string;
   selectedDay: string;
 }) {
-  const waterDomain = waterReserveDomain(rows, saturation);
+  const waterDomain = waterReserveDomain(rows, fieldCapacity);
   const firstX = rows[0]?.xIndex ?? 0;
   const lastX = rows[rows.length - 1]?.xIndex ?? firstX;
   const xDomain: [number, number] = [firstX, lastX <= firstX ? firstX + 1 : lastX];
@@ -1189,45 +1283,45 @@ function CompositeProfileChart({
             <YAxis
               yAxisId="temperature"
               width={LEFT_AXIS_WIDTH}
-              unit="°"
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('°C')}
               tick={{ fill: '#7b5b48', fontSize: 11 }}
             />
             <YAxis
               yAxisId="humidity"
               orientation="right"
               width={RIGHT_AXIS_HUMIDITY_WIDTH}
-              unit="%"
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('%')}
               tick={{ fill: '#2a756d', fontSize: 11 }}
             />
             <YAxis
               yAxisId="wind"
               orientation="right"
               width={RIGHT_AXIS_WIND_WIDTH}
-              unit="м/с"
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('м/с')}
               tick={{ fill: '#6958c8', fontSize: 11 }}
             />
             <YAxis
               yAxisId="evaporation"
               orientation="right"
               width={RIGHT_AXIS_EVAPORATION_WIDTH}
-              unit="мм"
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('мм')}
               tick={{ fill: '#8f4e18', fontSize: 11 }}
             />
             <YAxis
               yAxisId="shortwave"
               orientation="right"
               width={RIGHT_AXIS_SHORTWAVE_WIDTH}
-              unit="МДж"
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('МДж')}
               tick={{ fill: '#9b6b00', fontSize: 11 }}
             />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
@@ -1367,21 +1461,22 @@ function CompositeProfileChart({
             <YAxis
               yAxisId="temperatureSum"
               width={LEFT_AXIS_WIDTH}
-              unit="°"
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('°C')}
               tick={{ fill: '#9a5700', fontSize: 11 }}
             />
             <YAxis
-              yAxisId="cropTranspiration"
+              yAxisId="dailyWaterUse"
               orientation="right"
-              width={48}
-              unit="мм"
+              width={34}
+              domain={[0, 'dataMax + 1']}
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('мм')}
               tick={{ fill: '#3c7653', fontSize: 11 }}
             />
-            <RightAxisReserve yAxisId="plantRightReserveA" width={RIGHT_AXIS_TOTAL_WIDTH - 48} />
+            <RightAxisReserve yAxisId="plantRightReserveA" width={RIGHT_AXIS_TOTAL_WIDTH - 34} />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
             <ForecastBoundary forecastX={forecastX} yAxisId="temperatureSum" />
             <SelectedDayMarker selectedX={selectedX} yAxisId="temperatureSum" />
@@ -1391,7 +1486,8 @@ function CompositeProfileChart({
               dataKey="temperatureSumFact"
               name="Сумма температур от даты сева, °C"
               stroke="#f08c00"
-              strokeWidth={2}
+              strokeOpacity={0.78}
+              strokeWidth={1.6}
               dot={false}
               connectNulls={false}
             />
@@ -1401,31 +1497,76 @@ function CompositeProfileChart({
               dataKey="temperatureSumForecast"
               name="Сумма температур от даты сева, °C"
               stroke="#f08c00"
-              strokeOpacity={0.34}
+              strokeOpacity={0.24}
               strokeDasharray="5 5"
-              strokeWidth={2}
+              strokeWidth={1.6}
               dot={false}
               connectNulls={false}
             />
             <Line
-              yAxisId="cropTranspiration"
+              yAxisId="dailyWaterUse"
               type="monotone"
-              dataKey="cropTranspirationDailyFact"
-              name="Суточная транспирация культуры, мм"
-              stroke="#4c956c"
-              strokeWidth={2}
+              dataKey="actualEvapotranspirationDailyFact"
+              name="Фактическая эвапотранспирация, мм/сут"
+              stroke="#1f6f78"
+              strokeWidth={3}
               dot={false}
               connectNulls={false}
             />
             <Line
-              yAxisId="cropTranspiration"
+              yAxisId="dailyWaterUse"
               type="monotone"
-              dataKey="cropTranspirationDailyForecast"
-              name="Суточная транспирация культуры, мм"
-              stroke="#4c956c"
-              strokeOpacity={0.34}
+              dataKey="actualEvapotranspirationDailyForecast"
+              name="Фактическая эвапотранспирация, мм/сут"
+              stroke="#1f6f78"
+              strokeOpacity={0.42}
               strokeDasharray="5 5"
-              strokeWidth={2}
+              strokeWidth={3}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              yAxisId="dailyWaterUse"
+              type="monotone"
+              dataKey="actualSoilEvaporationDailyFact"
+              name="Испарение почвы, мм/сут"
+              stroke="#9a7b2f"
+              strokeDasharray="4 3"
+              strokeWidth={2.4}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              yAxisId="dailyWaterUse"
+              type="monotone"
+              dataKey="actualSoilEvaporationDailyForecast"
+              name="Испарение почвы, мм/сут"
+              stroke="#9a7b2f"
+              strokeOpacity={0.38}
+              strokeDasharray="2 5"
+              strokeWidth={2.4}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              yAxisId="dailyWaterUse"
+              type="monotone"
+              dataKey="actualTranspirationDailyFact"
+              name="Транспирация культуры, мм/сут"
+              stroke="#4c956c"
+              strokeWidth={3}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              yAxisId="dailyWaterUse"
+              type="monotone"
+              dataKey="actualTranspirationDailyForecast"
+              name="Транспирация культуры, мм/сут"
+              stroke="#4c956c"
+              strokeOpacity={0.42}
+              strokeDasharray="5 5"
+              strokeWidth={3}
               dot={false}
               connectNulls={false}
             />
@@ -1449,10 +1590,10 @@ function CompositeProfileChart({
             <XAxis dataKey="xIndex" type="number" domain={xDomain} hide />
             <YAxis
               width={LEFT_AXIS_WIDTH}
-              unit="мм"
               domain={waterDomain}
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('мм', { value: fieldCapacity, label: 'НВ' })}
               tick={{ fill: '#486344', fontSize: 11 }}
             />
             <YAxis
@@ -1471,36 +1612,44 @@ function CompositeProfileChart({
               tickLine={false}
               axisLine={false}
             />
-            <RightAxisReserve yAxisId="waterEvaporationReserve" width={RIGHT_AXIS_EVAPORATION_WIDTH} />
+            <RightAxisReserve
+              yAxisId="waterEvaporationReserve"
+              width={RIGHT_AXIS_EVAPORATION_WIDTH + RIGHT_AXIS_SHORTWAVE_WIDTH}
+            />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
             <ForecastBoundary forecastX={forecastX} />
             <SelectedDayMarker selectedX={selectedX} />
-            {saturation !== null && (
+            {fieldCapacity !== null && (
               <ReferenceLine
-                y={saturation}
-                label={{ value: 'полное насыщение', position: 'insideTopRight', fill: '#123b73' }}
-                stroke="#123b73"
-                strokeDasharray="6 4"
-                strokeWidth={2}
+                y={fieldCapacity}
+                stroke="#101614"
+                strokeWidth={1.8}
+              />
+            )}
+            {wiltingPoint !== null && (
+              <ReferenceLine
+                y={wiltingPoint}
+                stroke="#101614"
+                strokeWidth={1.4}
               />
             )}
             <Area
               type="monotone"
               dataKey="availableRangeFact"
-              name="Доступные влагозапасы, мм"
+              name="Диапазон управления 0.6—0.9 НВ, мм"
               stroke="#78a84c"
               fill="#91c86a"
-              fillOpacity={0.28}
+              fillOpacity={0.18}
               connectNulls={false}
             />
             <Area
               type="monotone"
               dataKey="availableRangeForecast"
-              name="Доступные влагозапасы, мм"
+              name="Диапазон управления 0.6—0.9 НВ, мм"
               stroke="#78a84c"
               strokeOpacity={0.32}
               fill="#91c86a"
-              fillOpacity={0.1}
+              fillOpacity={0.08}
               connectNulls={false}
             />
             <Line
@@ -1520,27 +1669,6 @@ function CompositeProfileChart({
               strokeOpacity={0.34}
               strokeWidth={3}
               strokeDasharray="5 5"
-              dot={false}
-              connectNulls={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="optimumWaterFact"
-              name="Оптимум влагозапасов, мм"
-              stroke="#5f8f2f"
-              strokeDasharray="7 4"
-              strokeWidth={1.6}
-              dot={false}
-              connectNulls={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="optimumWaterForecast"
-              name="Оптимум влагозапасов, мм"
-              stroke="#5f8f2f"
-              strokeOpacity={0.28}
-              strokeDasharray="4 6"
-              strokeWidth={1.6}
               dot={false}
               connectNulls={false}
             />
@@ -1569,9 +1697,9 @@ function CompositeProfileChart({
             />
             <YAxis
               width={LEFT_AXIS_WIDTH}
-              unit="мм"
               tickLine={false}
               axisLine={false}
+              tickFormatter={axisTickWithUnitAtZero('мм')}
               tick={{ fill: '#406071', fontSize: 11 }}
             />
             <YAxis
@@ -1590,7 +1718,10 @@ function CompositeProfileChart({
               tickLine={false}
               axisLine={false}
             />
-            <RightAxisReserve yAxisId="precipitationEvaporationReserve" width={RIGHT_AXIS_EVAPORATION_WIDTH} />
+            <RightAxisReserve
+              yAxisId="precipitationEvaporationReserve"
+              width={RIGHT_AXIS_EVAPORATION_WIDTH + RIGHT_AXIS_SHORTWAVE_WIDTH}
+            />
             <Tooltip {...CHART_TOOLTIP_PROPS} />
             <ForecastBoundary forecastX={forecastX} />
             <SelectedDayMarker selectedX={selectedX} />
