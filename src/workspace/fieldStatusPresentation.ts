@@ -1,9 +1,9 @@
 import type { FieldWaterRegimeStatusCode } from '../types/kornix';
 
 const statusLabels: Record<FieldWaterRegimeStatusCode, string> = {
-  ok: 'Состояние поля: норма',
-  warning: 'Состояние поля: внимание',
-  critical: 'Состояние поля: критическое',
+  ok: 'Влагозапасы в норме',
+  warning: 'Требуется анализ',
+  critical: 'Нужен полив',
   no_data: 'Состояние поля: нет данных',
   not_calculated: 'Состояние поля: нет расчёта',
   calculation_failed: 'Состояние поля: ошибка расчёта'

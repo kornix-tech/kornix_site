@@ -12,9 +12,11 @@ import type {
   KornixCurrentIrrigationLayerDto,
   KornixCurrentContextDto
 } from '../types/kornix';
-import { compareFieldKeys, fieldCropLabel, formatFieldKey } from './FieldSelectorPanel';
-import { fieldStatusClassName, fieldStatusLabel } from './fieldStatusPresentation';
-import { formatArea } from './format';
+import {
+  compareFieldKeys,
+  FieldListPanel,
+  type FieldMoistureZoneCode
+} from './FieldSelectorPanel';
 import { IRRIGATION_LEGEND_SESSION_KEY } from './irrigationUiSession';
 
 type IrrigationValues = Record<string, string>;
@@ -429,7 +431,9 @@ export function IrrigationInputTable({
   baseCalculationRunId,
   selectedMethodCode,
   onContextRefresh,
-  onCalculationComplete
+  onCalculationComplete,
+  currentMoistureZones,
+  forecastMoistureZones
 }: {
   fields: FieldSeasonMapFeatureCollection;
   seasonYear: number;
@@ -442,6 +446,8 @@ export function IrrigationInputTable({
   selectedMethodCode: string | null;
   onContextRefresh: () => Promise<unknown>;
   onCalculationComplete: (calculationRunId: string) => void;
+  currentMoistureZones?: ReadonlyMap<string, FieldMoistureZoneCode>;
+  forecastMoistureZones?: ReadonlyMap<string, FieldMoistureZoneCode>;
 }) {
   const today = serverDate;
   const forecastStart = forecastStartDate;
@@ -457,6 +463,7 @@ export function IrrigationInputTable({
     [context?.managedScope.fieldSeasonIds]
   );
   const days = useMemo(() => enumerateDays(firstDay, lastDay), [firstDay, lastDay]);
+  const calendarScrollWidth = days.length * 54;
   const monthGroups = useMemo(
     () => groupDates(days, (day) => day.slice(0, 7), monthName),
     [days]
@@ -472,8 +479,10 @@ export function IrrigationInputTable({
   );
   const tableFields = useMemo(() => sortedFields(fields), [fields]);
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const bottomScrollRef = useRef<HTMLDivElement | null>(null);
   const fieldListScrollRef = useRef<HTMLDivElement | null>(null);
   const isSyncingIrrigationScrollRef = useRef(false);
+  const isSyncingCalendarHorizontalScrollRef = useRef(false);
   const hydratedProjectionHashRef = useRef<string | null>(null);
   const [values, updateValue, pruneValues, replaceValues] = usePersistentIrrigationValues(seasonYear, storageScope);
   const [isSavingApproval, setIsSavingApproval] = useState(false);
@@ -481,7 +490,7 @@ export function IrrigationInputTable({
   const [calculationWarnings, setCalculationWarnings] = useState<CalculationWarning[]>([]);
   const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);
   const [elapsedCalculationSeconds, setElapsedCalculationSeconds] = useState(0);
-  const [fieldQuery, setFieldQuery] = useState('');
+  const [filteredPanelFields, setFilteredPanelFields] = useState<FieldSeasonMapFeature[] | null>(null);
   const [visibleFieldSeasonIds, setVisibleFieldSeasonIds] = useState<string[]>([]);
   const [isLegendVisible, setIsLegendVisible] = useState(() => {
     if (typeof window === 'undefined') {
@@ -508,32 +517,14 @@ export function IrrigationInputTable({
     () => tableFields.map((feature) => feature.properties.fieldSeasonId),
     [tableFields]
   );
-  const filteredTableFields = useMemo(() => {
-    const needle = fieldQuery.trim().toLowerCase();
-    if (!needle) {
-      return tableFields;
-    }
-
-    return tableFields.filter((feature) => {
-      const field = feature.properties;
-      return [
-        field.fieldName,
-        field.fieldKey,
-        formatFieldKey(field.fieldKey),
-        fieldCropLabel(field)
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(needle);
-    });
-  }, [fieldQuery, tableFields]);
+  const fieldsForCalendar = filteredPanelFields ?? tableFields;
   const selectedFieldSeasonIdSet = useMemo(
     () => new Set(visibleFieldSeasonIds),
     [visibleFieldSeasonIds]
   );
   const calendarFields = useMemo(
-    () => filteredTableFields.filter((feature) => selectedFieldSeasonIdSet.has(feature.properties.fieldSeasonId)),
-    [filteredTableFields, selectedFieldSeasonIdSet]
+    () => fieldsForCalendar.filter((feature) => selectedFieldSeasonIdSet.has(feature.properties.fieldSeasonId)),
+    [fieldsForCalendar, selectedFieldSeasonIdSet]
   );
   const irrigationLayer = useMemo(
     () => buildIrrigationLayer(values, context?.managedScope ?? null),
@@ -642,6 +633,9 @@ export function IrrigationInputTable({
       const targetScrollLeft =
         todayCell.offsetLeft - stickyFieldWidth - calendarViewportWidth / 2 + todayCell.offsetWidth / 2;
       tableScrollContainer.scrollLeft = Math.max(0, targetScrollLeft);
+      if (bottomScrollRef.current) {
+        bottomScrollRef.current.scrollLeft = tableScrollContainer.scrollLeft;
+      }
     }
 
     const frame = window.requestAnimationFrame(centerTodayColumn);
@@ -682,6 +676,36 @@ export function IrrigationInputTable({
     return () => {
       calendarScroll.removeEventListener('scroll', onCalendarScroll);
       fieldListScroll.removeEventListener('scroll', onFieldListScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const calendarScroll = tableScrollRef.current;
+    const bottomScroll = bottomScrollRef.current;
+    if (!calendarScroll || !bottomScroll) {
+      return undefined;
+    }
+
+    function syncHorizontalScroll(source: HTMLElement, target: HTMLElement) {
+      if (isSyncingCalendarHorizontalScrollRef.current) {
+        return;
+      }
+
+      isSyncingCalendarHorizontalScrollRef.current = true;
+      target.scrollLeft = source.scrollLeft;
+      window.requestAnimationFrame(() => {
+        isSyncingCalendarHorizontalScrollRef.current = false;
+      });
+    }
+
+    const onCalendarScroll = () => syncHorizontalScroll(calendarScroll, bottomScroll);
+    const onBottomScroll = () => syncHorizontalScroll(bottomScroll, calendarScroll);
+    calendarScroll.addEventListener('scroll', onCalendarScroll, { passive: true });
+    bottomScroll.addEventListener('scroll', onBottomScroll, { passive: true });
+
+    return () => {
+      calendarScroll.removeEventListener('scroll', onCalendarScroll);
+      bottomScroll.removeEventListener('scroll', onBottomScroll);
     };
   }, []);
 
@@ -795,257 +819,215 @@ export function IrrigationInputTable({
     window.sessionStorage.setItem(IRRIGATION_LEGEND_SESSION_KEY, String(isVisible));
   }
 
-  function toggleVisibleField(fieldSeasonId: string) {
-    setVisibleFieldSeasonIds((current) =>
-      current.includes(fieldSeasonId)
-        ? current.filter((selectedFieldSeasonId) => selectedFieldSeasonId !== fieldSeasonId)
-        : [...current, fieldSeasonId]
-    );
-  }
-
   return (
     <section className="irrigation-panel">
-      <div className="irrigation-toolbar">
-        <div className="irrigation-legend">
-          <input
-            type="checkbox"
-            aria-label="Показать легенду поливов"
-            checked={isLegendVisible}
-            onChange={(event) => changeLegendVisibility(event.target.checked)}
-          />
-          {isLegendVisible && (
-            <div className="irrigation-step-legend" aria-label="Легенда глубины полива">
-              {IRRIGATION_STEP_LEGEND.map((item) => (
-                <span key={`${item.className}-${item.label}`} className={item.className}>
-                  {item.label}
+      <div className="irrigation-workbench">
+        <FieldListPanel
+          fields={fields}
+          selectedFieldSeasonIds={visibleFieldSeasonIds}
+          onChange={setVisibleFieldSeasonIds}
+          currentMoistureZones={currentMoistureZones}
+          forecastMoistureZones={forecastMoistureZones}
+          listRef={fieldListScrollRef}
+          onFilteredFieldsChange={setFilteredPanelFields}
+        />
+
+        <div className="irrigation-calendar-card">
+          <div className="irrigation-toolbar">
+            <div className="irrigation-legend">
+              <input
+                type="checkbox"
+                aria-label="Показать легенду поливов"
+                checked={isLegendVisible}
+                onChange={(event) => changeLegendVisibility(event.target.checked)}
+              />
+              {isLegendVisible && (
+                <div className="irrigation-step-legend" aria-label="Легенда глубины полива">
+                  {IRRIGATION_STEP_LEGEND.map((item) => (
+                    <span key={`${item.className}-${item.label}`} className={item.className}>
+                      {item.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="irrigation-toolbar-main">
+              <div className="irrigation-approval-summary">
+                <span>
+                  до {formatDayShort(today)} - {actualIrrigationCount} поливов, план на 7 дней -{' '}
+                  {plannedIrrigationCount} поливов
+                </span>
+                <span>
+                  редактируемый диапазон {formatDayShort(editableStart)} - {formatDayShort(editableEnd)}
+                </span>
+                {activeLayerQuery.isLoading && (
+                  <span className="irrigation-calculation-status">загружаем активный слой поливов</span>
+                )}
+                {isSavingApproval && (
+                  <span className="irrigation-calculation-status">
+                    KORNIX рассчитывает водный режим · {elapsedCalculationSeconds} с
+                  </span>
+                )}
+                {approvalError && <span className="irrigation-approval-error">{approvalError}</span>}
+                {blockedReason && <span className="irrigation-approval-error">{String(blockedReason)}</span>}
+              </div>
+              <button
+                type="button"
+                className={`irrigation-approve-button irrigation-approve-${approvalState}`}
+                disabled={isSubmitBlocked}
+                onClick={() => void approveIrrigationEvents()}
+              >
+                Утверждаю
+              </button>
+            </div>
+          </div>
+
+          {isSavingApproval && (
+            <div className="irrigation-calculation-progress" role="progressbar" aria-label="Расчёт водного режима">
+              <span />
+            </div>
+          )}
+
+          {activeLayerQuery.isError && (
+            <div className="error-state">
+              {queryErrorMessage(activeLayerQuery.error, 'Не удалось загрузить активный слой поливов.')}
+            </div>
+          )}
+
+          {calculationWarnings.length > 0 && (
+            <div className="diagnostic-warning-list" aria-label="Предупреждения расчёта KORNIX">
+              {calculationWarnings.map((warning) => (
+                <span key={`${warning.code}-${warning.message}`}>
+                  <strong>{warning.code}</strong>: {warning.message}
                 </span>
               ))}
             </div>
           )}
-        </div>
-        <div className="irrigation-toolbar-main">
-          <div className="irrigation-approval-summary">
-            <span>
-              до {formatDayShort(today)} - {actualIrrigationCount} поливов, план на 7 дней -{' '}
-              {plannedIrrigationCount} поливов
-            </span>
-            <span>
-              редактируемый диапазон {formatDayShort(editableStart)} - {formatDayShort(editableEnd)}
-            </span>
-            {activeLayerQuery.isLoading && (
-              <span className="irrigation-calculation-status">загружаем активный слой поливов</span>
-            )}
-            {isSavingApproval && (
-              <span className="irrigation-calculation-status">
-                KORNIX рассчитывает водный режим · {elapsedCalculationSeconds} с
-              </span>
-            )}
-            {approvalError && <span className="irrigation-approval-error">{approvalError}</span>}
-            {blockedReason && <span className="irrigation-approval-error">{String(blockedReason)}</span>}
+
+          <div className="irrigation-table-scroll">
+          <div className="irrigation-table-viewport" ref={tableScrollRef}>
+            <table className="irrigation-table">
+              <thead>
+                <tr>
+                  {monthGroups.map((group) => (
+                    <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-month">
+                      {group.label}
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {weekGroups.map((group) => (
+                    <th key={group.key} colSpan={group.span} className="irrigation-scale">
+                      {group.label}
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {decadeGroups.map((group) => (
+                    <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-decade">
+                      {group.label}
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {days.map((day) => (
+                    <th
+                      key={day}
+                      data-irrigation-day={day}
+                      className={[
+                        'irrigation-day-head',
+                        day >= currentWeekStart && day <= currentWeekEnd ? 'irrigation-current-week' : '',
+                        day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
+                        isWeekStart(day) ? 'irrigation-week-start' : '',
+                        day < editableStart || day > editableEnd ? 'irrigation-locked-day-head' : '',
+                        day === forecastStart ? 'irrigation-forecast-start' : '',
+                        day === today ? 'irrigation-today' : ''
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
+                      {formatDayShort(day)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {calendarFields.map((feature) => {
+                  const field = feature.properties;
+                  return (
+                    <tr key={field.fieldSeasonId}>
+                      {days.map((day) => {
+                        const key = valueKey(field.fieldSeasonId, day);
+                        const isLockedDay =
+                          day < editableStart || day > editableEnd || !managedFieldSeasonIds.has(field.fieldSeasonId);
+                        const value = isLockedDay ? '' : (values[key] ?? '');
+                        const depthClassName = irrigationDepthClassName(value);
+                        return (
+                          <td
+                            key={key}
+                            className={[
+                              'irrigation-cell',
+                              day >= currentWeekStart && day <= currentWeekEnd ? 'irrigation-current-week' : '',
+                              day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
+                              isWeekStart(day) ? 'irrigation-week-start' : '',
+                              isLockedDay ? 'irrigation-locked-cell' : '',
+                              !isLockedDay && isAlertIrrigationValue(value) ? 'irrigation-alert-cell' : '',
+                              !isLockedDay ? depthClassName : '',
+                              day >= forecastStart ? 'irrigation-plan-cell' : 'irrigation-fact-cell',
+                              day === forecastStart ? 'irrigation-forecast-start' : '',
+                              day === today ? 'irrigation-today' : ''
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            <div className="irrigation-input-control">
+                              <input
+                                aria-label={`${field.fieldKey}, ${formatDayShort(day)}, полив мм`}
+                                inputMode="decimal"
+                                type="text"
+                                value={value}
+                                disabled={isLockedDay || isInputReadOnly}
+                                onChange={(event) => changeIrrigationValue(key, event.target.value)}
+                                onBlur={(event) => changeIrrigationValue(key, event.target.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                                    event.preventDefault();
+                                    changeIrrigationValue(key, nextSteppedValue(value, event.key === 'ArrowUp' ? 1 : -1));
+                                  }
+                                }}
+                              />
+                              <span className="irrigation-stepper" aria-hidden="true">
+                                <button
+                                  type="button"
+                                  tabIndex={-1}
+                                  disabled={isLockedDay || isInputReadOnly}
+                                  onClick={() => changeIrrigationValue(key, nextSteppedValue(value, 1))}
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  tabIndex={-1}
+                                  disabled={isLockedDay || isInputReadOnly}
+                                  onClick={() => changeIrrigationValue(key, nextSteppedValue(value, -1))}
+                                >
+                                  ▼
+                                </button>
+                              </span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <button
-            type="button"
-            className={`irrigation-approve-button irrigation-approve-${approvalState}`}
-            disabled={isSubmitBlocked}
-            onClick={() => void approveIrrigationEvents()}
-          >
-            Утверждаю
-          </button>
-        </div>
-      </div>
-
-      {isSavingApproval && (
-        <div className="irrigation-calculation-progress" role="progressbar" aria-label="Расчёт водного режима">
-          <span />
-        </div>
-      )}
-
-      {activeLayerQuery.isError && (
-        <div className="error-state">
-          {queryErrorMessage(activeLayerQuery.error, 'Не удалось загрузить активный слой поливов.')}
-        </div>
-      )}
-
-      {calculationWarnings.length > 0 && (
-        <div className="diagnostic-warning-list" aria-label="Предупреждения расчёта KORNIX">
-          {calculationWarnings.map((warning) => (
-            <span key={`${warning.code}-${warning.message}`}>
-              <strong>{warning.code}</strong>: {warning.message}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className="irrigation-workbench">
-        <aside className="field-selector irrigation-field-selector">
-          <div className="panel-header">
-            <h2>Поля</h2>
-            <span>{visibleFieldSeasonIds.length} выбрано</span>
+          <div className="irrigation-bottom-scroll" ref={bottomScrollRef} aria-label="Горизонтальная прокрутка календаря">
+            <div style={{ width: `${calendarScrollWidth}px` }} />
           </div>
-
-          <input
-            className="text-input"
-            type="search"
-            value={fieldQuery}
-            placeholder="Поиск поля"
-            onChange={(event) => setFieldQuery(event.target.value)}
-          />
-
-          <div className="selector-actions">
-            <button type="button" onClick={() => setVisibleFieldSeasonIds(allTableFieldSeasonIds)}>
-              Выбрать все
-            </button>
-            <button type="button" onClick={() => setVisibleFieldSeasonIds([])}>
-              Снять
-            </button>
           </div>
-
-          <div className="field-list" ref={fieldListScrollRef}>
-            {filteredTableFields.map((feature) => {
-              const field = feature.properties;
-              const displayFieldKey = formatFieldKey(field.fieldKey);
-              const isSelected = visibleFieldSeasonIds.includes(field.fieldSeasonId);
-              return (
-                <label
-                  key={field.fieldSeasonId}
-                  className={`field-list-item field-status-card ${fieldStatusClassName(field.latestStatus)}`}
-                  data-status-label={fieldStatusLabel(field.latestStatus)}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleVisibleField(field.fieldSeasonId)}
-                  />
-                  <span className="field-list-main">
-                    <span className="field-list-title">{displayFieldKey}</span>
-                    <span className="field-list-meta">
-                      {formatArea(field.areaHa)} · {fieldCropLabel(field)}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </aside>
-
-        <div className="irrigation-table-scroll" ref={tableScrollRef}>
-          <table className="irrigation-table">
-            <thead>
-              <tr>
-                {monthGroups.map((group) => (
-                  <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-month">
-                    {group.label}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {weekGroups.map((group) => (
-                  <th key={group.key} colSpan={group.span} className="irrigation-scale">
-                    {group.label}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {decadeGroups.map((group) => (
-                  <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-decade">
-                    {group.label}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {days.map((day) => (
-                  <th
-                    key={day}
-                    data-irrigation-day={day}
-                    className={[
-                      'irrigation-day-head',
-                      day >= currentWeekStart && day <= currentWeekEnd ? 'irrigation-current-week' : '',
-                      day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
-                      isWeekStart(day) ? 'irrigation-week-start' : '',
-                      day < editableStart || day > editableEnd ? 'irrigation-locked-day-head' : '',
-                      day === forecastStart ? 'irrigation-forecast-start' : '',
-                      day === today ? 'irrigation-today' : ''
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    {formatDayShort(day)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {calendarFields.map((feature) => {
-                const field = feature.properties;
-                return (
-                  <tr key={field.fieldSeasonId}>
-                    {days.map((day) => {
-                    const key = valueKey(field.fieldSeasonId, day);
-                    const isLockedDay =
-                      day < editableStart || day > editableEnd || !managedFieldSeasonIds.has(field.fieldSeasonId);
-                    const value = isLockedDay ? '' : (values[key] ?? '');
-                    const depthClassName = irrigationDepthClassName(value);
-                    return (
-                      <td
-                        key={key}
-                        className={[
-                          'irrigation-cell',
-                          day >= currentWeekStart && day <= currentWeekEnd ? 'irrigation-current-week' : '',
-                          day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
-                          isWeekStart(day) ? 'irrigation-week-start' : '',
-                          isLockedDay ? 'irrigation-locked-cell' : '',
-                          !isLockedDay && isAlertIrrigationValue(value) ? 'irrigation-alert-cell' : '',
-                          !isLockedDay ? depthClassName : '',
-                          day >= forecastStart ? 'irrigation-plan-cell' : 'irrigation-fact-cell',
-                          day === forecastStart ? 'irrigation-forecast-start' : '',
-                          day === today ? 'irrigation-today' : ''
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        <div className="irrigation-input-control">
-                          <input
-                            aria-label={`${field.fieldKey}, ${formatDayShort(day)}, полив мм`}
-                            inputMode="decimal"
-                            type="text"
-                            value={value}
-                            disabled={isLockedDay || isInputReadOnly}
-                            onChange={(event) => changeIrrigationValue(key, event.target.value)}
-                            onBlur={(event) => changeIrrigationValue(key, event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                                event.preventDefault();
-                                changeIrrigationValue(key, nextSteppedValue(value, event.key === 'ArrowUp' ? 1 : -1));
-                              }
-                            }}
-                          />
-                          <span className="irrigation-stepper" aria-hidden="true">
-                            <button
-                              type="button"
-                              tabIndex={-1}
-                              disabled={isLockedDay || isInputReadOnly}
-                              onClick={() => changeIrrigationValue(key, nextSteppedValue(value, 1))}
-                            >
-                              ▲
-                            </button>
-                            <button
-                              type="button"
-                              tabIndex={-1}
-                              disabled={isLockedDay || isInputReadOnly}
-                              onClick={() => changeIrrigationValue(key, nextSteppedValue(value, -1))}
-                            >
-                              ▼
-                            </button>
-                          </span>
-                        </div>
-                      </td>
-                    );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
       </div>
     </section>

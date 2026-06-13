@@ -839,7 +839,7 @@ input[type='checkbox'] {
   overflow-x: hidden;
   display: grid;
   align-content: start;
-  gap: 5px;
+  gap: 4px;
   padding-right: 2px;
 }
 
@@ -851,8 +851,8 @@ input[type='checkbox'] {
   align-items: center;
   width: 100%;
   min-width: 0;
-  min-height: 46px;
-  padding: 6px 8px;
+  min-height: 40px;
+  padding: 5px 8px;
   border: 1px solid rgb(23 65 38 / 10%);
   border-radius: var(--radius-card);
   background: #fff;
@@ -955,8 +955,8 @@ input[type='checkbox'] {
   white-space: nowrap;
   color: var(--color-muted);
   font-size: 10px;
-  line-height: 1.15;
-  margin-top: 2px;
+  line-height: 1.1;
+  margin-top: 1px;
 }
 
 .field-forecast-dot {
@@ -1834,27 +1834,23 @@ input[type='checkbox'] {
 
 .irrigation-panel {
   --irrigation-field-panel-width: clamp(280px, 17vw, 330px);
-  --irrigation-calendar-toolbar-height: 44px;
   --irrigation-calendar-head-row-height: 31px;
-  --irrigation-row-height: 51px;
+  --irrigation-row-height: 44px;
   flex: 1;
   min-height: 0;
   position: relative;
   display: block;
   overflow: hidden;
-  padding: 14px;
-  border: 1px solid rgb(23 65 38 / 12%);
-  border-radius: var(--radius-card);
-  background: rgb(255 255 255 / 94%);
-  box-shadow: 0 12px 34px rgb(14 44 27 / 8%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .irrigation-toolbar {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  left: calc(14px + var(--irrigation-field-panel-width) + 10px);
-  z-index: 12;
+  min-height: 44px;
+  padding: 8px 10px;
   display: flex;
   gap: 16px;
   align-items: center;
@@ -1926,6 +1922,7 @@ input[type='checkbox'] {
 .irrigation-calculation-progress {
   position: relative;
   height: 4px;
+  margin: 0 10px;
   overflow: hidden;
   border-radius: 999px;
   background: rgb(95 143 47 / 14%);
@@ -2014,19 +2011,56 @@ input[type='checkbox'] {
 .irrigation-table-scroll {
   position: relative;
   min-height: 0;
-  height: calc(100% - var(--irrigation-calendar-toolbar-height));
-  margin-top: var(--irrigation-calendar-toolbar-height);
-  overflow-x: scroll;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  border: 1px solid rgb(23 65 38 / 10%);
-  border-radius: 8px;
-  background: #fff;
+  flex: 1;
+  height: auto;
+  margin-top: 0;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  margin-left: 10px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 18px;
+  overflow: hidden;
+  border-top: 1px solid rgb(23 65 38 / 8%);
+  background: transparent;
 }
 
-.irrigation-table-scroll::-webkit-scrollbar {
-  height: 14px;
+.irrigation-table-viewport {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.irrigation-table-viewport::-webkit-scrollbar {
   width: 14px;
+}
+
+.irrigation-bottom-scroll {
+  z-index: 14;
+  height: 18px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  border-top: 1px solid rgb(23 65 38 / 8%);
+  background: rgb(255 255 255 / 92%);
+  scrollbar-color: #7b7f78 #f2f4ef;
+  scrollbar-width: auto;
+}
+
+.irrigation-bottom-scroll > div {
+  height: 1px;
+}
+
+.irrigation-bottom-scroll::-webkit-scrollbar {
+  height: 14px;
+}
+
+.irrigation-bottom-scroll::-webkit-scrollbar-track {
+  background: #f2f4ef;
+  border-radius: 999px;
+}
+
+.irrigation-bottom-scroll::-webkit-scrollbar-thumb {
+  background: #7b7f78;
+  border-radius: 999px;
 }
 
 .irrigation-workbench {
@@ -2034,16 +2068,25 @@ input[type='checkbox'] {
   min-height: 0;
   display: grid;
   grid-template-columns: var(--irrigation-field-panel-width) minmax(0, 1fr);
-  gap: 10px;
+  gap: clamp(12px, 0.9vw, 18px);
   overflow: hidden;
 }
 
-.irrigation-field-selector {
-  padding: 14px;
+.irrigation-calendar-card {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(23 65 38 / 12%);
+  border-radius: var(--radius-card);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 12px 34px rgb(14 44 27 / 8%);
 }
 
-.irrigation-field-selector .field-list-item {
-  min-height: var(--irrigation-row-height);
+.irrigation-calendar-card .error-state,
+.irrigation-calendar-card .diagnostic-warning-list {
+  margin: 0 10px 8px;
 }
 
 .irrigation-table {
@@ -2087,6 +2130,15 @@ input[type='checkbox'] {
 
 .irrigation-table thead tr:nth-child(4) th {
   top: calc(var(--irrigation-calendar-head-row-height) * 3);
+}
+
+.irrigation-table tbody {
+  position: relative;
+  top: -2px;
+}
+
+.irrigation-table tbody tr {
+  height: var(--irrigation-row-height);
 }
 
 .irrigation-scale {

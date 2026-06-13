@@ -176,18 +176,6 @@ export function WorkspacePage() {
   });
   const calculatedFields = activeCalculationRunId ? fieldsQuery.data : undefined;
   const workspaceFields = calculatedFields ?? catalogQuery.data;
-  const forecastStatusByFieldSeasonId = useMemo(() => {
-    if (!forecastFieldsQuery.data) {
-      return undefined;
-    }
-
-    return new Map(
-      forecastFieldsQuery.data.features.map((feature) => [
-        feature.properties.fieldSeasonId,
-        feature.properties.latestStatus
-      ])
-    );
-  }, [forecastFieldsQuery.data]);
   const forecastMoistureZoneByFieldSeasonId = useMemo(() => {
     if (!forecastFieldsQuery.data) {
       return undefined;
@@ -485,7 +473,6 @@ export function WorkspacePage() {
         <section className="chart-layout">
           <FieldSelectorPanel
             fields={calculatedFields}
-            forecastStatuses={forecastStatusByFieldSeasonId}
             currentMoistureZones={currentMoistureZoneByFieldSeasonId}
             forecastMoistureZones={forecastMoistureZoneByFieldSeasonId}
             selectedFieldSeasonIds={chartFieldSeasonIds}
@@ -529,6 +516,8 @@ export function WorkspacePage() {
             context={contextQuery.data ?? null}
             baseCalculationRunId={activeCalculationRunId}
             selectedMethodCode={selectedMethodCode}
+            currentMoistureZones={currentMoistureZoneByFieldSeasonId}
+            forecastMoistureZones={forecastMoistureZoneByFieldSeasonId}
             onContextRefresh={() => contextQuery.refetch()}
             onCalculationComplete={(calculationRunId) => {
               updateState({ calculationRunId }, true);

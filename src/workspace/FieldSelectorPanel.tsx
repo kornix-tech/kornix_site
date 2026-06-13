@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
-import type { FieldSeasonMapFeatureCollection, FieldWaterRegimeStatusCode } from '../types/kornix';
-import { fieldStatusLabel } from './fieldStatusPresentation';
+import { useEffect, useMemo, useState, type Ref } from 'react';
+import type { FieldSeasonMapFeatureCollection } from '../types/kornix';
 import { formatArea } from './format';
 
 type FieldSearchableProperties = FieldSeasonMapFeatureCollection['features'][number]['properties'] & {
@@ -15,6 +14,18 @@ type FieldSearchableProperties = FieldSeasonMapFeatureCollection['features'][num
 };
 
 export type FieldMoistureZoneCode = 'upper_warning' | 'regulation' | 'lower_warning' | 'wilting_stress' | 'no_data';
+
+const fieldMoistureZoneLabels: Record<FieldMoistureZoneCode, string> = {
+  upper_warning: 'Требуется анализ',
+  regulation: 'Влагозапасы в норме',
+  lower_warning: 'Требуется анализ',
+  wilting_stress: 'Нужен полив',
+  no_data: 'Состояние поля: нет данных'
+};
+
+export function fieldMoistureZoneLabel(zone: FieldMoistureZoneCode): string {
+  return fieldMoistureZoneLabels[zone];
+}
 
 function getFieldSortParts(fieldKey: string): number[] {
   const primaryKey = fieldKey.split(';')[0].trim();
@@ -78,20 +89,24 @@ export function fieldCropLabel(field: FieldSearchableProperties): string {
   return `${cropName} ${varietyName}`;
 }
 
-export function FieldSelectorPanel({
+export function FieldListPanel({
   fields,
-  forecastStatuses,
   currentMoistureZones,
   forecastMoistureZones,
   selectedFieldSeasonIds,
-  onChange
+  onChange,
+  className,
+  listRef,
+  onFilteredFieldsChange
 }: {
   fields: FieldSeasonMapFeatureCollection;
-  forecastStatuses?: ReadonlyMap<string, FieldWaterRegimeStatusCode>;
   currentMoistureZones?: ReadonlyMap<string, FieldMoistureZoneCode>;
   forecastMoistureZones?: ReadonlyMap<string, FieldMoistureZoneCode>;
   selectedFieldSeasonIds: string[];
   onChange: (ids: string[]) => void;
+  className?: string;
+  listRef?: Ref<HTMLDivElement>;
+  onFilteredFieldsChange?: (fields: FieldSeasonMapFeatureCollection['features']) => void;
 }) {
   const [query, setQuery] = useState('');
 
@@ -108,7 +123,7 @@ export function FieldSelectorPanel({
     [sortedFields]
   );
 
-  const filtered = sortedFields.filter((feature) => {
+  const filtered = useMemo(() => sortedFields.filter((feature) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
       return true;
@@ -123,7 +138,11 @@ export function FieldSelectorPanel({
       .join(' ')
       .toLowerCase()
       .includes(needle);
-  });
+  }), [query, sortedFields]);
+
+  useEffect(() => {
+    onFilteredFieldsChange?.(filtered);
+  }, [filtered, onFilteredFieldsChange]);
 
   function toggle(id: string) {
     if (selectedFieldSeasonIds.includes(id)) {
@@ -134,7 +153,7 @@ export function FieldSelectorPanel({
   }
 
   return (
-    <aside className="field-selector">
+    <aside className={className ? `field-selector ${className}` : 'field-selector'}>
       <div className="panel-header">
         <h2>Поля</h2>
         <span>{selectedFieldSeasonIds.length} выбрано</span>
@@ -157,18 +176,18 @@ export function FieldSelectorPanel({
         </button>
       </div>
 
-      <div className="field-list">
+      <div className="field-list" ref={listRef}>
         {filtered.map((feature) => {
           const field = feature.properties;
           const displayFieldKey = formatFieldKey(field.fieldKey);
-          const forecastStatus = forecastStatuses?.get(field.fieldSeasonId) ?? field.latestStatus;
           const forecastMoistureZone = forecastMoistureZones?.get(field.fieldSeasonId) ?? 'no_data';
           const fieldMoistureZone = currentMoistureZones?.get(field.fieldSeasonId) ?? 'no_data';
+          const forecastMoistureZoneLabel = fieldMoistureZoneLabel(forecastMoistureZone);
           return (
             <label
               key={field.fieldSeasonId}
               className={`field-list-item field-status-card field-list-zone-${fieldMoistureZone}`}
-              data-status-label={fieldStatusLabel(field.latestStatus)}
+              data-status-label={fieldMoistureZoneLabel(fieldMoistureZone)}
             >
               <input
                 type="checkbox"
@@ -183,8 +202,8 @@ export function FieldSelectorPanel({
               </span>
               <span
                 className={`field-forecast-dot field-forecast-dot-zone-${forecastMoistureZone}`}
-                title={`Последний день прогноза: ${fieldStatusLabel(forecastStatus)}`}
-                aria-label={`Последний день прогноза: ${fieldStatusLabel(forecastStatus)}`}
+                title={`Последний день прогноза: ${forecastMoistureZoneLabel}`}
+                aria-label={`Последний день прогноза: ${forecastMoistureZoneLabel}`}
               />
             </label>
           );
@@ -192,4 +211,8 @@ export function FieldSelectorPanel({
       </div>
     </aside>
   );
+}
+
+export function FieldSelectorPanel(props: Omit<Parameters<typeof FieldListPanel>[0], 'className' | 'listRef' | 'onFilteredFieldsChange'>) {
+  return <FieldListPanel {...props} />;
 }
