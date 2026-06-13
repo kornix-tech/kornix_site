@@ -12,9 +12,10 @@ import type {
   KornixCurrentIrrigationLayerDto,
   KornixCurrentContextDto
 } from '../types/kornix';
-import { compareFieldKeys } from './FieldSelectorPanel';
+import { compareFieldKeys, fieldCropLabel, formatFieldKey } from './FieldSelectorPanel';
 import { fieldStatusClassName, fieldStatusLabel } from './fieldStatusPresentation';
 import { formatArea } from './format';
+import { IRRIGATION_LEGEND_SESSION_KEY } from './irrigationUiSession';
 
 type IrrigationValues = Record<string, string>;
 
@@ -471,6 +472,8 @@ export function IrrigationInputTable({
   );
   const tableFields = useMemo(() => sortedFields(fields), [fields]);
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const fieldListScrollRef = useRef<HTMLDivElement | null>(null);
+  const isSyncingIrrigationScrollRef = useRef(false);
   const hydratedProjectionHashRef = useRef<string | null>(null);
   const [values, updateValue, pruneValues, replaceValues] = usePersistentIrrigationValues(seasonYear, storageScope);
   const [isSavingApproval, setIsSavingApproval] = useState(false);
@@ -478,7 +481,15 @@ export function IrrigationInputTable({
   const [calculationWarnings, setCalculationWarnings] = useState<CalculationWarning[]>([]);
   const [calculationStartedAt, setCalculationStartedAt] = useState<number | null>(null);
   const [elapsedCalculationSeconds, setElapsedCalculationSeconds] = useState(0);
-  const [isLegendVisible, setIsLegendVisible] = useState(true);
+  const [fieldQuery, setFieldQuery] = useState('');
+  const [visibleFieldSeasonIds, setVisibleFieldSeasonIds] = useState<string[]>([]);
+  const [isLegendVisible, setIsLegendVisible] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.sessionStorage.getItem(IRRIGATION_LEGEND_SESSION_KEY) === 'true';
+  });
   const activeLayerQuery = useQuery({
     queryKey: ['current-irrigation-layer', seasonYear, context?.managedScope.scopeVersion],
     enabled: Boolean(context),
@@ -492,6 +503,37 @@ export function IrrigationInputTable({
   const backendProjectionSignature = useMemo(
     () => layerSignature(backendIrrigationLayer),
     [backendIrrigationLayer]
+  );
+  const allTableFieldSeasonIds = useMemo(
+    () => tableFields.map((feature) => feature.properties.fieldSeasonId),
+    [tableFields]
+  );
+  const filteredTableFields = useMemo(() => {
+    const needle = fieldQuery.trim().toLowerCase();
+    if (!needle) {
+      return tableFields;
+    }
+
+    return tableFields.filter((feature) => {
+      const field = feature.properties;
+      return [
+        field.fieldName,
+        field.fieldKey,
+        formatFieldKey(field.fieldKey),
+        fieldCropLabel(field)
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [fieldQuery, tableFields]);
+  const selectedFieldSeasonIdSet = useMemo(
+    () => new Set(visibleFieldSeasonIds),
+    [visibleFieldSeasonIds]
+  );
+  const calendarFields = useMemo(
+    () => filteredTableFields.filter((feature) => selectedFieldSeasonIdSet.has(feature.properties.fieldSeasonId)),
+    [filteredTableFields, selectedFieldSeasonIdSet]
   );
   const irrigationLayer = useMemo(
     () => buildIrrigationLayer(values, context?.managedScope ?? null),
@@ -536,6 +578,14 @@ export function IrrigationInputTable({
   const plannedIrrigationCount = irrigationLayer.filter(
     (task) => task.irrigationDate >= forecastStart && task.irrigationDate <= forecastEnd
   ).length;
+
+  useEffect(() => {
+    setVisibleFieldSeasonIds((current) => {
+      const availableIds = new Set(allTableFieldSeasonIds);
+      const retainedIds = current.filter((fieldSeasonId) => availableIds.has(fieldSeasonId));
+      return current.length === 0 ? allTableFieldSeasonIds : retainedIds;
+    });
+  }, [allTableFieldSeasonIds]);
 
   useEffect(() => {
     if (!isSavingApproval || calculationStartedAt === null) {
@@ -604,6 +654,36 @@ export function IrrigationInputTable({
       retryTimers.forEach((timer) => window.clearTimeout(timer));
     };
   }, [today, days.length]);
+
+  useEffect(() => {
+    const calendarScroll = tableScrollRef.current;
+    const fieldListScroll = fieldListScrollRef.current;
+    if (!calendarScroll || !fieldListScroll) {
+      return undefined;
+    }
+
+    function syncScroll(source: HTMLElement, target: HTMLElement) {
+      if (isSyncingIrrigationScrollRef.current) {
+        return;
+      }
+
+      isSyncingIrrigationScrollRef.current = true;
+      target.scrollTop = source.scrollTop;
+      window.requestAnimationFrame(() => {
+        isSyncingIrrigationScrollRef.current = false;
+      });
+    }
+
+    const onCalendarScroll = () => syncScroll(calendarScroll, fieldListScroll);
+    const onFieldListScroll = () => syncScroll(fieldListScroll, calendarScroll);
+    calendarScroll.addEventListener('scroll', onCalendarScroll, { passive: true });
+    fieldListScroll.addEventListener('scroll', onFieldListScroll, { passive: true });
+
+    return () => {
+      calendarScroll.removeEventListener('scroll', onCalendarScroll);
+      fieldListScroll.removeEventListener('scroll', onFieldListScroll);
+    };
+  }, []);
 
   async function approveIrrigationEvents() {
     if (isSubmitBlocked || !context || !baseCalculationRunId) {
@@ -710,6 +790,19 @@ export function IrrigationInputTable({
     updateValue(key, value);
   }
 
+  function changeLegendVisibility(isVisible: boolean) {
+    setIsLegendVisible(isVisible);
+    window.sessionStorage.setItem(IRRIGATION_LEGEND_SESSION_KEY, String(isVisible));
+  }
+
+  function toggleVisibleField(fieldSeasonId: string) {
+    setVisibleFieldSeasonIds((current) =>
+      current.includes(fieldSeasonId)
+        ? current.filter((selectedFieldSeasonId) => selectedFieldSeasonId !== fieldSeasonId)
+        : [...current, fieldSeasonId]
+    );
+  }
+
   return (
     <section className="irrigation-panel">
       <div className="irrigation-toolbar">
@@ -718,7 +811,7 @@ export function IrrigationInputTable({
             type="checkbox"
             aria-label="Показать легенду поливов"
             checked={isLegendVisible}
-            onChange={(event) => setIsLegendVisible(event.target.checked)}
+            onChange={(event) => changeLegendVisibility(event.target.checked)}
           />
           {isLegendVisible && (
             <div className="irrigation-step-legend" aria-label="Легенда глубины полива">
@@ -783,70 +876,110 @@ export function IrrigationInputTable({
         </div>
       )}
 
-      <div className="irrigation-table-scroll" ref={tableScrollRef}>
-        <table className="irrigation-table">
-          <thead>
-            <tr>
-              <th className="irrigation-field-head" rowSpan={4}>
-                Поля
-              </th>
-              {monthGroups.map((group) => (
-                <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-month">
-                  {group.label}
-                </th>
-              ))}
-            </tr>
-            <tr>
-              {weekGroups.map((group) => (
-                <th key={group.key} colSpan={group.span} className="irrigation-scale">
-                  {group.label}
-                </th>
-              ))}
-            </tr>
-            <tr>
-              {decadeGroups.map((group) => (
-                <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-decade">
-                  {group.label}
-                </th>
-              ))}
-            </tr>
-            <tr>
-              {days.map((day) => (
-                <th
-                  key={day}
-                  data-irrigation-day={day}
-                  className={[
-                    'irrigation-day-head',
-                    day >= currentWeekStart && day <= currentWeekEnd ? 'irrigation-current-week' : '',
-                    day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
-                    isWeekStart(day) ? 'irrigation-week-start' : '',
-                    day < editableStart || day > editableEnd ? 'irrigation-locked-day-head' : '',
-                    day === forecastStart ? 'irrigation-forecast-start' : '',
-                    day === today ? 'irrigation-today' : ''
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
-                  {formatDayShort(day)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tableFields.map((feature) => {
+      <div className="irrigation-workbench">
+        <aside className="field-selector irrigation-field-selector">
+          <div className="panel-header">
+            <h2>Поля</h2>
+            <span>{visibleFieldSeasonIds.length} выбрано</span>
+          </div>
+
+          <input
+            className="text-input"
+            type="search"
+            value={fieldQuery}
+            placeholder="Поиск поля"
+            onChange={(event) => setFieldQuery(event.target.value)}
+          />
+
+          <div className="selector-actions">
+            <button type="button" onClick={() => setVisibleFieldSeasonIds(allTableFieldSeasonIds)}>
+              Выбрать все
+            </button>
+            <button type="button" onClick={() => setVisibleFieldSeasonIds([])}>
+              Снять
+            </button>
+          </div>
+
+          <div className="field-list" ref={fieldListScrollRef}>
+            {filteredTableFields.map((feature) => {
               const field = feature.properties;
+              const displayFieldKey = formatFieldKey(field.fieldKey);
+              const isSelected = visibleFieldSeasonIds.includes(field.fieldSeasonId);
               return (
-                <tr key={field.fieldSeasonId}>
-                  <th
-                    className={`irrigation-field-cell field-status-card ${fieldStatusClassName(field.latestStatus)}`}
-                    data-status-label={fieldStatusLabel(field.latestStatus)}
-                  >
-                    <span className="irrigation-field-title">{field.fieldKey}</span>
-                    <span className="irrigation-field-meta">
-                      {formatArea(field.areaHa)} · {field.cropName ?? 'нет культуры'}
+                <label
+                  key={field.fieldSeasonId}
+                  className={`field-list-item field-status-card ${fieldStatusClassName(field.latestStatus)}`}
+                  data-status-label={fieldStatusLabel(field.latestStatus)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleVisibleField(field.fieldSeasonId)}
+                  />
+                  <span className="field-list-main">
+                    <span className="field-list-title">{displayFieldKey}</span>
+                    <span className="field-list-meta">
+                      {formatArea(field.areaHa)} · {fieldCropLabel(field)}
                     </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </aside>
+
+        <div className="irrigation-table-scroll" ref={tableScrollRef}>
+          <table className="irrigation-table">
+            <thead>
+              <tr>
+                {monthGroups.map((group) => (
+                  <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-month">
+                    {group.label}
                   </th>
-                  {days.map((day) => {
+                ))}
+              </tr>
+              <tr>
+                {weekGroups.map((group) => (
+                  <th key={group.key} colSpan={group.span} className="irrigation-scale">
+                    {group.label}
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {decadeGroups.map((group) => (
+                  <th key={group.key} colSpan={group.span} className="irrigation-scale irrigation-decade">
+                    {group.label}
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {days.map((day) => (
+                  <th
+                    key={day}
+                    data-irrigation-day={day}
+                    className={[
+                      'irrigation-day-head',
+                      day >= currentWeekStart && day <= currentWeekEnd ? 'irrigation-current-week' : '',
+                      day >= forecastStart && day <= forecastEnd ? 'irrigation-forecast-week' : '',
+                      isWeekStart(day) ? 'irrigation-week-start' : '',
+                      day < editableStart || day > editableEnd ? 'irrigation-locked-day-head' : '',
+                      day === forecastStart ? 'irrigation-forecast-start' : '',
+                      day === today ? 'irrigation-today' : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    {formatDayShort(day)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {calendarFields.map((feature) => {
+                const field = feature.properties;
+                return (
+                  <tr key={field.fieldSeasonId}>
+                    {days.map((day) => {
                     const key = valueKey(field.fieldSeasonId, day);
                     const isLockedDay =
                       day < editableStart || day > editableEnd || !managedFieldSeasonIds.has(field.fieldSeasonId);
@@ -907,12 +1040,13 @@ export function IrrigationInputTable({
                         </div>
                       </td>
                     );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

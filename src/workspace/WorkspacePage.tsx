@@ -4,12 +4,14 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { kornixApi } from '../api/kornixApi';
 import { useAuth } from '../features/auth/AuthProvider';
 import { ApiError } from '../shared/api/httpClient';
+import type { FieldSeasonMapFeatureCollection } from '../types/kornix';
 import type { MapDisplayMode } from './FieldMap';
 import { ExportActions } from './ExportActions';
-import { FieldSelectorPanel } from './FieldSelectorPanel';
+import { FieldSelectorPanel, type FieldMoistureZoneCode } from './FieldSelectorPanel';
 import { MapDisplayPanel } from './MapDisplayPanel';
 import { MapTimeRuler } from './MapTimeRuler';
 import { buildCsv, downloadCsv, downloadPagePng } from './exportUtils';
+import { IRRIGATION_LEGEND_SESSION_KEY } from './irrigationUiSession';
 import { isServiceWarningCode, visibleUserWarnings } from './warningPresentation';
 import {
   DEFAULT_WORKSPACE_STATE,
@@ -28,6 +30,61 @@ const IrrigationInputTable = lazy(() =>
   import('./IrrigationInputTable').then((module) => ({ default: module.IrrigationInputTable }))
 );
 const RESERVED_CALCULATION_RUN_IDS = new Set(['catalog']);
+const DEFAULT_FIELD_REGULATION_RANGE = { min: 0.6, max: 0.9 };
+
+function storedFieldRegulationRange(storageScope: string): { min: number; max: number } {
+  if (typeof window === 'undefined') {
+    return DEFAULT_FIELD_REGULATION_RANGE;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(`kornix-water-regime-regulation-range:${storageScope}`);
+    const parsed = raw ? (JSON.parse(raw) as Partial<{ min: number; max: number }>) : null;
+    const min = typeof parsed?.min === 'number' && Number.isFinite(parsed.min) ? parsed.min : DEFAULT_FIELD_REGULATION_RANGE.min;
+    const max = typeof parsed?.max === 'number' && Number.isFinite(parsed.max) ? parsed.max : DEFAULT_FIELD_REGULATION_RANGE.max;
+    return {
+      min: Math.max(0, Math.min(1, min)),
+      max: Math.max(0, Math.min(1, max))
+    };
+  } catch {
+    return DEFAULT_FIELD_REGULATION_RANGE;
+  }
+}
+
+function fieldMoistureZoneAtForecastEnd(
+  field: FieldSeasonMapFeatureCollection['features'][number]['properties'],
+  regulationRange: { min: number; max: number }
+): FieldMoistureZoneCode {
+  const fieldCapacity = field.soil_field_capacity_water_mm;
+  const wiltingPoint = field.soil_wilting_point_capacity_water_mm;
+  const water = field.soil_water_end_mm ?? field.soil_water_content_mm;
+
+  if (
+    typeof fieldCapacity !== 'number' ||
+    typeof wiltingPoint !== 'number' ||
+    typeof water !== 'number' ||
+    !Number.isFinite(fieldCapacity) ||
+    !Number.isFinite(wiltingPoint) ||
+    !Number.isFinite(water)
+  ) {
+    return 'no_data';
+  }
+
+  if (water < wiltingPoint) {
+    return 'wilting_stress';
+  }
+
+  const lower = fieldCapacity * regulationRange.min;
+  const upper = fieldCapacity * regulationRange.max;
+  if (water > upper) {
+    return 'upper_warning';
+  }
+  if (water >= lower) {
+    return 'regulation';
+  }
+
+  return 'lower_warning';
+}
 
 export function WorkspacePage() {
   const mapGraphicsRef = useRef<HTMLDivElement | null>(null);
@@ -131,6 +188,32 @@ export function WorkspacePage() {
       ])
     );
   }, [forecastFieldsQuery.data]);
+  const forecastMoistureZoneByFieldSeasonId = useMemo(() => {
+    if (!forecastFieldsQuery.data) {
+      return undefined;
+    }
+
+    const regulationRange = storedFieldRegulationRange(localStorageScope);
+    return new Map(
+      forecastFieldsQuery.data.features.map((feature) => [
+        feature.properties.fieldSeasonId,
+        fieldMoistureZoneAtForecastEnd(feature.properties, regulationRange)
+      ])
+    );
+  }, [forecastFieldsQuery.data, localStorageScope]);
+  const currentMoistureZoneByFieldSeasonId = useMemo(() => {
+    if (!calculatedFields) {
+      return undefined;
+    }
+
+    const regulationRange = storedFieldRegulationRange(localStorageScope);
+    return new Map(
+      calculatedFields.features.map((feature) => [
+        feature.properties.fieldSeasonId,
+        fieldMoistureZoneAtForecastEnd(feature.properties, regulationRange)
+      ])
+    );
+  }, [calculatedFields, localStorageScope]);
   const chartFieldSeasonIds = useMemo(() => {
     const availableFieldSeasonIds = new Set(
       workspaceFields?.features.map((feature) => feature.properties.fieldSeasonId) ?? []
@@ -198,6 +281,7 @@ export function WorkspacePage() {
   );
 
   async function handleLogout() {
+    window.sessionStorage.removeItem(IRRIGATION_LEGEND_SESSION_KEY);
     await logout();
     navigate('/login', { replace: true });
   }
@@ -311,33 +395,33 @@ export function WorkspacePage() {
             </p>
           </div>
           <div className="header-actions">
-            <button type="button" onClick={() => void handleLogout()}>
+            <nav className="tabs" aria-label="Разделы рабочего пространства">
+              <button
+                type="button"
+                className={state.tab === 'map' ? 'tab-active' : ''}
+                onClick={() => updateState({ tab: 'map', mapDay: serverDate })}
+              >
+                Карта
+              </button>
+              <button
+                type="button"
+                className={state.tab === 'chart' ? 'tab-active' : ''}
+                onClick={() => updateState({ tab: 'chart', fieldsExplicitlyCleared: false })}
+              >
+                Водный режим
+              </button>
+              <button
+                type="button"
+                className={state.tab === 'irrigation' ? 'tab-active' : ''}
+                onClick={() => updateState({ tab: 'irrigation' })}
+              >
+                Ввод поливов
+              </button>
+            </nav>
+            <button className="logout-button" type="button" onClick={() => void handleLogout()}>
               Выйти
             </button>
           </div>
-          <nav className="tabs">
-            <button
-              type="button"
-              className={state.tab === 'map' ? 'tab-active' : ''}
-              onClick={() => updateState({ tab: 'map', mapDay: serverDate })}
-            >
-              Карта
-            </button>
-            <button
-              type="button"
-              className={state.tab === 'chart' ? 'tab-active' : ''}
-              onClick={() => updateState({ tab: 'chart', fieldsExplicitlyCleared: false })}
-            >
-              Водный режим
-            </button>
-            <button
-              type="button"
-              className={state.tab === 'irrigation' ? 'tab-active' : ''}
-              onClick={() => updateState({ tab: 'irrigation' })}
-            >
-              Ввод поливов
-            </button>
-          </nav>
         </div>
       </header>
 
@@ -402,6 +486,8 @@ export function WorkspacePage() {
           <FieldSelectorPanel
             fields={calculatedFields}
             forecastStatuses={forecastStatusByFieldSeasonId}
+            currentMoistureZones={currentMoistureZoneByFieldSeasonId}
+            forecastMoistureZones={forecastMoistureZoneByFieldSeasonId}
             selectedFieldSeasonIds={chartFieldSeasonIds}
             onChange={(fieldSeasonIds) =>
               updateState({ fieldSeasonIds, fieldsExplicitlyCleared: fieldSeasonIds.length === 0 })
@@ -409,8 +495,10 @@ export function WorkspacePage() {
           />
           <Suspense fallback={<div className="chart-panel empty-state">Загрузка графика…</div>}>
             <WaterRegimeChart
+              key={localStorageScope}
               fields={calculatedFields.features}
               fieldSeasonIds={chartFieldSeasonIds}
+              storageScope={localStorageScope}
               from={state.from}
               to={state.to}
               calculationRunId={activeCalculationRunId}

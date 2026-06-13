@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FieldSeasonMapFeatureCollection, FieldWaterRegimeStatusCode } from '../types/kornix';
-import { fieldStatusClassName, fieldStatusLabel } from './fieldStatusPresentation';
+import { fieldStatusLabel } from './fieldStatusPresentation';
 import { formatArea } from './format';
 
 type FieldSearchableProperties = FieldSeasonMapFeatureCollection['features'][number]['properties'] & {
@@ -13,6 +13,8 @@ type FieldSearchableProperties = FieldSeasonMapFeatureCollection['features'][num
   varietyName?: string | null;
   variety_name?: string | null;
 };
+
+export type FieldMoistureZoneCode = 'upper_warning' | 'regulation' | 'lower_warning' | 'wilting_stress' | 'no_data';
 
 function getFieldSortParts(fieldKey: string): number[] {
   const primaryKey = fieldKey.split(';')[0].trim();
@@ -36,7 +38,7 @@ export function compareFieldKeys(leftKey: string, rightKey: string): number {
   return leftKey.localeCompare(rightKey, 'ru', { numeric: true });
 }
 
-function formatFieldKey(fieldKey: string): string {
+export function formatFieldKey(fieldKey: string): string {
   return fieldKey.replace(/^[A-Za-zА-Яа-я]{2,}\s*[:.-]\s*/u, '').trim() || fieldKey;
 }
 
@@ -66,7 +68,7 @@ function cropVarietyName(field: FieldSearchableProperties): string | null {
   );
 }
 
-function fieldCropLabel(field: FieldSearchableProperties): string {
+export function fieldCropLabel(field: FieldSearchableProperties): string {
   const cropName = formatCropName(field.cropName);
   const varietyName = cropVarietyName(field)?.trim();
   if (!varietyName || cropName.toLowerCase().includes(varietyName.toLowerCase())) {
@@ -79,11 +81,15 @@ function fieldCropLabel(field: FieldSearchableProperties): string {
 export function FieldSelectorPanel({
   fields,
   forecastStatuses,
+  currentMoistureZones,
+  forecastMoistureZones,
   selectedFieldSeasonIds,
   onChange
 }: {
   fields: FieldSeasonMapFeatureCollection;
   forecastStatuses?: ReadonlyMap<string, FieldWaterRegimeStatusCode>;
+  currentMoistureZones?: ReadonlyMap<string, FieldMoistureZoneCode>;
+  forecastMoistureZones?: ReadonlyMap<string, FieldMoistureZoneCode>;
   selectedFieldSeasonIds: string[];
   onChange: (ids: string[]) => void;
 }) {
@@ -156,10 +162,12 @@ export function FieldSelectorPanel({
           const field = feature.properties;
           const displayFieldKey = formatFieldKey(field.fieldKey);
           const forecastStatus = forecastStatuses?.get(field.fieldSeasonId) ?? field.latestStatus;
+          const forecastMoistureZone = forecastMoistureZones?.get(field.fieldSeasonId) ?? 'no_data';
+          const fieldMoistureZone = currentMoistureZones?.get(field.fieldSeasonId) ?? 'no_data';
           return (
             <label
               key={field.fieldSeasonId}
-              className={`field-list-item field-status-card ${fieldStatusClassName(field.latestStatus)}`}
+              className={`field-list-item field-status-card field-list-zone-${fieldMoistureZone}`}
               data-status-label={fieldStatusLabel(field.latestStatus)}
             >
               <input
@@ -174,9 +182,9 @@ export function FieldSelectorPanel({
                 </span>
               </span>
               <span
-                className={`field-forecast-dot field-forecast-dot-${forecastStatus}`}
-                title={`Прогноз today+7: ${fieldStatusLabel(forecastStatus)}`}
-                aria-label={`Прогноз today+7: ${fieldStatusLabel(forecastStatus)}`}
+                className={`field-forecast-dot field-forecast-dot-zone-${forecastMoistureZone}`}
+                title={`Последний день прогноза: ${fieldStatusLabel(forecastStatus)}`}
+                aria-label={`Последний день прогноза: ${fieldStatusLabel(forecastStatus)}`}
               />
             </label>
           );
