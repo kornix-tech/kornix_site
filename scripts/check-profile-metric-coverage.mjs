@@ -1,12 +1,10 @@
 import { readFileSync } from 'node:fs';
+import { REQUIRED_FAO90_METRIC_COUNT, readRequiredFao90MetricCodes } from './lib/fao90MetricContract.mjs';
 
 const metricsSource = readFileSync('src/config/metrics.ts', 'utf8');
 const chartSource = readFileSync('src/workspace/WaterRegimeChart.tsx', 'utf8');
 
-const requiredArrayMatch = metricsSource.match(/REQUIRED_FAO90_METRIC_CODES:[\s\S]*?=\s*\[([\s\S]*?)\];/);
-const requiredMetricCodes = requiredArrayMatch
-  ? [...requiredArrayMatch[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
-  : [];
+const requiredMetricCodes = readRequiredFao90MetricCodes();
 const metricCodes = [...metricsSource.matchAll(/long_name_for_code:\s*'([^']+)'/g)].map((match) => match[1]);
 const disabledMetricCodes = [];
 const metadataOnlyMetricCodes = new Set(disabledMetricCodes);
@@ -18,7 +16,7 @@ if (metricCodes.length === 0) {
   failures.push('No KORNIX_METRICS entries were found in src/config/metrics.ts.');
 }
 
-if (requiredMetricCodes.length !== 44) {
+if (requiredMetricCodes.length !== REQUIRED_FAO90_METRIC_COUNT) {
   failures.push(`Expected 44 REQUIRED_FAO90_METRIC_CODES, got ${requiredMetricCodes.length}.`);
 }
 
@@ -53,5 +51,5 @@ if (failures.length > 0) {
 }
 
 console.log('Profile metric coverage check passed.');
-console.log(`Required FAO90 metrics: ${requiredMetricCodes.length}/44`);
+console.log(`Required FAO90 metrics: ${requiredMetricCodes.length}/${REQUIRED_FAO90_METRIC_COUNT}`);
 console.log(`Presentation registry metrics: ${requiredVisibleMetricCodes.length}/${metricCodes.length}`);

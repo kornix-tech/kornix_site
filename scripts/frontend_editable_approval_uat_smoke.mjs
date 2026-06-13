@@ -1,26 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { REQUIRED_FAO90_METRIC_COUNT, readRequiredFao90MetricCodes } from './lib/fao90MetricContract.mjs';
 
 const READY_STATUS = 'KORNIX_FRONTEND_EDITABLE_APPROVAL_UAT_READY';
 const NOT_READY_STATUS = 'NOT_READY_FRONTEND_EDITABLE_APPROVAL_UAT_GAP';
 const BACKEND_HANDOFF_COMMIT = '63c699da5e2c30a6d31f6011384e4d748ab7dbdb';
 const REQUIRED_METRIC = 'shortwave_radiation_daily_mj_m2';
-const REQUIRED_METRICS = [
-  'air_temperature_daily_c',
-  'relative_humidity_daily_pct',
-  'wind_daily_mps',
-  'eto_daily_mm',
-  REQUIRED_METRIC,
-  'soil_total_capacity_water_mm',
-  'soil_field_capacity_water_mm',
-  'soil_wilting_point_capacity_water_mm',
-  'soil_water_content_mm',
-  'positive_temperature_sum_from_sowing_c',
-  'crop_transpiration_daily_mm',
-  'precipitation_effective_daily_mm',
-  'irrigation_effective_daily_mm'
-];
+const REQUIRED_METRICS = readRequiredFao90MetricCodes();
 
 const frontendOrigin =
   process.env.KORNIX_FRONTEND_ORIGIN ||
@@ -45,7 +32,7 @@ const seasonYear = Number(
   2026
 );
 const expectedFields = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_FIELDS || 37);
-const expectedMetrics = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS || 13);
+const expectedMetrics = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS || REQUIRED_FAO90_METRIC_COUNT);
 const reportJson = 'codex_reports/frontend_editable_approval_uat_report.json';
 const smokeJson = 'codex_reports/frontend_editable_approval_uat_smoke.json';
 const contractMapJson = 'codex_reports/frontend_editable_approval_uat_contract_map.json';

@@ -715,31 +715,27 @@ function buildProfileRows(
     const shortwaveRadiationDaily = scalarValue(series('shortwave_radiation_daily_mj_m2'), day);
     const temperatureSum = scalarValue(series('positive_temperature_sum_from_sowing_c'), day);
     const actualEvapotranspirationRaw = scalarValue(series('actual_evapotranspiration_mm'), day);
-    const legacyDailyWaterUse = scalarValue(series('crop_transpiration_daily_mm'), day);
     const actualTranspirationRaw = scalarValue(series('actual_transpiration_mm'), day);
     const soilEvaporationRaw = scalarValue(series('actual_soil_evaporation_mm'), day);
-    const evapotranspirationSource = firstFiniteValue(actualEvapotranspirationRaw, legacyDailyWaterUse);
     const actualTranspirationDaily = firstFiniteValue(
       actualTranspirationRaw,
-      evapotranspirationSource !== null && soilEvaporationRaw !== null
-        ? Math.max(0, evapotranspirationSource - soilEvaporationRaw)
-        : null,
-      evapotranspirationSource !== null ? 0 : null
+      actualEvapotranspirationRaw !== null && soilEvaporationRaw !== null
+        ? Math.max(0, actualEvapotranspirationRaw - soilEvaporationRaw)
+        : null
     );
     const soilEvaporationDaily = firstFiniteValue(
       soilEvaporationRaw,
-      evapotranspirationSource !== null && actualTranspirationRaw !== null
-        ? Math.max(0, evapotranspirationSource - actualTranspirationRaw)
-        : null,
-      evapotranspirationSource !== null ? evapotranspirationSource : null
+      actualEvapotranspirationRaw !== null && actualTranspirationRaw !== null
+        ? Math.max(0, actualEvapotranspirationRaw - actualTranspirationRaw)
+        : null
     );
     const actualEvapotranspirationFromComponents = sumRequiredFiniteValues(
       actualTranspirationDaily,
       soilEvaporationDaily
     );
     const actualEvapotranspirationDaily = firstFiniteValue(
-      actualEvapotranspirationFromComponents,
-      evapotranspirationSource
+      actualEvapotranspirationRaw,
+      actualEvapotranspirationFromComponents
     );
     const fieldCapacity = scalarValue(series('soil_field_capacity_water_mm'), day);
     const wiltingPoint = scalarValue(series('soil_wilting_point_capacity_water_mm'), day);

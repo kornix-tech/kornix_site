@@ -1,10 +1,13 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { REQUIRED_FAO90_METRIC_COUNT, readRequiredFao90MetricCodes } from './lib/fao90MetricContract.mjs';
 
 const apiBaseUrl = process.env.KORNIX_FRONTEND_SMOKE_API_BASE_URL || 'http://localhost:8001';
 const expectedFields = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_FIELDS || 37);
-const expectedMetrics = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS || 13);
+const defaultExpectedMetrics = REQUIRED_FAO90_METRIC_COUNT;
+const expectedMetrics = Number(process.env.KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS || defaultExpectedMetrics);
+const allowDegradedMetricsOverride = process.env.KORNIX_FRONTEND_SMOKE_ALLOW_DEGRADED_METRICS === 'true';
 const outputJson = process.env.KORNIX_FRONTEND_SMOKE_OUTPUT_JSON || 'codex_reports/frontend_api_v2_sp37_live_smoke.json';
 const backendRepo = process.env.KORNIX_FRONTEND_SMOKE_BACKEND_REPO || '/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack';
 const ephemeralUsername = process.env.KORNIX_FRONTEND_SMOKE_EPHEMERAL_USERNAME || 'frontend_sp37_live_smoke_user';
@@ -15,21 +18,7 @@ if (!/^[a-z0-9_]+$/.test(ephemeralUsername)) {
   throw new Error('KORNIX_FRONTEND_SMOKE_EPHEMERAL_USERNAME must contain only lowercase latin letters, digits, and underscores.');
 }
 
-const requiredMetrics = [
-  'air_temperature_daily_c',
-  'relative_humidity_daily_pct',
-  'wind_daily_mps',
-  'eto_daily_mm',
-  'shortwave_radiation_daily_mj_m2',
-  'soil_total_capacity_water_mm',
-  'soil_field_capacity_water_mm',
-  'soil_wilting_point_capacity_water_mm',
-  'soil_water_content_mm',
-  'positive_temperature_sum_from_sowing_c',
-  'crop_transpiration_daily_mm',
-  'precipitation_effective_daily_mm',
-  'irrigation_effective_daily_mm'
-];
+const requiredMetrics = readRequiredFao90MetricCodes();
 
 const cookieJar = new Map();
 const blockers = [];
@@ -96,7 +85,11 @@ const report = {
   profileTimeseries: {
     statusCode: null,
     metrics: null,
+    defaultExpectedMetrics,
     expectedMetrics,
+    effectiveExpectedMetrics: expectedMetrics,
+    degradedExpectedMetricsOverride: expectedMetrics < defaultExpectedMetrics,
+    degradedExpectedMetricsOverrideAllowed: allowDegradedMetricsOverride,
     requiredMetricsPresent: false,
     missingMetrics: [],
     shortwavePresent: false,
@@ -431,6 +424,9 @@ try {
   report.profileTimeseries.missingMetrics = requiredMetrics.filter((code) => !metricCodes.includes(code));
   report.profileTimeseries.requiredMetricsPresent = report.profileTimeseries.missingMetrics.length === 0;
   report.profileTimeseries.shortwavePresent = metricCodes.includes('shortwave_radiation_daily_mj_m2');
+  if (expectedMetrics < defaultExpectedMetrics && !allowDegradedMetricsOverride) {
+    fail(`KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS=${expectedMetrics} is below production FAO90 contract ${defaultExpectedMetrics}. Set KORNIX_FRONTEND_SMOKE_ALLOW_DEGRADED_METRICS=true only for explicit debug runs.`);
+  }
   report.profileTimeseries.pass =
     profileResponse.ok &&
     metrics.length === expectedMetrics &&
