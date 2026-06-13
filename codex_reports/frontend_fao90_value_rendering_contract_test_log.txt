@@ -1,4 +1,0 @@
-Profile metric coverage check passed.
-Required FAO90 metrics: 44/44
-Presentation registry metrics: 44/44
-CONTRACT_TEST_EXIT_STATUS:0

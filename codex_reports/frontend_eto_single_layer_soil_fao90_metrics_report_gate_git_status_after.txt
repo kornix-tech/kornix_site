@@ -1,3 +1,0 @@
-Final clean git status is captured in the Codex final response after commit and push.
-This committed file is intentionally not regenerated after the cleanup commit, because
-committing the post-commit status file again would create a self-referential report loop.

@@ -8,3 +8,5 @@ coverage/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+codex_reports/*
+!codex_reports/.gitkeep

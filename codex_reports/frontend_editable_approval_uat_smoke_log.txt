@@ -1,5 +1,0 @@
-{
-  "status": "KORNIX_FRONTEND_EDITABLE_APPROVAL_UAT_READY",
-  "output": "codex_reports/frontend_editable_approval_uat_smoke.json",
-  "blockers": []
-}

@@ -1,8 +1,0 @@
-PRE-COMMIT PROVENANCE FROM IMPLEMENTATION REPORT
-
-The original contents of this file captured the dirty worktree before commit
-3ce773f4bb140e5cbfc0ca08a142635b26197f94 was created and pushed.
-
-It is not a final delivery gate status.
-Final report-gate status is recorded in:
-codex_reports/frontend_eto_single_layer_soil_fao90_metrics_report_gate.json

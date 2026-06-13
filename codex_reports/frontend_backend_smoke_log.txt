@@ -1,3 +1,0 @@
-## backend smoke
-{"status":"ok"}
-{"error":{"code":"SESSION_REQUIRED","message":"Authenticated server-side session is required.","requestId":"req_a815d799a0774f899234f5ff8e63ad27"}}

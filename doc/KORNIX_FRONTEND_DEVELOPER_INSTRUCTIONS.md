@@ -46,5 +46,6 @@ The project currently has no `npm test` script.
 
 ## Reports
 
-Final-stage reports live in `codex_reports/` and are regenerated for each final
-readiness pass.
+Final-stage reports are generated locally in `codex_reports/` for each final
+readiness pass. The generated files are ignored by git; keep production commits
+limited to source code, scripts, configuration, and documentation.

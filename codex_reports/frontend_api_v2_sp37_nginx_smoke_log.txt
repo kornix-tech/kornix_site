@@ -1,149 +1,0 @@
-== GET / ==
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0100    726 100    726   0      0 368.4k      0                              0100    726 100    726   0      0 350.6k      0                              0100    726 100    726   0      0 347.3k      0                              0
-HTTP/1.1 200 OK
-Server: nginx/1.27.5
-Date: Sun, 07 Jun 2026 20:47:08 GMT
-Content-Type: text/html
-Content-Length: 726
-Last-Modified: Sun, 07 Jun 2026 20:39:04 GMT
-Connection: keep-alive
-ETag: "6a25d6e8-2d6"
-X-Content-Type-Options: nosniff
-X-Frame-Options: SAMEORIGIN
-Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
-Cross-Origin-Opener-Policy: same-origin
-X-Permitted-Cross-Domain-Policies: none
-Content-Security-Policy: default-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
-Accept-Ranges: bytes
-
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KORNIX Frontend</title>
-    <script type="module" crossorigin src="/assets/index-BCqw-eLD.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-react-Dtp2-oVi.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-query-B7GAe2XU.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-map-3SCwb1bY.js">
-    <link rel="stylesheet" crossorigin href="/assets/vendor-map-CIGW-MKW.css">
-    <link rel="stylesheet" crossorigin href="/assets/index-nQ6MXr0w.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
-
-== GET /login ==
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0100    726 100    726   0      0 609.0k      0                              0100    726 100    726   0      0 590.3k      0                              0100    726 100    726   0      0 584.9k      0                              0
-HTTP/1.1 200 OK
-Server: nginx/1.27.5
-Date: Sun, 07 Jun 2026 20:47:08 GMT
-Content-Type: text/html
-Content-Length: 726
-Last-Modified: Sun, 07 Jun 2026 20:39:04 GMT
-Connection: keep-alive
-ETag: "6a25d6e8-2d6"
-X-Content-Type-Options: nosniff
-X-Frame-Options: SAMEORIGIN
-Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
-Cross-Origin-Opener-Policy: same-origin
-X-Permitted-Cross-Domain-Policies: none
-Content-Security-Policy: default-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
-Accept-Ranges: bytes
-
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KORNIX Frontend</title>
-    <script type="module" crossorigin src="/assets/index-BCqw-eLD.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-react-Dtp2-oVi.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-query-B7GAe2XU.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-map-3SCwb1bY.js">
-    <link rel="stylesheet" crossorigin href="/assets/vendor-map-CIGW-MKW.css">
-    <link rel="stylesheet" crossorigin href="/assets/index-nQ6MXr0w.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
-
-== GET /map ==
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0100    726 100    726   0      0 613.8k      0                              0100    726 100    726   0      0 594.7k      0                              0100    726 100    726   0      0 589.3k      0                              0
-HTTP/1.1 200 OK
-Server: nginx/1.27.5
-Date: Sun, 07 Jun 2026 20:47:08 GMT
-Content-Type: text/html
-Content-Length: 726
-Last-Modified: Sun, 07 Jun 2026 20:39:04 GMT
-Connection: keep-alive
-ETag: "6a25d6e8-2d6"
-X-Content-Type-Options: nosniff
-X-Frame-Options: SAMEORIGIN
-Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
-Cross-Origin-Opener-Policy: same-origin
-X-Permitted-Cross-Domain-Policies: none
-Content-Security-Policy: default-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
-Accept-Ranges: bytes
-
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KORNIX Frontend</title>
-    <script type="module" crossorigin src="/assets/index-BCqw-eLD.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-react-Dtp2-oVi.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-query-B7GAe2XU.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-map-3SCwb1bY.js">
-    <link rel="stylesheet" crossorigin href="/assets/vendor-map-CIGW-MKW.css">
-    <link rel="stylesheet" crossorigin href="/assets/index-nQ6MXr0w.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
-
-== GET /healthz ==
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0100      3 100      3   0      0   2084      0                              0100      3 100      3   0      0   2031      0                              0100      3 100      3   0      0   2016      0                              0
-HTTP/1.1 200 OK
-Server: nginx/1.27.5
-Date: Sun, 07 Jun 2026 20:47:08 GMT
-Content-Type: application/octet-stream
-Content-Length: 3
-Connection: keep-alive
-Content-Type: text/plain
-
-ok
-
-== GET /assets/__missing__.js ==
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-  0      0   0      0   0      0      0      0                              0100    153 100    153   0      0 125.9k      0                              0100    153 100    153   0      0 120.2k      0                              0100    153 100    153   0      0 118.3k      0                              0
-HTTP/1.1 404 Not Found
-Server: nginx/1.27.5
-Date: Sun, 07 Jun 2026 20:47:08 GMT
-Content-Type: text/html
-Content-Length: 153
-Connection: keep-alive
-
-<html>
-<head><title>404 Not Found</title></head>
-<body>
-<center><h1>404 Not Found</h1></center>
-<hr><center>nginx/1.27.5</center>
-</body>
-</html>

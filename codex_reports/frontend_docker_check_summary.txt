@@ -1,6 +1,0 @@
-## docker compose config
-compose_exit=0
-## docker compose dev config
-compose_dev_exit=0
-## docker build
-docker_build_exit=0

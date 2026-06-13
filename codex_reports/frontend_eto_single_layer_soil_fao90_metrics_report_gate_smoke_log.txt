@@ -1,5 +1,0 @@
-{
-  "status": "KORNIX_FRONTEND_ETO_SINGLE_LAYER_SOIL_FAO90_METRICS_READY",
-  "output": "codex_reports/frontend_eto_single_layer_soil_fao90_metrics_smoke.json",
-  "blockers": []
-}

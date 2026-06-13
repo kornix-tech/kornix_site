@@ -20,7 +20,7 @@ For SP37 live API v2 proof run:
 ```bash
 KORNIX_FRONTEND_SMOKE_API_BASE_URL=http://localhost:8001 \
 KORNIX_FRONTEND_SMOKE_EXPECTED_FIELDS=37 \
-KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS=13 \
+KORNIX_FRONTEND_SMOKE_EXPECTED_METRICS=44 \
 KORNIX_FRONTEND_SMOKE_OUTPUT_JSON=codex_reports/frontend_api_v2_sp37_live_smoke.json \
 node scripts/frontend_api_v2_sp37_live_smoke.mjs
 ```
@@ -36,7 +36,7 @@ memory and is not written to reports.
 The smoke runner keeps cookies/CSRF tokens in memory, redacts secrets from logs,
 and fails unless current-context exposes a non-empty
 `currentAppliedCalculationRunId`, the map endpoint returns 37 features, and
-profile-timeseries returns all 13 required metrics including
+profile-timeseries returns all 44 required metrics including
 `shortwave_radiation_daily_mj_m2`.
 
 ## Browser Smoke
