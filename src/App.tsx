@@ -8,6 +8,30 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route
+        path="/fields/:organizationCode/:seasonYear"
+        element={
+          <AuthGuard>
+            <WorkspacePage />
+          </AuthGuard>
+        }
+      />
+      <Route
+        path="/water-regime/:organizationCode/:seasonYear"
+        element={
+          <AuthGuard>
+            <WorkspacePage />
+          </AuthGuard>
+        }
+      />
+      <Route
+        path="/irrigation-input/:organizationCode/:seasonYear"
+        element={
+          <AuthGuard>
+            <WorkspacePage />
+          </AuthGuard>
+        }
+      />
+      <Route
         path="/map"
         element={
           <AuthGuard>
@@ -39,7 +63,7 @@ export function App() {
           </AuthGuard>
         }
       />
-      <Route path="*" element={<Navigate to="/map" replace />} />
+      <Route path="*" element={<Navigate to="/fields/sp/2026" replace />} />
     </Routes>
   );
 }

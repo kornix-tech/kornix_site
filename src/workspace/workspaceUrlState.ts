@@ -10,6 +10,7 @@ const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export type WorkspaceUrlState = {
   tab: WorkspaceTab;
+  organizationCode: string;
   seasonYear: number;
   calculationRunId: string | null;
   methodCode: string | null;
@@ -23,6 +24,7 @@ export type WorkspaceUrlState = {
 
 export const DEFAULT_WORKSPACE_STATE: WorkspaceUrlState = {
   tab: 'map',
+  organizationCode: 'sp',
   seasonYear: 2026,
   calculationRunId: null,
   methodCode: null,
@@ -34,29 +36,49 @@ export const DEFAULT_WORKSPACE_STATE: WorkspaceUrlState = {
   aggregation: 'area_weighted_mean'
 };
 
-export function workspacePathForTab(tab: WorkspaceTab): string {
+const ORGANIZATION_CODE_PATTERN = /^[a-z0-9-]{1,32}$/;
+
+export function normalizeOrganizationCode(value: string | null | undefined): string {
+  const normalized = value?.trim().toLowerCase() ?? '';
+  return ORGANIZATION_CODE_PATTERN.test(normalized) ? normalized : DEFAULT_WORKSPACE_STATE.organizationCode;
+}
+
+function pathSegmentForTab(tab: WorkspaceTab): string {
   if (tab === 'chart') {
-    return '/water-regime';
+    return 'water-regime';
   }
 
   if (tab === 'irrigation') {
-    return '/irrigation';
+    return 'irrigation-input';
   }
 
-  return '/map';
+  return 'fields';
 }
 
-export function tabFromWorkspacePath(pathname: string): WorkspaceTab | null {
-  if (pathname === '/water-regime') {
-    return 'chart';
-  }
-  if (pathname === '/irrigation') {
-    return 'irrigation';
-  }
-  if (pathname === '/map') {
-    return 'map';
-  }
-  return null;
+export function workspacePathForState(state: Pick<WorkspaceUrlState, 'tab' | 'organizationCode' | 'seasonYear'>): string {
+  return `/${pathSegmentForTab(state.tab)}/${normalizeOrganizationCode(state.organizationCode)}/${state.seasonYear}`;
+}
+
+function workspacePathParts(pathname: string): Pick<WorkspaceUrlState, 'tab' | 'organizationCode' | 'seasonYear'> {
+  const [segment = '', organizationSegment, seasonSegment] = pathname.split('/').filter(Boolean);
+  const tab =
+    segment === 'water-regime'
+      ? 'chart'
+      : segment === 'irrigation-input' || segment === 'irrigation'
+        ? 'irrigation'
+        : segment === 'fields' || segment === 'map' || segment === 'workspace'
+          ? 'map'
+          : null;
+  const seasonYearRaw = Number(seasonSegment);
+
+  return {
+    tab: tab ?? DEFAULT_WORKSPACE_STATE.tab,
+    organizationCode: normalizeOrganizationCode(organizationSegment),
+    seasonYear:
+      Number.isFinite(seasonYearRaw) && seasonYearRaw > 2000
+        ? seasonYearRaw
+        : DEFAULT_WORKSPACE_STATE.seasonYear
+  };
 }
 
 function isValidIsoDate(value: string): boolean {
@@ -84,13 +106,14 @@ function parseFieldSeasonIds(value: string): string[] {
 }
 
 export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/map'): WorkspaceUrlState {
+  const pathState = workspacePathParts(pathname);
   const tabParam = searchParams.get('tab');
   const tab =
     tabParam === 'chart' || tabParam === 'irrigation'
       ? tabParam
       : tabParam === 'map'
         ? 'map'
-        : tabFromWorkspacePath(pathname) ?? 'map';
+        : pathState.tab;
   const seasonYearRaw = Number(searchParams.get('season') ?? searchParams.get('seasonYear'));
   const parsedMapDay = normalizedDate(
     searchParams.get('day') || searchParams.get('mapDay'),
@@ -107,7 +130,8 @@ export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/
 
   return {
     tab,
-    seasonYear: Number.isFinite(seasonYearRaw) && seasonYearRaw > 2000 ? seasonYearRaw : 2026,
+    organizationCode: pathState.organizationCode,
+    seasonYear: Number.isFinite(seasonYearRaw) && seasonYearRaw > 2000 ? seasonYearRaw : pathState.seasonYear,
     calculationRunId:
       calculationRunIdParam &&
       CALCULATION_RUN_ID_PATTERN.test(calculationRunIdParam) &&
@@ -126,12 +150,6 @@ export function parseWorkspaceState(searchParams: URLSearchParams, pathname = '/
 
 export function serializeWorkspaceState(state: WorkspaceUrlState): URLSearchParams {
   const params = new URLSearchParams();
-  if (state.seasonYear !== DEFAULT_WORKSPACE_STATE.seasonYear) {
-    params.set('season', String(state.seasonYear));
-  }
-  if (state.calculationRunId) {
-    params.set('calculationRunId', state.calculationRunId);
-  }
   if (state.methodCode) {
     params.set('methodCode', state.methodCode);
   }

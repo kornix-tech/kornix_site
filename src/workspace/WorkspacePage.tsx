@@ -15,9 +15,10 @@ import { IRRIGATION_LEGEND_SESSION_KEY } from './irrigationUiSession';
 import { isServiceWarningCode, visibleUserWarnings } from './warningPresentation';
 import {
   DEFAULT_WORKSPACE_STATE,
+  normalizeOrganizationCode,
   parseWorkspaceState,
   serializeWorkspaceState,
-  workspacePathForTab,
+  workspacePathForState,
   type WorkspaceUrlState
 } from './workspaceUrlState';
 import { deriveWaterMetrics } from '../features/water-regime/derivedWaterMetrics';
@@ -99,7 +100,16 @@ export function WorkspacePage() {
   );
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const canonicalPath = workspacePathForTab(state.tab);
+
+  const contextQuery = useQuery({
+    queryKey: ['kornix-current-context', state.seasonYear],
+    queryFn: () => kornixApi.getCurrentContext({ seasonYear: state.seasonYear })
+  });
+
+  const canonicalOrganizationCode = normalizeOrganizationCode(
+    contextQuery.data?.organizationCode ?? user?.organizationCode ?? state.organizationCode
+  );
+  const canonicalPath = workspacePathForState({ ...state, organizationCode: canonicalOrganizationCode });
   const canonicalSearch = serializeWorkspaceState(state).toString();
   const dateRangeSearchValue = `${searchParams.get('from') ?? ''}:${searchParams.get('to') ?? ''}`;
   const hasDateRangeParams = searchParams.has('from') || searchParams.has('to');
@@ -117,11 +127,6 @@ export function WorkspacePage() {
       );
     }
   }, [canonicalPath, canonicalSearch, location.pathname, navigate, searchParams]);
-
-  const contextQuery = useQuery({
-    queryKey: ['kornix-current-context', state.seasonYear],
-    queryFn: () => kornixApi.getCurrentContext({ seasonYear: state.seasonYear })
-  });
 
   const activeCalculationRunIdCandidate = contextQuery.data?.currentAppliedCalculationRunId ?? null;
   const activeCalculationRunId =
@@ -221,24 +226,24 @@ export function WorkspacePage() {
     (patch: Partial<WorkspaceUrlState>, replace = false) => {
       const nextState = { ...state, ...patch };
       const search = serializeWorkspaceState(nextState).toString();
-      const pathname = workspacePathForTab(nextState.tab);
+      const pathname = workspacePathForState({
+        ...nextState,
+        organizationCode: canonicalOrganizationCode
+      });
       navigate({ pathname, search }, { replace });
     },
-    [navigate, state]
+    [canonicalOrganizationCode, navigate, state]
   );
 
   useEffect(() => {
     const nextPatch: Partial<WorkspaceUrlState> = {};
-    if (contextQuery.data && state.calculationRunId !== activeCalculationRunId) {
-      nextPatch.calculationRunId = activeCalculationRunId;
-    }
     if (contextQuery.data && state.methodCode !== selectedMethodCode) {
       nextPatch.methodCode = selectedMethodCode;
     }
     if (Object.keys(nextPatch).length > 0) {
       updateState(nextPatch, true);
     }
-  }, [activeCalculationRunId, contextQuery.data, selectedMethodCode, state.calculationRunId, state.methodCode, updateState]);
+  }, [contextQuery.data, selectedMethodCode, state.methodCode, updateState]);
 
   useEffect(() => {
     const context = contextQuery.data;
@@ -519,8 +524,7 @@ export function WorkspacePage() {
             currentMoistureZones={currentMoistureZoneByFieldSeasonId}
             forecastMoistureZones={forecastMoistureZoneByFieldSeasonId}
             onContextRefresh={() => contextQuery.refetch()}
-            onCalculationComplete={(calculationRunId) => {
-              updateState({ calculationRunId }, true);
+            onCalculationComplete={() => {
               void contextQuery.refetch();
             }}
           />
