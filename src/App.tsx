@@ -63,7 +63,7 @@ export function App() {
           </AuthGuard>
         }
       />
-      <Route path="*" element={<Navigate to="/fields/sp/2026" replace />} />
+      <Route path="*" element={<Navigate to="/workspace" replace />} />
     </Routes>
   );
 }

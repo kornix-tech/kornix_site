@@ -128,9 +128,10 @@ export function WorkspacePage() {
     queryKey: ['kornix-current-context', state.seasonYear],
     queryFn: () => kornixApi.getCurrentContext({ seasonYear: state.seasonYear })
   });
+  const context = contextQuery.data ?? null;
 
   const canonicalOrganizationCode = normalizeOrganizationCode(
-    contextQuery.data?.organizationCode ?? user?.organizationCode ?? state.organizationCode
+    context?.organizationCode ?? user?.organizationCode ?? state.organizationCode
   );
   const canonicalPath = workspacePathForState({ ...state, organizationCode: canonicalOrganizationCode });
   const canonicalSearch = serializeWorkspaceState(state).toString();
@@ -151,32 +152,32 @@ export function WorkspacePage() {
     }
   }, [canonicalPath, canonicalSearch, location.pathname, navigate, searchParams]);
 
-  const activeCalculationRunIdCandidate = contextQuery.data?.currentAppliedCalculationRunId ?? null;
+  const activeCalculationRunIdCandidate = context?.currentAppliedCalculationRunId ?? null;
   const activeCalculationRunId =
     activeCalculationRunIdCandidate && !RESERVED_CALCULATION_RUN_IDS.has(activeCalculationRunIdCandidate)
       ? activeCalculationRunIdCandidate
       : null;
-  const availableMethods = contextQuery.data?.availableMethods ?? [];
-  const defaultMethodCode = contextQuery.data?.defaultMethodCode ?? null;
+  const availableMethods = context?.availableMethods ?? [];
+  const defaultMethodCode = context?.defaultMethodCode ?? null;
   const isUrlMethodValid = Boolean(
     state.methodCode && availableMethods.some((method) => method.methodCode === state.methodCode)
   );
   const selectedMethodCode = isUrlMethodValid ? state.methodCode : defaultMethodCode;
   const selectedMethod = availableMethods.find((method) => method.methodCode === selectedMethodCode) ?? null;
-  const serverDate = contextQuery.data?.serverDate ?? DEFAULT_WORKSPACE_STATE.mapDay;
-  const forecastStartDate = contextQuery.data?.forecastStartDate ?? DEFAULT_WORKSPACE_STATE.to;
-  const forecastEndDate = contextQuery.data?.forecastEndDate ?? DEFAULT_WORKSPACE_STATE.to;
-  const localStorageScope = `${contextQuery.data?.organizationCode ?? user?.organizationCode ?? 'unknown'}:${
+  const serverDate = context?.serverDate ?? '';
+  const forecastStartDate = context?.forecastStartDate ?? '';
+  const forecastEndDate = context?.forecastEndDate ?? '';
+  const localStorageScope = `${context?.organizationCode ?? user?.organizationCode ?? 'unknown'}:${
     user?.id ?? 'anonymous'
   }`;
   const effectiveMapDay =
-    state.mapDay === DEFAULT_WORKSPACE_STATE.mapDay && contextQuery.data?.serverDate
-      ? contextQuery.data.serverDate
+    state.mapDay === DEFAULT_WORKSPACE_STATE.mapDay && context?.serverDate
+      ? context.serverDate
       : state.mapDay;
 
   const fieldsQuery = useQuery({
     queryKey: ['field-season-map', activeCalculationRunId, selectedMethodCode, effectiveMapDay],
-    enabled: Boolean(activeCalculationRunId && selectedMethodCode),
+    enabled: Boolean(activeCalculationRunId && selectedMethodCode && effectiveMapDay),
     queryFn: () =>
       kornixApi.getFieldSeasonMap({
         calculationRunId: activeCalculationRunId ?? '',
@@ -187,7 +188,7 @@ export function WorkspacePage() {
   });
   const forecastFieldsQuery = useQuery({
     queryKey: ['field-season-map-forecast-end', activeCalculationRunId, selectedMethodCode, forecastEndDate],
-    enabled: Boolean(activeCalculationRunId && selectedMethodCode),
+    enabled: Boolean(activeCalculationRunId && selectedMethodCode && forecastEndDate),
     queryFn: () =>
       kornixApi.getFieldSeasonMap({
         calculationRunId: activeCalculationRunId ?? '',
@@ -198,7 +199,7 @@ export function WorkspacePage() {
   });
   const catalogQuery = useQuery({
     queryKey: ['field-season-catalog', state.seasonYear],
-    enabled: Boolean(contextQuery.data && !activeCalculationRunId),
+    enabled: Boolean(context && !activeCalculationRunId),
     queryFn: () => kornixApi.getFieldSeasonCatalog({ seasonYear: state.seasonYear }),
     retry: 1
   });
@@ -264,16 +265,15 @@ export function WorkspacePage() {
 
   useEffect(() => {
     const nextPatch: Partial<WorkspaceUrlState> = {};
-    if (contextQuery.data && state.methodCode !== selectedMethodCode) {
+    if (context && state.methodCode !== selectedMethodCode) {
       nextPatch.methodCode = selectedMethodCode;
     }
     if (Object.keys(nextPatch).length > 0) {
       updateState(nextPatch, true);
     }
-  }, [contextQuery.data, selectedMethodCode, state.methodCode, updateState]);
+  }, [context, selectedMethodCode, state.methodCode, updateState]);
 
   useEffect(() => {
-    const context = contextQuery.data;
     const hasManualDateRange = hasDateRangeParams && autoDateRangeRef.current !== dateRangeSearchValue;
     if (!context || hasManualDateRange) {
       return;
@@ -285,13 +285,7 @@ export function WorkspacePage() {
       autoDateRangeRef.current = `${nextFrom}:${nextTo}`;
       updateState({ from: nextFrom, to: nextTo }, true);
     }
-  }, [contextQuery.data, dateRangeSearchValue, hasDateRangeParams, state.from, state.to, updateState]);
-
-  useEffect(() => {
-    if (!contextQuery.data && !contextQuery.isLoading) {
-      console.warn('KORNIX backend dates are unavailable; frontend uses Moscow-date fallback.');
-    }
-  }, [contextQuery.data, contextQuery.isLoading]);
+  }, [context, dateRangeSearchValue, hasDateRangeParams, state.from, state.to, updateState]);
 
   const selectFieldFromMap = useCallback(
     (fieldSeasonId: string) => {
@@ -416,7 +410,7 @@ export function WorkspacePage() {
             <div className="eyebrow">SOFTWARE · DATA · IRRIGATION SYSTEMS</div>
             <h1>Водный режим <span>полей</span></h1>
             <p>
-              {contextQuery.data?.organizationName ?? user?.organizationName ?? 'Хозяйство'} · сезон {state.seasonYear}
+              {context?.organizationName ?? user?.organizationName ?? 'Хозяйство'} · сезон {state.seasonYear}
             </p>
           </div>
           <div className="header-actions">
@@ -450,11 +444,20 @@ export function WorkspacePage() {
         </div>
       </header>
 
-      {!activeCalculationRunId && !workspaceFields && (
+      {contextQuery.isLoading && <div className="empty-state">Загрузка backend-контекста…</div>}
+      {contextQuery.isError && (
+        <div className="error-state">
+          {queryErrorMessage(contextQuery.error, 'Не удалось загрузить backend-контекст рабочего пространства.')}
+        </div>
+      )}
+      {!contextQuery.isLoading && !contextQuery.isError && !context && (
+        <div className="error-state">Backend не вернул контекст рабочего пространства.</div>
+      )}
+      {context && !activeCalculationRunId && !workspaceFields && (
         <div className="empty-state">Нет расчёта. Загружаем каталог полей для первого расчёта.</div>
       )}
       {activeCalculationRunId && fieldsQuery.isLoading && <div className="empty-state">Загрузка полей…</div>}
-      {!activeCalculationRunId && catalogQuery.isLoading && <div className="empty-state">Загрузка каталога полей…</div>}
+      {context && !activeCalculationRunId && catalogQuery.isLoading && <div className="empty-state">Загрузка каталога полей…</div>}
       {fieldsQuery.isError && <div className="error-state">{queryErrorMessage(fieldsQuery.error, 'Не удалось загрузить карту полей.')}</div>}
       {catalogQuery.isError && !activeCalculationRunId && (
         <div className="error-state">
@@ -468,14 +471,14 @@ export function WorkspacePage() {
         <div className="empty-state">График водного режима появится после расчёта. Перейдите во вкладку ввода поливов и отправьте сценарий.</div>
       )}
 
-      {activeCalculationRunId && calculatedFields && state.tab === 'map' && (
+      {context && activeCalculationRunId && calculatedFields && state.tab === 'map' && (
         <section className="map-layout">
           <div className="map-main">
             <div ref={mapGraphicsRef} className="map-export-frame">
               <Suspense fallback={<div className="empty-state">Загрузка карты…</div>}>
                 <FieldMap
                   fields={calculatedFields}
-                  mapBounds={contextQuery.data?.mapBounds ?? null}
+                  mapBounds={context.mapBounds ?? null}
                   mode={mapDisplayMode}
                   regulationRange={fieldRegulationRange}
                   currentMoistureZones={currentMoistureZoneByFieldSeasonId}
@@ -498,7 +501,7 @@ export function WorkspacePage() {
             warnings={calculatedFields.warnings ?? []}
           >
             <WorkspaceMethodPanel
-              context={contextQuery.data}
+              context={context}
               selectedMethodCode={selectedMethodCode}
               invalidUrlMethodCode={state.methodCode && !isUrlMethodValid ? state.methodCode : null}
               onMethodChange={(methodCode) => updateState({ methodCode })}
@@ -508,7 +511,7 @@ export function WorkspacePage() {
         </section>
       )}
 
-      {activeCalculationRunId && calculatedFields && state.tab === 'chart' && (
+      {context && activeCalculationRunId && calculatedFields && state.tab === 'chart' && (
         <section className="chart-layout">
           <FieldSelectorPanel
             fields={calculatedFields}
@@ -542,7 +545,7 @@ export function WorkspacePage() {
         </section>
       )}
 
-      {workspaceFields && state.tab === 'irrigation' && (
+      {context && workspaceFields && state.tab === 'irrigation' && (
         <Suspense fallback={<div className="irrigation-panel empty-state">Загрузка таблицы поливов…</div>}>
           <IrrigationInputTable
             key={localStorageScope}
@@ -552,7 +555,7 @@ export function WorkspacePage() {
             serverDate={serverDate}
             forecastStartDate={forecastStartDate}
             forecastEndDate={forecastEndDate}
-            context={contextQuery.data ?? null}
+            context={context}
             baseCalculationRunId={activeCalculationRunId}
             selectedMethodCode={selectedMethodCode}
             regulationRange={fieldRegulationRange}

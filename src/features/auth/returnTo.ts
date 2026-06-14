@@ -1,4 +1,4 @@
-const DEFAULT_RETURN_TO = '/fields/sp/2026';
+const DEFAULT_RETURN_TO = '/workspace';
 const LEGACY_RETURN_PATHS = new Set(['/map', '/water-regime', '/irrigation', '/workspace']);
 const FRIENDLY_RETURN_PATH_PATTERN = /^\/(?:fields|water-regime|irrigation-input)\/[a-z0-9-]{1,32}\/\d{4}$/;
 

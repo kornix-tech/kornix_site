@@ -3,6 +3,15 @@
 ## [Unreleased]
 
 ### Fixed
+- Frontend больше не подставляет browser-derived даты вместо backend
+  `current-context`: при недоступном контексте рабочее пространство показывает
+  явную загрузку/ошибку, а API-запросы карты, графика и ввода поливов не
+  стартуют с локальными датами.
+- Неизвестные маршруты и пустой `returnTo` теперь ведут на нейтральный
+  `/workspace`, а не сразу на зашитый `/fields/sp/2026`.
+- Типы Vite `ImportMetaEnv` дополнены стандартными runtime-флагами и
+  `VITE_KORNIX_CALCULATION_TIMEOUT_MS`, чтобы `src` typecheck не падал на
+  используемых env-полях.
 - Frontend build tooling обновлён до `vite 8` и `@vitejs/plugin-react 6`,
   чтобы убрать `high severity` audit warnings в цепочке `vite -> esbuild`
   перед production build для VDS.
