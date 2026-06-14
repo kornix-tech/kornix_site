@@ -26,15 +26,29 @@ Inside Docker the Vite dev server proxies same-origin `/api/*` requests to
 ```bash
 npm ci --no-audit --no-fund
 npm run typecheck
+npm run test:contract
 npm run build
 ./scripts/validate.sh
 ```
 
 The project currently has no `npm test` script.
 
+## Code Documentation
+
+- `doc/KORNIX_FRONTEND_CODE_REFERENCE.md` is the primary source-code map for
+  modules, API flows, frontend calculations, storage rules and extension
+  guardrails.
+- `doc/KORNIX_FRONTEND_VDS_RELEASE_RUNBOOK.md` describes the pre-commit,
+  pre-push and VDS deployment checklist.
+- Update the code reference whenever module ownership, API flow, frontend
+  calculations, browser storage or deployment-critical behavior changes.
+
 ## Guardrails
 
-- Do not call `/api/v2/kornix/*` from production frontend code.
+- Do not add legacy v1, mock or backend admin routes to production frontend
+  runtime.
+- User-facing calculation code must call only `/api/v2/*` endpoints through the
+  typed API layer.
 - Do not call `/api/admin/v1` or expose backend admin UI in the user frontend.
 - Do not store access/refresh tokens in browser storage.
 - Do not treat `localStorage` as the source of truth for approved irrigation.

@@ -10,6 +10,20 @@
 - dev-режим через Vite внутри Docker;
 - короткие URL `/map`, `/water-regime` и `/irrigation` с query-state только для выбранных полей, дат и дня карты.
 
+## Основная документация
+
+- [Frontend code reference](doc/KORNIX_FRONTEND_CODE_REFERENCE.md) - карта
+  source-кода, API/data flow, frontend-расчёты, browser storage и правила
+  безопасного расширения.
+- [VDS release runbook](doc/KORNIX_FRONTEND_VDS_RELEASE_RUNBOOK.md) - чеклист
+  перед коммитом/пушем, production build contract, smoke и rollback.
+- [Production deployment](doc/KORNIX_FRONTEND_PRODUCTION_DEPLOYMENT.md) -
+  Docker/Nginx/VDS deployment notes.
+- [API v2 workflow](doc/KORNIX_FRONTEND_API_V2_WORKFLOW.md) - порядок вызовов
+  backend API v2 и approval flow.
+- [Security architecture](doc/security/KORNIX_FRONTEND_SECURITY_ARCHITECTURE.md)
+  - security boundary, auth/session и production guardrails.
+
 ## Быстрый запуск в WSL
 
 ```bash

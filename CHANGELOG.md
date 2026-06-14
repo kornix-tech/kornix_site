@@ -43,10 +43,19 @@
   timeout-механизм, что и остальные frontend API-запросы.
 
 ### Technical
+- Production nginx `/api/` proxy now resolves backend upstream at request time
+  through Docker DNS, so the static frontend container can start for VDS/static
+  smoke even when backend host DNS is unavailable during nginx startup.
 - Production nginx proxy получил таймауты для длинных approval/recalculation
   API-запросов, согласованные с frontend calculation timeout.
 
 ### Added
+- Добавлен полный frontend code reference с картой `src/`, API/session flow,
+  frontend-расчётами, browser storage contract, deployment files и правилами
+  безопасного расширения перед VDS.
+- Добавлен VDS release runbook с pre-commit/pre-push проверками, production
+  build contract, smoke-сценарием, rollback и перечнем документации, которую
+  нужно держать синхронной.
 - Добавлена frontend-поддержка 44 метрик FAO90 single-layer soil chain для
   `simple_eto_single_layer_soil`: динамический CSV/export всех profile metrics,
   grouped FAO90 summary/diagnostics в графике, расширенный map tooltip/export
@@ -78,6 +87,11 @@
   статус в README.
 
 ### Changed
+- README, developer instructions и production deployment docs теперь ссылаются
+  на frontend code reference и VDS release runbook; устаревший guardrail про
+  запрет `/api/v2/kornix/*` заменён на запрет legacy/mock/admin endpoints.
+- VDS runbook и production deployment docs теперь требуют production dependency
+  audit `npm audit --omit=dev --audit-level=high` перед релизом.
 - Верхний заголовок рабочего пространства `Водный режим полей` теперь целиком
   окрашен корпоративным медным цветом.
 - Рабочие разделы frontend получили человекочитаемые URL с организацией и
