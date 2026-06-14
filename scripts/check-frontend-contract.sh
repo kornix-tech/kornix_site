@@ -40,6 +40,8 @@ check_file_contains() {
 
 check_absent "/api/v1/kornix" "legacy KORNIX v1 endpoints must not be used by frontend src"
 check_absent "/api/admin/v1|/admin" "user frontend must not expose backend admin/research routes"
+check_absent "VITE_KORNIX_API_VERSION" "KORNIX frontend runtime is v2-only and must not expose an API version switch"
+check_absent "water_balance" "frontend runtime metric groups must not use retired water_balance naming"
 check_absent "'admin'|'service_admin'" "user frontend must not model backend admin roles"
 check_absent "calculateWaterRegime" "legacy synchronous calculate flow must not be imported"
 check_absent "latestCalculationRunId" "displayed run must come from currentAppliedCalculationRunId"
@@ -58,6 +60,7 @@ check_present "CSRF_TOKEN_INVALID" "unsafe requests must handle CSRF token refre
 check_file_contains ".env.production.example" "^VITE_API_BASE_URL=/api$" "production env example must use same-origin /api"
 check_file_contains "docker-compose.yml" "KORNIX_API_BASE_URL: \\$\\{VITE_API_BASE_URL:-/api\\}" "production compose default API base must be /api"
 check_file_contains "nginx.conf" "Content-Security-Policy" "production nginx must set CSP"
+check_file_contains "nginx.conf" "proxy_read_timeout 130s" "production nginx must keep long approval/recalculation API calls open"
 if grep -E "localhost:8000|127\\.0\\.0\\.1:8000|localhost:8001|127\\.0\\.0\\.1:8001" nginx.conf >/dev/null; then
   echo "frontend contract check failed: production nginx CSP must not allow localhost API origins" >&2
   exit 1

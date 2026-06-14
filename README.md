@@ -336,7 +336,7 @@ cookie.
 
 ## API checklist
 
-Актуальный пользовательский frontend переведён на Big Bang контракт
+Актуальный пользовательский frontend переведён на canonical runtime contract
 `/api/v2/kornix`: tenant scope задаёт BFF/backend, frontend не передаёт
 `organizationCode` как доверенный фильтр, использует backend-даты, выбранный
 `methodCode`, `managedScope`, approval workflow с polling и правило `null != 0`.

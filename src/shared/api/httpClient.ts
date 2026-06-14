@@ -112,13 +112,33 @@ function authRequiredError(errorEnvelope: BackendErrorEnvelope['error'] | null, 
   );
 }
 
+async function fetchWithOptionalTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = init.signal ? null : new AbortController();
+  const timeoutId = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : undefined;
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: init.signal ?? controller?.signal
+    });
+  } finally {
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+}
+
 async function ensureCsrfToken(path: string, forceRefresh = false): Promise<string | null> {
   const existingToken = csrfToken();
   if ((existingToken && !forceRefresh) || path === CSRF_BOOTSTRAP_PATH) {
     return existingToken;
   }
 
-  const response = await fetch(buildUrl(CSRF_BOOTSTRAP_PATH), {
+  const response = await fetchWithOptionalTimeout(buildUrl(CSRF_BOOTSTRAP_PATH), {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -157,11 +177,6 @@ async function ensureCsrfToken(path: string, forceRefresh = false): Promise<stri
 
 export async function requestJson<T>(path: string, init: KornixRequestInit = {}): Promise<T> {
   const { timeoutMs, ...fetchInit } = init;
-  const controller = init.signal ? null : new AbortController();
-  const timeoutId = controller
-    ? window.setTimeout(() => controller.abort(), timeoutMs ?? DEFAULT_TIMEOUT_MS)
-    : undefined;
-
   const method = (fetchInit.method ?? 'GET').toUpperCase();
   const headers = new Headers(fetchInit.headers);
   headers.set('Accept', headers.get('Accept') ?? 'application/json');
@@ -172,24 +187,20 @@ export async function requestJson<T>(path: string, init: KornixRequestInit = {})
     headers.set('X-CSRF-Token', token);
   }
 
-  async function performFetch(signal?: AbortSignal): Promise<Response> {
-    return fetch(buildUrl(path), {
-      ...fetchInit,
-      // Cookie-based BFF session требует credentials: include. В mock-режиме этот флаг безвреден.
-      credentials: 'include',
-      signal,
-      headers
-    });
+  async function performFetch(): Promise<Response> {
+    return fetchWithOptionalTimeout(
+      buildUrl(path),
+      {
+        ...fetchInit,
+        // Cookie-based BFF session требует credentials: include. В mock-режиме этот флаг безвреден.
+        credentials: 'include',
+        headers
+      },
+      timeoutMs ?? DEFAULT_TIMEOUT_MS
+    );
   }
 
-  let response: Response;
-  try {
-    response = await performFetch(fetchInit.signal ?? controller?.signal ?? undefined);
-  } finally {
-    if (timeoutId !== undefined) {
-      window.clearTimeout(timeoutId);
-    }
-  }
+  let response = await performFetch();
 
   if (response.status === 403 && UNSAFE_METHODS.has(method)) {
     const errorEnvelope = await parseBackendErrorEnvelope(response);
@@ -197,7 +208,7 @@ export async function requestJson<T>(path: string, init: KornixRequestInit = {})
       const retryToken = await ensureCsrfToken(path, true);
       if (retryToken) {
         headers.set('X-CSRF-Token', retryToken);
-        response = await performFetch(fetchInit.signal ?? undefined);
+        response = await performFetch();
       }
     }
   }

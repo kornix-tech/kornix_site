@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Fixed
+- Frontend runtime очищен от устаревшего переключателя `VITE_KORNIX_API_VERSION`
+  и внутреннего имени группы `water_balance`: пользовательский calculation API
+  теперь явно считается v2-only/canonical, а soil-water метрики сгруппированы
+  как `soil_water`.
+- API client стал устойчивее к неполному backend DTO: пустые `features`,
+  `metrics`, `recommendations`, `methods` и `catalog.fields` больше не приводят
+  к падению страницы при нормализации ответа.
+- CSRF bootstrap и retry после `CSRF_TOKEN_INVALID` теперь используют тот же
+  timeout-механизм, что и остальные frontend API-запросы.
+
+### Technical
+- Production nginx proxy получил таймауты для длинных approval/recalculation
+  API-запросов, согласованные с frontend calculation timeout.
+
 ### Added
 - Добавлена frontend-поддержка 44 метрик FAO90 single-layer soil chain для
   `simple_eto_single_layer_soil`: динамический CSV/export всех profile metrics,
@@ -229,8 +244,8 @@
   polling статуса approval без переключения на failed расчёт.
 - `stale_read_only` и `not_ready` режимы current-context блокируют отправку и
   редактирование поливов, но не трактуются как ошибка авторизации.
-- Интеграционный env-профиль явно фиксирует `VITE_KORNIX_API_VERSION=v2` и
-  описывает разделение `/api/v1` auth endpoints и `/api/v2/kornix` расчётов.
+- Интеграционный env-профиль описывает разделение `/api/v1` auth endpoints и
+  v2-only `/api/v2/kornix` расчётов.
 - В validate-проверку добавлен contract-check, который блокирует возврат
   legacy `/api/v1/kornix`, `latestCalculationRunId`, старого calculate-flow и
   `irrigation_tasks` в рабочем `src`.

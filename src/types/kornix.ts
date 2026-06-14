@@ -178,7 +178,7 @@ export type KornixMetricDefinition = {
   unit: string;
   valueKind: MetricValueKind;
   chartKind: MetricChartKind;
-  group: 'water_balance' | 'weather' | 'plant' | 'irrigation' | 'diagnostics';
+  group: 'soil_water' | 'weather' | 'plant' | 'irrigation' | 'diagnostics';
   isDefaultVisible: boolean;
   isEnabled: boolean;
 };

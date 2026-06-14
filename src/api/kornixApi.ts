@@ -35,10 +35,6 @@ import { buildMockProfileTimeseries } from './timeseries';
 const mockEnabled = import.meta.env.VITE_ENABLE_MOCK_API === 'true' && isMockRuntimeAllowed();
 const DEFAULT_CALCULATION_REQUEST_TIMEOUT_MS = 120_000;
 const configuredCalculationTimeoutMs = Number(import.meta.env.VITE_KORNIX_CALCULATION_TIMEOUT_MS);
-const configuredKornixApiVersion = import.meta.env.VITE_KORNIX_API_VERSION || 'v2';
-if (configuredKornixApiVersion !== 'v2') {
-  console.warn('KORNIX frontend поддерживает только пользовательский calculation API /api/v2/kornix.');
-}
 const KORNIX_API_PREFIX = '/api/v2/kornix';
 const CALCULATION_REQUEST_TIMEOUT_MS =
   Number.isFinite(configuredCalculationTimeoutMs) && configuredCalculationTimeoutMs > 0
@@ -110,7 +106,7 @@ function normalizeMapFeatureCollection(collection: FieldSeasonMapFeatureCollecti
   return {
     ...collection,
     warnings: collection.warnings ?? [],
-    features: collection.features.map((feature) => ({
+    features: (collection.features ?? []).map((feature) => ({
       ...feature,
       geometry: feature.geometry ?? { type: 'MultiPolygon' as const, coordinates: [] },
       properties: normalizeMapProperties(feature.properties as MapPropertiesWithCamelCaseRecommendation)
@@ -121,8 +117,9 @@ function normalizeMapFeatureCollection(collection: FieldSeasonMapFeatureCollecti
 function normalizeProfileTimeseries(profile: KornixProfileTimeseriesDto): KornixProfileTimeseriesDto {
   return {
     ...profile,
+    metrics: profile.metrics ?? [],
     warnings: profile.warnings ?? [],
-    recommendations: profile.recommendations.map(normalizeRecommendation)
+    recommendations: (profile.recommendations ?? []).map(normalizeRecommendation)
   };
 }
 
@@ -151,7 +148,7 @@ function normalizeMethodsResponse(response: KornixMethodsResponseDto | KornixMet
 
   return {
     ...response,
-    methods: response.methods.map(normalizeMethod).filter((method) => method.methodCode)
+    methods: (response.methods ?? []).map(normalizeMethod).filter((method) => method.methodCode)
   };
 }
 
@@ -163,7 +160,7 @@ function catalogToMapFeatureCollection(catalog: FieldSeasonCatalogDto): FieldSea
     seasonYear: catalog.seasonYear,
     calculationRunId: 'catalog',
     day: '',
-    features: catalog.fields.map((field) => {
+    features: (catalog.fields ?? []).map((field) => {
       const geometry = field.geometry ?? { type: 'MultiPolygon' as const, coordinates: [] };
       return {
         type: 'Feature' as const,
