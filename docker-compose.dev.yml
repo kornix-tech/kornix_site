@@ -6,9 +6,9 @@ services:
     image: kornix-frontend:dev
     container_name: kornix-frontend-dev
     environment:
-      VITE_AUTH_MODE: ${VITE_AUTH_MODE:-mock}
+      VITE_AUTH_MODE: ${VITE_AUTH_MODE:-bff}
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8001}
-      VITE_ENABLE_MOCK_API: ${VITE_ENABLE_MOCK_API:-true}
+      VITE_ENABLE_MOCK_API: ${VITE_ENABLE_MOCK_API:-false}
       VITE_ALLOW_PRIVATE_MOCK_RUNTIME: ${VITE_ALLOW_PRIVATE_MOCK_RUNTIME:-false}
       VITE_KORNIX_API_VERSION: ${VITE_KORNIX_API_VERSION:-v2}
       VITE_KORNIX_CALCULATION_TIMEOUT_MS: ${VITE_KORNIX_CALCULATION_TIMEOUT_MS:-120000}

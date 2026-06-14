@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Fixed
+- Docker dev frontend теперь по умолчанию запускается в BFF-режиме с
+  `VITE_ENABLE_MOCK_API=false`, чтобы совместный front+back-via-API запуск
+  показывал обычную авторизацию, а не demo-login.
 - BFF auth/session/CSRF frontend client switched from retired v1 auth/session
   endpoints to canonical `/api/v2/*`, fixing the `API 404: Not Found`
   authorization check in local front+back-via-API mode.
