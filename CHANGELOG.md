@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Fixed
+- Frontend build tooling обновлён до `vite 8` и `@vitejs/plugin-react 6`,
+  чтобы убрать `high severity` audit warnings в цепочке `vite -> esbuild`
+  перед production build для VDS.
 - Диапазон регулирования влагозапасов теперь хранится в версионированном
   `localStorage`-ключе, чтобы старые пользовательские значения `0.60..0.90 НВ`
   не перекрывали новый операторский default после обновления.
