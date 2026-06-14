@@ -20,6 +20,11 @@ import {
 import { IRRIGATION_LEGEND_SESSION_KEY } from './irrigationUiSession';
 
 type IrrigationValues = Record<string, string>;
+type IrrigationHintValues = Record<string, string>;
+type RegulationRange = {
+  min: number;
+  max: number;
+};
 
 type DateGroup = {
   key: string;
@@ -30,15 +35,14 @@ type DateGroup = {
 type ApprovalState = 'empty' | 'dirty' | 'approved' | 'saving' | 'error';
 type CalculationWarning = { code: string; message: string };
 
-const HIGH_ALERT_IRRIGATION_MM = 30;
+const LOW_ALERT_IRRIGATION_MM = 5;
+const HIGH_ALERT_IRRIGATION_MM = 25;
+const IRRIGATION_DAY_COLUMN_WIDTH_PX = 48;
 const IRRIGATION_STEP_LEGEND = [
-  { className: 'irrigation-alert-cell', label: '1–3' },
-  { className: 'irrigation-depth-4-7', label: '4–7' },
-  { className: 'irrigation-depth-8-11', label: '8–11' },
-  { className: 'irrigation-depth-12-15', label: '12–15' },
-  { className: 'irrigation-depth-16-20', label: '16–20' },
-  { className: 'irrigation-depth-20-30', label: '20–30' },
-  { className: 'irrigation-alert-cell', label: '>30' }
+  { className: 'irrigation-alert-cell', label: '<5 мм' },
+  { className: 'irrigation-depth-5-15', label: '5–15 мм' },
+  { className: 'irrigation-depth-16-25', label: '16–25 мм' },
+  { className: 'irrigation-alert-cell', label: '>25 мм' }
 ];
 const MONTH_GENITIVE = [
   'января',
@@ -117,6 +121,10 @@ function isWeekStart(day: string): boolean {
   return weekday === 1;
 }
 
+function isIrrigationHintDay(day: string, today: string, forecastStart: string, forecastEnd: string): boolean {
+  return day === today || (day >= forecastStart && day <= forecastEnd);
+}
+
 function groupDates(days: string[], getKey: (day: string) => string, getLabel: (day: string) => string): DateGroup[] {
   return days.reduce<DateGroup[]>((groups, day) => {
     const key = getKey(day);
@@ -172,28 +180,67 @@ function normalizeStoredIrrigationValues(values: IrrigationValues): IrrigationVa
 
 function irrigationDepthClassName(value: string): string {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 4 || parsed > HIGH_ALERT_IRRIGATION_MM) {
+  if (!Number.isFinite(parsed) || parsed < LOW_ALERT_IRRIGATION_MM || parsed > HIGH_ALERT_IRRIGATION_MM) {
     return '';
   }
 
-  if (parsed <= 7) {
-    return 'irrigation-depth-4-7';
-  }
-  if (parsed <= 11) {
-    return 'irrigation-depth-8-11';
-  }
   if (parsed <= 15) {
-    return 'irrigation-depth-12-15';
+    return 'irrigation-depth-5-15';
   }
-  if (parsed <= 20) {
-    return 'irrigation-depth-16-20';
-  }
-  return 'irrigation-depth-20-30';
+  return 'irrigation-depth-16-25';
 }
 
 function isAlertIrrigationValue(value: string): boolean {
   const parsed = Number(value);
-  return value.trim() !== '' && Number.isFinite(parsed) && parsed > 0 && (parsed <= 3 || parsed > HIGH_ALERT_IRRIGATION_MM);
+  return (
+    value.trim() !== '' &&
+    Number.isFinite(parsed) &&
+    parsed > 0 &&
+    (parsed < LOW_ALERT_IRRIGATION_MM || parsed > HIGH_ALERT_IRRIGATION_MM)
+  );
+}
+
+function minimumIrrigationHintMm(
+  field: FieldSeasonMapFeature['properties'],
+  regulationRange: RegulationRange
+): number | null {
+  const fieldCapacity = field.soil_field_capacity_water_mm;
+  const water = field.soil_water_end_mm ?? field.soil_water_content_mm;
+
+  if (
+    typeof fieldCapacity !== 'number' ||
+    typeof water !== 'number' ||
+    !Number.isFinite(fieldCapacity) ||
+    !Number.isFinite(water) ||
+    fieldCapacity <= 0
+  ) {
+    return null;
+  }
+
+  return Math.max(0, fieldCapacity * regulationRange.min - water);
+}
+
+function buildMinimumIrrigationHints(
+  collections: FieldSeasonMapFeatureCollection[],
+  regulationRange: RegulationRange
+): IrrigationHintValues {
+  const hints: IrrigationHintValues = {};
+
+  collections.forEach((collection) => {
+    collection.features.forEach((feature) => {
+      const field = feature.properties;
+      const day = field.day || collection.day;
+      const recommendation = minimumIrrigationHintMm(field, regulationRange);
+
+      if (!day || recommendation === null || recommendation < 5) {
+        return;
+      }
+
+      hints[valueKey(field.fieldSeasonId, day)] = String(Math.round(recommendation));
+    });
+  });
+
+  return hints;
 }
 
 function nextSteppedValue(currentValue: string, direction: 1 | -1): string {
@@ -430,6 +477,7 @@ export function IrrigationInputTable({
   context,
   baseCalculationRunId,
   selectedMethodCode,
+  regulationRange,
   onContextRefresh,
   onCalculationComplete,
   currentMoistureZones,
@@ -444,6 +492,7 @@ export function IrrigationInputTable({
   context: KornixCurrentContextDto | null;
   baseCalculationRunId: string | null;
   selectedMethodCode: string | null;
+  regulationRange: RegulationRange;
   onContextRefresh: () => Promise<unknown>;
   onCalculationComplete: (calculationRunId: string) => void;
   currentMoistureZones?: ReadonlyMap<string, FieldMoistureZoneCode>;
@@ -463,7 +512,11 @@ export function IrrigationInputTable({
     [context?.managedScope.fieldSeasonIds]
   );
   const days = useMemo(() => enumerateDays(firstDay, lastDay), [firstDay, lastDay]);
-  const calendarScrollWidth = days.length * 54;
+  const irrigationHintDays = useMemo(
+    () => days.filter((day) => isIrrigationHintDay(day, today, forecastStart, forecastEnd)),
+    [days, forecastEnd, forecastStart, today]
+  );
+  const calendarScrollWidth = days.length * IRRIGATION_DAY_COLUMN_WIDTH_PX;
   const monthGroups = useMemo(
     () => groupDates(days, (day) => day.slice(0, 7), monthName),
     [days]
@@ -503,6 +556,30 @@ export function IrrigationInputTable({
     queryKey: ['current-irrigation-layer', seasonYear, context?.managedScope.scopeVersion],
     enabled: Boolean(context),
     queryFn: () => kornixApi.getCurrentIrrigationLayerV2({ seasonYear }),
+    retry: 1
+  });
+  const minimumIrrigationHintsQuery = useQuery({
+    queryKey: [
+      'irrigation-minimum-hints',
+      baseCalculationRunId,
+      selectedMethodCode,
+      irrigationHintDays.join(','),
+      regulationRange.min
+    ],
+    enabled: Boolean(baseCalculationRunId && selectedMethodCode && irrigationHintDays.length > 0),
+    queryFn: async () => {
+      const collections = await Promise.all(
+        irrigationHintDays.map((day) =>
+          kornixApi.getFieldSeasonMap({
+            calculationRunId: baseCalculationRunId ?? '',
+            methodCode: selectedMethodCode ?? '',
+            day
+          })
+        )
+      );
+
+      return buildMinimumIrrigationHints(collections, regulationRange);
+    },
     retry: 1
   });
   const backendIrrigationLayer = useMemo(
@@ -642,10 +719,15 @@ export function IrrigationInputTable({
     // Таблица широкая, sticky-колонки и шрифты могут уточнять размеры после первого кадра.
     // Повторяем центрирование короткой серией, чтобы вход на вкладку стабильно показывал текущий день.
     const retryTimers = [120, 500].map((delayMs) => window.setTimeout(centerTodayColumn, delayMs));
+    const resizeObserver = new ResizeObserver(() => {
+      centerTodayColumn();
+    });
+    resizeObserver.observe(tableScrollContainer);
 
     return () => {
       window.cancelAnimationFrame(frame);
       retryTimers.forEach((timer) => window.clearTimeout(timer));
+      resizeObserver.disconnect();
     };
   }, [today, days.length]);
 
@@ -962,6 +1044,7 @@ export function IrrigationInputTable({
                           day < editableStart || day > editableEnd || !managedFieldSeasonIds.has(field.fieldSeasonId);
                         const value = isLockedDay ? '' : (values[key] ?? '');
                         const depthClassName = irrigationDepthClassName(value);
+                        const minimumIrrigationHint = minimumIrrigationHintsQuery.data?.[key] ?? '';
                         return (
                           <td
                             key={key}
@@ -986,6 +1069,7 @@ export function IrrigationInputTable({
                                 inputMode="decimal"
                                 type="text"
                                 value={value}
+                                placeholder={minimumIrrigationHint}
                                 disabled={isLockedDay || isInputReadOnly}
                                 onChange={(event) => changeIrrigationValue(key, event.target.value)}
                                 onBlur={(event) => changeIrrigationValue(key, event.target.value)}

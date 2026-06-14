@@ -297,13 +297,13 @@ button:active {
 .workspace-header h1 {
   margin: 3px 0 2px;
   max-width: 720px;
-  color: var(--color-ink);
+  color: var(--color-orange-600);
   font-size: 26px;
   line-height: 1.1;
 }
 
 .workspace-header h1 span {
-  color: var(--color-orange-600);
+  color: inherit;
 }
 
 .workspace-header p {
@@ -370,6 +370,12 @@ button:active {
   margin-top: auto;
   color: var(--color-muted);
   font-size: 11px;
+}
+
+.workspace-method-panel,
+.chart-model-caption,
+.export-actions {
+  display: none !important;
 }
 
 .workspace-method-panel label {
@@ -595,7 +601,7 @@ button:active {
 .map-time-scale {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 700;
@@ -745,6 +751,47 @@ button:active {
   font-weight: 700;
 }
 
+.map-discrete-legend {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgb(23 65 38 / 14%);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.map-discrete-legend-five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.map-discrete-legend-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.map-discrete-legend span {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 18px auto;
+  border-right: 1px solid rgb(255 255 255 / 72%);
+}
+
+.map-discrete-legend span:last-child {
+  border-right: 0;
+}
+
+.map-discrete-legend i {
+  display: block;
+}
+
+.map-discrete-legend small {
+  padding: 3px 2px 4px;
+  color: var(--color-green-900);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .field-center-label {
   pointer-events: none;
 }
@@ -772,6 +819,38 @@ button:active {
   min-width: 230px;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.field-tooltip-map-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e2e8d8;
+}
+
+.field-tooltip-map-summary strong {
+  color: #3f4541;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.field-tooltip-map-summary span {
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.field-tooltip-current {
+  color: #12345b;
+}
+
+.field-tooltip-forecast {
+  color: #8a3a00;
+  margin-top: 6px;
 }
 
 .field-tooltip hr {
@@ -1834,8 +1913,11 @@ input[type='checkbox'] {
 
 .irrigation-panel {
   --irrigation-field-panel-width: clamp(280px, 17vw, 330px);
-  --irrigation-calendar-head-row-height: 31px;
+  --irrigation-calendar-head-row-height: 27px;
+  --irrigation-calendar-date-row-height: 23px;
   --irrigation-row-height: 44px;
+  --irrigation-first-row-extra-height: 4px;
+  --irrigation-day-column-width: 48px;
   flex: 1;
   min-height: 0;
   position: relative;
@@ -1849,7 +1931,7 @@ input[type='checkbox'] {
 }
 
 .irrigation-toolbar {
-  min-height: 44px;
+  min-height: 56px;
   padding: 8px 10px;
   display: flex;
   gap: 16px;
@@ -1956,13 +2038,13 @@ input[type='checkbox'] {
 }
 
 .irrigation-legend {
-  width: min(448px, 46vw);
+  width: min(320px, 30vw);
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
   gap: 6px;
   align-items: center;
   align-self: center;
-  margin-left: auto;
+  margin-right: auto;
 }
 
 .irrigation-legend > input {
@@ -1973,7 +2055,7 @@ input[type='checkbox'] {
 
 .irrigation-step-legend {
   display: grid;
-  grid-template-columns: repeat(7, minmax(52px, 1fr));
+  grid-template-columns: repeat(4, minmax(52px, 1fr));
   overflow: hidden;
   min-height: 28px;
   border: 1px solid rgb(23 65 38 / 18%);
@@ -2013,7 +2095,7 @@ input[type='checkbox'] {
   min-height: 0;
   flex: 1;
   height: auto;
-  margin-top: 0;
+  margin-top: 6px;
   margin-right: 10px;
   margin-bottom: 10px;
   margin-left: 10px;
@@ -2116,6 +2198,11 @@ input[type='checkbox'] {
   white-space: nowrap;
 }
 
+.irrigation-table thead tr:not(:nth-child(4)) th {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
 .irrigation-table thead tr:nth-child(1) th {
   top: 0;
 }
@@ -2132,13 +2219,27 @@ input[type='checkbox'] {
   top: calc(var(--irrigation-calendar-head-row-height) * 3);
 }
 
+.irrigation-table thead tr:nth-child(4) .irrigation-day-head {
+  height: var(--irrigation-calendar-date-row-height);
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
 .irrigation-table tbody {
   position: relative;
-  top: -2px;
+  top: -10px;
 }
 
 .irrigation-table tbody tr {
   height: var(--irrigation-row-height);
+}
+
+.irrigation-table tbody tr:first-child {
+  height: calc(var(--irrigation-row-height) + var(--irrigation-first-row-extra-height));
+}
+
+.irrigation-table tbody tr:first-child .irrigation-cell {
+  height: calc(var(--irrigation-row-height) + var(--irrigation-first-row-extra-height));
 }
 
 .irrigation-scale {
@@ -2158,15 +2259,15 @@ input[type='checkbox'] {
 }
 
 .irrigation-day-head {
-  width: 54px;
-  min-width: 54px;
+  width: var(--irrigation-day-column-width);
+  min-width: var(--irrigation-day-column-width);
   color: #43513f !important;
   background: #fff !important;
 }
 
 .irrigation-cell {
-  width: 54px;
-  min-width: 54px;
+  width: var(--irrigation-day-column-width);
+  min-width: var(--irrigation-day-column-width);
   height: var(--irrigation-row-height);
   padding: 3px;
   background: #fff;
@@ -2181,27 +2282,15 @@ input[type='checkbox'] {
 }
 
 .irrigation-alert-cell {
-  background: #eaa4a2 !important;
+  background: #f1aaa8 !important;
 }
 
-.irrigation-depth-4-7 {
-  background: #c9f1ff !important;
+.irrigation-depth-5-15 {
+  background: #78d9ff !important;
 }
 
-.irrigation-depth-8-11 {
-  background: #85d9ff !important;
-}
-
-.irrigation-depth-12-15 {
-  background: #2eb8ff !important;
-}
-
-.irrigation-depth-16-20 {
-  background: #008fe3 !important;
-}
-
-.irrigation-depth-20-30 {
-  background: #0059bf !important;
+.irrigation-depth-16-25 {
+  background: #0064c8 !important;
 }
 
 .irrigation-week-start {
@@ -2260,6 +2349,16 @@ input[type='checkbox'] {
   font-weight: 800;
   line-height: 1;
   text-align: center;
+}
+
+.irrigation-cell input::placeholder {
+  color: rgb(76 86 78 / 34%);
+  font-weight: 900;
+  opacity: 1;
+}
+
+.irrigation-cell input:focus::placeholder {
+  color: rgb(76 86 78 / 20%);
 }
 
 .irrigation-cell input:focus {

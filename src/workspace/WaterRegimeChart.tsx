@@ -256,6 +256,15 @@ function formatTooltipPct(value: number | null): string {
   return value === null || !Number.isFinite(value) ? 'нет данных' : `${Math.round(value)}%`;
 }
 
+function formatMinimumIrrigationTooltip(row: ProfileRow, regulationRange: RegulationRangeFractions): string {
+  if (row.fieldCapacity === null || row.currentWater === null) {
+    return 'нет данных';
+  }
+
+  const minimumIrrigationMm = Math.max(0, row.fieldCapacity * regulationRange.min - row.currentWater);
+  return minimumIrrigationMm < 5 ? 'не требуется' : `${Math.round(minimumIrrigationMm)} мм`;
+}
+
 type ChartTooltipPayloadEntry = {
   color?: string;
   dataKey?: string | number;
@@ -327,6 +336,48 @@ function ChartTooltip({ active, label, payload, sortPayload }: ChartTooltipProps
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function PrecipitationTooltip({
+  active,
+  label,
+  payload,
+  sortPayload,
+  regulationRange
+}: ChartTooltipProps & { regulationRange: RegulationRangeFractions }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const visiblePayload = payload.filter((entry) => numericTooltipValues(entry.value).length > 0);
+  const orderedPayload = sortPayload ? sortPayload(visiblePayload) : visiblePayload;
+  const row = payload.find((entry) => entry.payload)?.payload;
+
+  if (!orderedPayload.length && !row) {
+    return null;
+  }
+
+  return (
+    <div style={CHART_TOOLTIP_PROPS.contentStyle}>
+      <div style={CHART_TOOLTIP_PROPS.labelStyle}>{tooltipDateLabel(label, payload)}</div>
+      {orderedPayload.map((entry) => {
+        const [formattedValue, formattedName] = tooltipValueFormatter(entry.value, entry.name);
+        const color = entry.color ?? entry.stroke ?? '#43513f';
+        const dataKey = String(entry.dataKey ?? formattedName);
+
+        return (
+          <div key={dataKey} style={{ ...CHART_TOOLTIP_PROPS.itemStyle, color }}>
+            {formattedName}: {formattedValue}
+          </div>
+        );
+      })}
+      {row && (
+        <div style={{ ...CHART_TOOLTIP_PROPS.itemStyle, color: '#0646c8' }}>
+          Минимальный полив: {formatMinimumIrrigationTooltip(row, regulationRange)}
+        </div>
+      )}
     </div>
   );
 }
@@ -2439,7 +2490,15 @@ function CompositeProfileChart({
               y1={precipitationTooltipDomains.precipitation[0]}
               y2={precipitationTooltipDomains.precipitation[1]}
             />
-            <Tooltip {...CHART_TOOLTIP_PROPS} content={<ChartTooltip sortPayload={sortPrecipitationTooltipPayload} />} />
+            <Tooltip
+              {...CHART_TOOLTIP_PROPS}
+              content={
+                <PrecipitationTooltip
+                  sortPayload={sortPrecipitationTooltipPayload}
+                  regulationRange={regulationRange}
+                />
+              }
+            />
             <ForecastBoundary forecastX={forecastMarkerX} />
             <SelectedDayMarker selectedX={selectedX} />
             <Bar

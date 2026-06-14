@@ -30,6 +30,7 @@ export type FieldSeasonMapPropertiesDto = {
   fieldSeasonId: string;
   fieldKey: string;
   fieldName: string;
+  fieldDisplayName?: string | null;
   areaHa: number | null;
   cropName: string | null;
   cropSowingDate: string | null;
@@ -70,6 +71,11 @@ export type FieldSeasonMapPropertiesDto = {
   actual_soil_evaporation_mm?: number | null;
   actual_evapotranspiration_mm?: number | null;
   actual_evapotranspiration_cumulative_mm?: number | null;
+  forecastSevenDayDate?: string | null;
+  forecastSevenDayEvapotranspirationSumMm?: number | null;
+  forecastSevenDayPrecipitationSumMm?: number | null;
+  forecastSevenDaySoilWaterContentMm?: number | null;
+  forecastSevenDayFieldCapacityWaterMm?: number | null;
   water_stress_coefficient?: number | null;
   crop_stage_code?: string | null;
   days_after_sowing?: number | null;
@@ -79,6 +85,10 @@ export type FieldSeasonMapPropertiesDto = {
   crop_transpiration_daily_mm: number | null;
   recommended_irrigation_date: string | null;
   recommended_irrigation_mm: number | null;
+  popupSummary?: {
+    fieldDisplayName: string;
+    lines: string[];
+  } | null;
   dataQuality: FieldDataQualityDto;
 };
 

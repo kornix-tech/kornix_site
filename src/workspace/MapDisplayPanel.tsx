@@ -7,36 +7,43 @@ type LegendItem = {
 };
 
 const displayOptions: Array<{ value: MapDisplayMode; label: string }> = [
-  { value: 'status', label: 'Сводная метрика' },
-  { value: 'water_percent', label: 'Доля продуктивных влагозапасов' },
-  { value: 'precipitation', label: 'Эффективные осадки' },
-  { value: 'irrigation', label: 'Эффективный полив' },
+  { value: 'minimum_irrigation', label: 'Минимальный полив' },
+  { value: 'status', label: 'Уровень влагозапасов' },
+  { value: 'water_percent', label: 'Процент продуктивных влагозапасов' },
+  { value: 'field_capacity_percent', label: 'Влагозапасы в % НВ' },
   { value: 'temperature_sum', label: 'Сумма температур от даты сева' }
 ];
 
 const statusLegend: LegendItem[] = [
-  { label: 'Норма', color: '#4caf50' },
-  { label: 'Внимание', color: '#ffc107' },
-  { label: 'Критично', color: '#e53935' },
-  { label: 'Нет расчёта', color: '#b0b4b8' }
+  { label: 'Норма', color: '#eaf6e3' },
+  { label: 'Требуется анализ', color: '#fff8df' },
+  { label: 'Нужен полив', color: '#fff0f0' },
+  { label: 'Нет данных', color: '#f0f3ef' }
 ];
 
-const gradientLegend: Record<Exclude<MapDisplayMode, 'status'>, { min: string; max: string; gradient: string }> = {
-  water_percent: {
-    min: 'мало',
-    max: 'много',
-    gradient: 'linear-gradient(90deg, #d95745, #f0c84b, #2f8f46)'
-  },
-  precipitation: {
-    min: '0 мм',
-    max: 'больше',
-    gradient: 'linear-gradient(90deg, #eaf8ff, #68c5f4, #0878be)'
-  },
-  irrigation: {
-    min: '0 мм',
-    max: 'больше',
-    gradient: 'linear-gradient(90deg, #edf4ff, #5d96f2, #174ea6)'
-  },
+const waterPercentLegend: LegendItem[] = [
+  { label: '0-19%', color: '#d84a40' },
+  { label: '20-39%', color: '#e9863d' },
+  { label: '40-59%', color: '#e7c94d' },
+  { label: '60-79%', color: '#5aa85d' },
+  { label: '80-100%', color: '#2f74d0' }
+];
+
+const fieldCapacityPercentLegend: LegendItem[] = [
+  { label: '0-50%', color: '#d84a40' },
+  { label: '51-70%', color: '#e9863d' },
+  { label: '71-90%', color: '#5aa85d' },
+  { label: '91-100%', color: '#e7c94d' }
+];
+
+const minimumIrrigationLegend: LegendItem[] = [
+  { label: 'менее 5 мм', color: 'transparent' },
+  { label: '5-15 мм', color: '#32b8e6' },
+  { label: '16-25 мм', color: '#0646c8' },
+  { label: 'более 25 мм', color: '#00a99d' }
+];
+
+const gradientLegend: Record<Exclude<MapDisplayMode, 'status' | 'water_percent' | 'field_capacity_percent' | 'minimum_irrigation'>, { min: string; max: string; gradient: string }> = {
   temperature_sum: {
     min: 'меньше',
     max: 'больше',
@@ -85,6 +92,27 @@ export function MapDisplayPanel({
               <span key={item.label} className="map-legend-item">
                 <span className="map-legend-swatch" style={{ background: item.color }} />
                 {item.label}
+              </span>
+            ))}
+          </div>
+        ) : mode === 'water_percent' || mode === 'field_capacity_percent' || mode === 'minimum_irrigation' ? (
+          <div
+            className={`map-discrete-legend ${
+              mode === 'field_capacity_percent' || mode === 'minimum_irrigation'
+                ? 'map-discrete-legend-four'
+                : 'map-discrete-legend-five'
+            }`}
+          >
+            {(
+              mode === 'water_percent'
+                ? waterPercentLegend
+                : mode === 'field_capacity_percent'
+                  ? fieldCapacityPercentLegend
+                  : minimumIrrigationLegend
+            ).map((item) => (
+              <span key={item.label}>
+                <i style={{ background: item.color }} />
+                <small>{item.label}</small>
               </span>
             ))}
           </div>

@@ -11,7 +11,7 @@ import { FieldSelectorPanel, type FieldMoistureZoneCode } from './FieldSelectorP
 import { MapDisplayPanel } from './MapDisplayPanel';
 import { MapTimeRuler } from './MapTimeRuler';
 import { buildCsv, downloadCsv, downloadPagePng } from './exportUtils';
-import { IRRIGATION_LEGEND_SESSION_KEY } from './irrigationUiSession';
+import { IRRIGATION_LEGEND_SESSION_KEY, MAP_DISPLAY_MODE_SESSION_KEY } from './irrigationUiSession';
 import { isServiceWarningCode, visibleUserWarnings } from './warningPresentation';
 import {
   DEFAULT_WORKSPACE_STATE,
@@ -32,6 +32,25 @@ const IrrigationInputTable = lazy(() =>
 );
 const RESERVED_CALCULATION_RUN_IDS = new Set(['catalog']);
 const DEFAULT_FIELD_REGULATION_RANGE = { min: 0.6, max: 0.9 };
+const DEFAULT_MAP_DISPLAY_MODE: MapDisplayMode = 'minimum_irrigation';
+const MAP_DISPLAY_MODES: MapDisplayMode[] = [
+  'minimum_irrigation',
+  'status',
+  'water_percent',
+  'field_capacity_percent',
+  'temperature_sum'
+];
+
+function storedMapDisplayMode(): MapDisplayMode {
+  if (typeof window === 'undefined') {
+    return DEFAULT_MAP_DISPLAY_MODE;
+  }
+
+  const storedMode = window.sessionStorage.getItem(MAP_DISPLAY_MODE_SESSION_KEY);
+  return MAP_DISPLAY_MODES.includes(storedMode as MapDisplayMode)
+    ? (storedMode as MapDisplayMode)
+    : DEFAULT_MAP_DISPLAY_MODE;
+}
 
 function storedFieldRegulationRange(storageScope: string): { min: number; max: number } {
   if (typeof window === 'undefined') {
@@ -90,7 +109,7 @@ function fieldMoistureZoneAtForecastEnd(
 export function WorkspacePage() {
   const mapGraphicsRef = useRef<HTMLDivElement | null>(null);
   const [searchParams] = useSearchParams();
-  const [mapDisplayMode, setMapDisplayMode] = useState<MapDisplayMode>('status');
+  const [mapDisplayMode, setMapDisplayMode] = useState<MapDisplayMode>(storedMapDisplayMode);
   const [chartCsv, setChartCsv] = useState<string | null>(null);
   const autoDateRangeRef = useRef<string | null>(null);
   const location = useLocation();
@@ -181,6 +200,10 @@ export function WorkspacePage() {
   });
   const calculatedFields = activeCalculationRunId ? fieldsQuery.data : undefined;
   const workspaceFields = calculatedFields ?? catalogQuery.data;
+  const fieldRegulationRange = useMemo(
+    () => storedFieldRegulationRange(localStorageScope),
+    [localStorageScope, state.tab]
+  );
   const forecastMoistureZoneByFieldSeasonId = useMemo(() => {
     if (!forecastFieldsQuery.data) {
       return undefined;
@@ -272,9 +295,14 @@ export function WorkspacePage() {
     },
     [updateState]
   );
+  const changeMapDisplayMode = useCallback((mode: MapDisplayMode) => {
+    setMapDisplayMode(mode);
+    window.sessionStorage.setItem(MAP_DISPLAY_MODE_SESSION_KEY, mode);
+  }, []);
 
   async function handleLogout() {
     window.sessionStorage.removeItem(IRRIGATION_LEGEND_SESSION_KEY);
+    window.sessionStorage.removeItem(MAP_DISPLAY_MODE_SESSION_KEY);
     await logout();
     navigate('/login', { replace: true });
   }
@@ -392,7 +420,7 @@ export function WorkspacePage() {
               <button
                 type="button"
                 className={state.tab === 'map' ? 'tab-active' : ''}
-                onClick={() => updateState({ tab: 'map', mapDay: serverDate })}
+                onClick={() => updateState({ tab: 'map' })}
               >
                 Карта
               </button>
@@ -445,6 +473,8 @@ export function WorkspacePage() {
                   fields={calculatedFields}
                   mapBounds={contextQuery.data?.mapBounds ?? null}
                   mode={mapDisplayMode}
+                  regulationRange={fieldRegulationRange}
+                  currentMoistureZones={currentMoistureZoneByFieldSeasonId}
                   selectedFieldSeasonIds={state.fieldSeasonIds}
                   onSelectField={selectFieldFromMap}
                 />
@@ -460,7 +490,7 @@ export function WorkspacePage() {
           </div>
           <MapDisplayPanel
             mode={mapDisplayMode}
-            onModeChange={setMapDisplayMode}
+            onModeChange={changeMapDisplayMode}
             warnings={calculatedFields.warnings ?? []}
           >
             <WorkspaceMethodPanel
@@ -521,6 +551,7 @@ export function WorkspacePage() {
             context={contextQuery.data ?? null}
             baseCalculationRunId={activeCalculationRunId}
             selectedMethodCode={selectedMethodCode}
+            regulationRange={fieldRegulationRange}
             currentMoistureZones={currentMoistureZoneByFieldSeasonId}
             forecastMoistureZones={forecastMoistureZoneByFieldSeasonId}
             onContextRefresh={() => contextQuery.refetch()}
