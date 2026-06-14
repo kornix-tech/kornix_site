@@ -8,7 +8,7 @@
 
 ## API Smoke
 
-- `GET http://localhost:8001/api/v1/me`
+- `GET http://localhost:8001/api/v2/me`
 - `GET http://localhost:8001/api/v2/kornix/current-context`
 - `GET http://localhost:8001/api/v2/kornix/irrigation-layer/current`
 - Map endpoint with `currentAppliedCalculationRunId + methodCode`
@@ -25,7 +25,7 @@ KORNIX_FRONTEND_SMOKE_OUTPUT_JSON=codex_reports/frontend_api_v2_sp37_live_smoke.
 node scripts/frontend_api_v2_sp37_live_smoke.mjs
 ```
 
-If `/api/v1/me` requires authentication, provide
+If `/api/v2/me` requires authentication, provide
 `KORNIX_FRONTEND_SMOKE_USERNAME` and `KORNIX_FRONTEND_SMOKE_PASSWORD` through
 the environment. If they are absent in the local CODEX runtime, the smoke runner
 can create a temporary backend user through the existing backend bootstrap
@@ -52,7 +52,7 @@ profile-timeseries returns all 44 required metrics including
 
 ## Negative Checks
 
-- No `/api/v1/kornix/*` requests
+- No `/api/v2/kornix/*` requests
 - No `/api/admin/v1` requests
 - `0 мм` is not submitted
 - Values outside `managedScope` are not editable or submitted

@@ -18,9 +18,6 @@ serving static `dist`. Vite dev server is not used in production.
 ## Required Production Env
 
 ```env
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
-VITE_ALLOW_PRIVATE_MOCK_RUNTIME=false
 VITE_API_BASE_URL=/api
 VITE_KORNIX_CALCULATION_TIMEOUT_MS=120000
 ```
@@ -59,7 +56,5 @@ remain strict and return `404` when the file is missing.
 
 Do not set production frontend to:
 
-- `VITE_AUTH_MODE=mock`
-- `VITE_ENABLE_MOCK_API=true`
 - `VITE_API_BASE_URL=http://localhost:*`
 - any secret in `VITE_*`

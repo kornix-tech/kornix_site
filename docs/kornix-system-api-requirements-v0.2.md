@@ -1,6 +1,6 @@
 # KORNIX System API Requirements v0.2
 
-> Archived/deprecated for frontend runtime: sections with `/api/v1/kornix/*`
+> Archived/deprecated for frontend runtime: sections with `/api/v2/kornix/*`
 > are historical requirements. Current frontend UAT/prod calculation contract is
 > `/api/v2/kornix/*`.
 
@@ -60,9 +60,9 @@ Frontend не должен хранить:
 Required endpoints:
 
 ```http
-GET  /api/v1/me
-GET  /api/v1/auth/login?returnTo=/map
-POST /api/v1/auth/logout
+GET  /api/v2/me
+GET  /api/v2/auth/login?returnTo=/map
+POST /api/v2/auth/logout
 ```
 
 Session cookie requirements:
@@ -133,19 +133,19 @@ Rules:
 
 | Area | Endpoint | MVP | Notes |
 | --- | --- | ---: | --- |
-| Auth | `GET /api/v1/me` | yes | current user/session |
-| Auth | `GET /api/v1/auth/login` | yes | redirect to OIDC/BFF login |
-| Auth | `POST /api/v1/auth/logout` | yes | clear session |
-| Context | `GET /api/v1/kornix/current-context?seasonYear=2026` | yes | organization/farm/season/readiness |
-| Map | `GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=YYYY-MM-DD` | yes | GeoJSON + daily values |
-| Summary | `GET /api/v1/kornix/field-seasons/current-water-regime` | recommended | may be merged into map endpoint for MVP |
-| Timeseries | `GET /api/v1/kornix/water-regime/timeseries` | yes | one metric per request |
-| Profile timeseries | `GET /api/v1/kornix/water-regime/profile-timeseries` | recommended | batch endpoint for chart performance |
-| Irrigation input | `GET /api/v1/kornix/irrigation-events?seasonYear=2026&from=YYYY-MM-DD&to=YYYY-MM-DD` | recommended | fact and planned irrigation calendar |
-| Irrigation input | `PUT /api/v1/kornix/irrigation-events` | recommended | save fact/planned irrigation values |
-| Metrics | `GET /api/v1/kornix/metrics` | recommended | metadata and units |
-| Readiness | `GET /api/v1/kornix/readiness/current?seasonYear=2026` | recommended | blockers and calculation state |
-| Runs | `GET /api/v1/kornix/runs/latest?seasonYear=2026` | recommended | latest run, freshness, model version |
+| Auth | `GET /api/v2/me` | yes | current user/session |
+| Auth | `GET /api/v2/auth/login` | yes | redirect to OIDC/BFF login |
+| Auth | `POST /api/v2/auth/logout` | yes | clear session |
+| Context | `GET /api/v2/kornix/current-context?seasonYear=2026` | yes | organization/farm/season/readiness |
+| Map | `GET /api/v2/kornix/field-seasons/map?seasonYear=2026&day=YYYY-MM-DD` | yes | GeoJSON + daily values |
+| Summary | `GET /api/v2/kornix/field-seasons/current-water-regime` | recommended | may be merged into map endpoint for MVP |
+| Timeseries | `GET /api/v2/kornix/water-regime/timeseries` | yes | one metric per request |
+| Profile timeseries | `GET /api/v2/kornix/water-regime/profile-timeseries` | recommended | batch endpoint for chart performance |
+| Irrigation input | `GET /api/v2/kornix/irrigation-events?seasonYear=2026&from=YYYY-MM-DD&to=YYYY-MM-DD` | recommended | fact and planned irrigation calendar |
+| Irrigation input | `PUT /api/v2/kornix/irrigation-events` | recommended | save fact/planned irrigation values |
+| Metrics | `GET /api/v2/kornix/metrics` | recommended | metadata and units |
+| Readiness | `GET /api/v2/kornix/readiness/current?seasonYear=2026` | recommended | blockers and calculation state |
+| Runs | `GET /api/v2/kornix/runs/latest?seasonYear=2026` | recommended | latest run, freshness, model version |
 
 Backend implementation status values:
 
@@ -222,7 +222,7 @@ export type CurrentUserDto = {
 ## 10. Current Context API
 
 ```http
-GET /api/v1/kornix/current-context?seasonYear=2026
+GET /api/v2/kornix/current-context?seasonYear=2026
 ```
 
 Response:
@@ -276,7 +276,7 @@ export type KornixReadinessSummaryDto = {
 ## 11. Map API
 
 ```http
-GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
+GET /api/v2/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
 ```
 
 Requirements:
@@ -365,7 +365,7 @@ All text must be plain text, not trusted HTML.
 Recommended endpoint:
 
 ```http
-GET /api/v1/kornix/field-seasons/current-water-regime?seasonYear=2026&day=2026-05-31
+GET /api/v2/kornix/field-seasons/current-water-regime?seasonYear=2026&day=2026-05-31
 ```
 
 This may be merged into map endpoint for MVP. If split, response should be keyed by `fieldSeasonId`.
@@ -438,7 +438,7 @@ type DataQualityIssueDto = {
 ## 15. Timeseries API
 
 ```http
-GET /api/v1/kornix/water-regime/timeseries?fieldSeasonIds=fs_1,fs_2&metric=current_water_mm&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
+GET /api/v2/kornix/water-regime/timeseries?fieldSeasonIds=fs_1,fs_2&metric=current_water_mm&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
 ```
 
 Query params:
@@ -583,7 +583,7 @@ Backend should return enough dates to cover requested `to` and at least 7 foreca
 Recommended batch endpoint:
 
 ```http
-GET /api/v1/kornix/water-regime/profile-timeseries?fieldSeasonIds=fs_1,fs_2&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
+GET /api/v2/kornix/water-regime/profile-timeseries?fieldSeasonIds=fs_1,fs_2&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
 ```
 
 Response should contain the same per-metric DTOs in one payload:
@@ -757,7 +757,7 @@ Business meaning:
 Recommended read endpoint:
 
 ```http
-GET /api/v1/kornix/irrigation-events?seasonYear=2026&from=2026-04-01&to=2026-06-07
+GET /api/v2/kornix/irrigation-events?seasonYear=2026&from=2026-04-01&to=2026-06-07
 ```
 
 Recommended response:
@@ -777,7 +777,7 @@ export type IrrigationEventDto = {
 Recommended save endpoint:
 
 ```http
-PUT /api/v1/kornix/irrigation-events
+PUT /api/v2/kornix/irrigation-events
 Content-Type: application/json
 ```
 
@@ -816,8 +816,8 @@ Backend does not need export endpoints for MVP.
 Future backend export endpoints may be added if datasets become too large:
 
 ```http
-POST /api/v1/kornix/exports/water-regime.csv
-POST /api/v1/kornix/exports/map-state.geojson
+POST /api/v2/kornix/exports/water-regime.csv
+POST /api/v2/kornix/exports/map-state.geojson
 ```
 
 These future endpoints must apply the same auth, tenant and input validation rules.
@@ -908,8 +908,8 @@ Recommended limits:
 
 Backend API is ready for frontend validation when these scenarios pass:
 
-1. Anonymous user gets `401` on `/api/v1/me`.
-2. Authenticated viewer gets `/api/v1/me`.
+1. Anonymous user gets `401` on `/api/v2/me`.
+2. Authenticated viewer gets `/api/v2/me`.
 3. Forbidden user gets `403` on KORNIX endpoints.
 4. Current context returns organization, season, counts and readiness.
 5. Map returns valid GeoJSON for all accessible field seasons.
@@ -958,7 +958,7 @@ Backend API is ready for frontend validation when these scenarios pass:
 
 MVP API is done when:
 
-- `GET /api/v1/me` works with real session;
+- `GET /api/v2/me` works with real session;
 - login/logout work through BFF/session cookie;
 - current context returns readiness;
 - map endpoint returns scoped GeoJSON with current values;
@@ -967,8 +967,6 @@ MVP API is done when:
 - null/missing-data policy is respected;
 - errors use unified shape;
 - tenant isolation is enforced server-side;
-- production can run with `VITE_AUTH_MODE=bff`;
-- production can run with `VITE_ENABLE_MOCK_API=false`;
 - frontend acceptance scenarios pass.
 
 ## 31. Change Log

@@ -25,5 +25,3 @@ export type AuthClient = {
   login(credentials: LoginCredentials, returnTo?: string): Promise<void>;
   logout(): Promise<void>;
 };
-
-export type AuthMode = 'mock' | 'bff';

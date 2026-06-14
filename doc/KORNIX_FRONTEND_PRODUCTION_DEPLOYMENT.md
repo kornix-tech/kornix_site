@@ -13,8 +13,6 @@ docker compose \
 Production frontend must be built with:
 
 ```env
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
 VITE_API_BASE_URL=/api
 ```
 

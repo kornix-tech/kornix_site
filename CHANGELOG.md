@@ -3,9 +3,9 @@
 ## [Unreleased]
 
 ### Fixed
-- Docker dev frontend теперь по умолчанию запускается в BFF-режиме с
-  `VITE_ENABLE_MOCK_API=false`, чтобы совместный front+back-via-API запуск
-  показывал обычную авторизацию, а не demo-login.
+- Frontend runtime жёстко переведён на backend session/API: удалены
+  синтетические auth/data builders и env-переключатели автономного режима,
+  а сбой проверки сессии теперь показывает "отсутствует связь с сервером".
 - BFF auth/session/CSRF frontend client switched from retired v1 auth/session
   endpoints to canonical `/api/v2/*`, fixing the `API 404: Not Found`
   authorization check in local front+back-via-API mode.
@@ -255,9 +255,8 @@
 - В validate-проверку добавлен contract-check, который блокирует возврат
   legacy KORNIX v1, `latestCalculationRunId`, старого calculate-flow и
   `irrigation_tasks` в рабочем `src`.
-- Mock `calculationRunId` на рабочей странице теперь подчиняется той же
-  runtime-защите, что mock API/auth, и не подставляется вне разрешённых
-  локальных host.
+- Старый синтетический `calculationRunId` на рабочей странице удалён из
+  runtime-пути вместе с автономным frontend data fallback.
 - BFF auth больше не маскирует сетевые ошибки `/api/v2/me` под гостевую
   сессию: реальные ошибки backend показываются как сбой проверки авторизации.
 - Календарная арифметика карты, графика и ввода поливов переведена на
@@ -276,12 +275,12 @@
   frontend DTO.
 - Tooltip и форматирование площади устойчивее к пропускам `fieldName`,
   `areaHa` и блока `dataQuality`.
-- TypeScript-контракт API v1 ужесточён: даты profile-timeseries обязательны,
+- TypeScript-контракт API ужесточён: даты profile-timeseries обязательны,
   `areaHa` в map properties допускает `null`, а `FieldDataQualityDto` принимает
   дополнительные поля источника данных.
 - URL parser больше не принимает служебный `calculationRunId=catalog`, чтобы
   placeholder каталога не уходил в backend map/profile endpoints.
-- Добавлен `.env.integration.example` для backend smoke без mock API.
+- Добавлен `.env.integration.example` для backend smoke без offline API.
 - Submit поливов считает `calculationStatus=failed` ошибкой: не утверждает
   сценарий, не переключает URL и показывает `calculationRunId`/warning codes.
 - Backend warnings по расчёту, карте и profile-timeseries отображаются как
@@ -289,8 +288,8 @@
 - Служебный `calculationRunId=catalog` игнорируется не только из URL, но и из
   текущего backend context, чтобы map/profile не запрашивались с placeholder id.
 - Добавлен `make integration-dev` для запуска frontend против локального backend
-  API через `.env.integration.example` без mock-режима.
-- Обновлён frontend-контракт до API v1.1: добавлены даты backend
+  API через `.env.integration.example` без offline-режима.
+- Обновлён frontend-контракт до API.1: добавлены даты backend
   `serverDate`, `forecastStartDate`, `forecastEndDate`, каталог полей до
   первого расчёта и поддержка пустого сценария `irrigation_tasks`.
 - Исправлена AWC-семантика: `available_water_content_mm` теперь означает
@@ -302,7 +301,7 @@
   с возможностью настройки через `VITE_KORNIX_CALCULATION_TIMEOUT_MS`.
 - CSV-экспорт графика теперь пишет дневное значение
   `soil_total_capacity_water_mm`, а не общий максимум для оси.
-- Адаптирован frontend KORNIX под контракт API v1.0: групповой `calculationRunId`,
+- Адаптирован frontend KORNIX под контракт API.0: групповой `calculationRunId`,
   `current-context`, `calculate`, map и profile-timeseries endpoints.
 - Заменены старые коды метрик на v1.0 `long_name_for_code` и добавлены derived
   расчёты доступных влагозапасов на стороне frontend.
@@ -337,7 +336,7 @@
 - В правой панели графика для одиночного выбранного поля отображается его
   название вместо технической подписи «одно поле».
 - Из пользовательской правой панели графика убраны технические предупреждения
-  mock-агрегации и неполного покрытия расчётов.
+  client-side aggregation и неполного покрытия расчётов.
 - Упрощены подписи во всплывающих подсказках графика: влагозапасы и суммы
   температур округляются до целых значений, диапазон доступных влагозапасов
   показывается как положительная разность.

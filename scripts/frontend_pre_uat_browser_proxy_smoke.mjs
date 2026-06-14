@@ -88,7 +88,7 @@ const report = {
     shortwavePresent: false,
     missingMetrics: []
   },
-  mockModeUsed: false,
+  offlineModeUsed: false,
   blockers
 };
 

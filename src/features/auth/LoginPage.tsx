@@ -4,7 +4,7 @@ import { normalizeReturnTo } from './returnTo';
 import { useAuth } from './useAuth';
 
 export function LoginPage() {
-  const { authMode, state, login } = useAuth();
+  const { state, login } = useAuth();
   const [searchParams] = useSearchParams();
   const returnTo = normalizeReturnTo(searchParams.get('returnTo'));
   const [username, setUsername] = useState('');
@@ -50,7 +50,7 @@ export function LoginPage() {
             autoComplete="username"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            required={authMode !== 'mock'}
+            required
           />
         </label>
         <label className="login-field">
@@ -60,12 +60,12 @@ export function LoginPage() {
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            required={authMode !== 'mock'}
+            required
           />
         </label>
         {loginError && <div className="login-error">{loginError}</div>}
         <button className="primary-button" type="submit" disabled={state.status === 'loading' || isSubmitting}>
-          {isSubmitting ? 'Входим...' : authMode === 'mock' ? 'Войти в демо-режиме' : 'Войти'}
+          {isSubmitting ? 'Входим...' : 'Войти'}
         </button>
       </form>
     </main>

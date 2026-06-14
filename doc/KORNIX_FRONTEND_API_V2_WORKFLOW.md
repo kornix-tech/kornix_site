@@ -2,7 +2,7 @@
 
 ## Startup
 
-1. `GET /api/v1/me`
+1. `GET /api/v2/me`
 2. `GET /api/v2/kornix/current-context`
 3. Validate `availableMethods`
 4. Select URL `methodCode` if valid, otherwise backend `defaultMethodCode`

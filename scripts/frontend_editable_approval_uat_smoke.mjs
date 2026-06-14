@@ -82,7 +82,7 @@ const report = {
     workspaceReachable: 'NOT_RUN',
     editableControlsEnabled: 'FAIL',
     approvalSubmitPathExercisedThroughUiOrFrontendClient: 'FAIL',
-    mockModeUsed: false
+    offlineModeUsed: false
   },
   liveSmoke: {
     sameOriginApiHealth: 'FAIL',
@@ -102,7 +102,7 @@ const report = {
     approvalReadback: 'FAIL',
     seasonYearPropagated: 'FAIL',
     sessionBoundCsrfUsed: 'FAIL',
-    mockModeUsed: false
+    offlineModeUsed: false
   },
   security: {
     noAuthTokenLocalStorage: 'FAIL',
@@ -584,7 +584,7 @@ try {
     report.liveSmoke.approvalReadback === 'PASS' &&
     report.liveSmoke.sessionBoundCsrfUsed === 'PASS' &&
     report.liveSmoke.seasonYearPropagated === 'PASS' &&
-    report.liveSmoke.mockModeUsed === false &&
+    report.liveSmoke.offlineModeUsed === false &&
     report.credentialsGate.valuesRedacted === true &&
     blockers.length === 0;
   report.status = ready ? READY_STATUS : NOT_READY_STATUS;

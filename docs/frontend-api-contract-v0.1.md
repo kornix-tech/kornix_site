@@ -1,7 +1,7 @@
 # KORNIX Frontend API Contract v0.1
 
 > Archived/deprecated: этот документ описывает исторический legacy-контракт
-> `/api/v1/kornix/*`. Актуальный пользовательский runtime frontend использует
+> `/api/v2/kornix/*`. Актуальный пользовательский runtime frontend использует
 > `/api/v2/kornix/*`; auth/me и CSRF остаются на `/api/v1`.
 
 ## Принципы
@@ -35,7 +35,7 @@
 заменяются безопасными значениями по умолчанию, а список полей фильтруется по
 формату id и ограничивается по длине.
 
-## GET /api/v1/me
+## GET /api/v2/me
 
 ```ts
 type CurrentUserDto = {
@@ -52,7 +52,7 @@ type CurrentUserDto = {
 `organizationId` используется frontend только как отображаемая информация.
 Backend обязан применять tenant scope самостоятельно из authenticated session.
 
-## GET /api/v1/kornix/current-context
+## GET /api/v2/kornix/current-context
 
 ```ts
 type KornixCurrentContextDto = {
@@ -81,7 +81,7 @@ type KornixCurrentContextDto = {
 };
 ```
 
-## GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
+## GET /api/v2/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
 
 Возвращает GeoJSON FeatureCollection. Если передан `day`, daily-поля в `properties`
 должны соответствовать выбранной дате карты. Backend по-прежнему сам применяет
@@ -117,7 +117,7 @@ type FieldSeasonMapPropertiesDto = {
 };
 ```
 
-## GET /api/v1/kornix/water-regime/timeseries
+## GET /api/v2/kornix/water-regime/timeseries
 
 Query:
 

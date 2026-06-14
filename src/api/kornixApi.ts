@@ -1,6 +1,4 @@
 import { KORNIX_METRICS } from '../config/metrics';
-import { isMockRuntimeAllowed } from '../config/runtimeSafety';
-import { mockAuthUser } from '../features/auth/mockAuthClient';
 import { requestJson } from '../shared/api/httpClient';
 import type {
   CalculationRunId,
@@ -21,18 +19,7 @@ import type {
   KornixReadinessSummaryDto,
   KornixProfileTimeseriesDto
 } from '../types/kornix';
-import {
-  buildMockApprovalResponse,
-  buildMockApprovalStatus,
-  buildMockFieldSeasonMapForDay,
-  getMockFieldSeasonCatalog,
-  getMockCurrentIrrigationLayer,
-  getMockCurrentContext,
-  MOCK_INITIAL_CALCULATION_RUN_ID
-} from './mockData';
-import { buildMockProfileTimeseries } from './timeseries';
 
-const mockEnabled = import.meta.env.VITE_ENABLE_MOCK_API === 'true' && isMockRuntimeAllowed();
 const DEFAULT_CALCULATION_REQUEST_TIMEOUT_MS = 120_000;
 const configuredCalculationTimeoutMs = Number(import.meta.env.VITE_KORNIX_CALCULATION_TIMEOUT_MS);
 const KORNIX_API_PREFIX = '/api/v2/kornix';
@@ -43,10 +30,6 @@ const CALCULATION_REQUEST_TIMEOUT_MS =
 
 function seasonYearQuery(seasonYear: number): string {
   return new URLSearchParams({ seasonYear: String(seasonYear) }).toString();
-}
-
-function delay<T>(value: T, ms = 200): Promise<T> {
-  return new Promise((resolve) => window.setTimeout(() => resolve(value), ms));
 }
 
 type CamelCaseRecommendationDto = {
@@ -202,16 +185,10 @@ function catalogToMapFeatureCollection(catalog: FieldSeasonCatalogDto): FieldSea
 
 export const kornixApi = {
   async getMe(): Promise<CurrentUserDto> {
-    if (mockEnabled) {
-      return delay(mockAuthUser);
-    }
     return requestJson<CurrentUserDto>('/api/v2/me');
   },
 
   async getCurrentContextV2(params: { seasonYear: number }): Promise<KornixCurrentContextDto> {
-    if (mockEnabled) {
-      return delay(getMockCurrentContext());
-    }
     return requestJson<KornixCurrentContextDto>(
       `${KORNIX_API_PREFIX}/current-context?${seasonYearQuery(params.seasonYear)}`
     );
@@ -222,10 +199,6 @@ export const kornixApi = {
   },
 
   async submitWaterRegimeApprovalV2(request: KornixApprovalRequestDto): Promise<KornixApprovalSubmitResponseDto> {
-    if (mockEnabled) {
-      return delay(buildMockApprovalResponse(request), 900);
-    }
-
     return requestJson<KornixApprovalSubmitResponseDto>(`${KORNIX_API_PREFIX}/water-regime/approvals`, {
       method: 'POST',
       timeoutMs: CALCULATION_REQUEST_TIMEOUT_MS,
@@ -237,20 +210,12 @@ export const kornixApi = {
   },
 
   async getApprovalStatusV2(approvalBatchId: string): Promise<KornixApprovalStatusDto> {
-    if (mockEnabled) {
-      return delay(buildMockApprovalStatus(approvalBatchId), 300);
-    }
-
     return requestJson<KornixApprovalStatusDto>(
       `${KORNIX_API_PREFIX}/water-regime/approvals/${encodeURIComponent(approvalBatchId)}`
     );
   },
 
   async getCurrentIrrigationLayerV2(params: { seasonYear: number }): Promise<KornixCurrentIrrigationLayerDto> {
-    if (mockEnabled) {
-      return delay(getMockCurrentIrrigationLayer());
-    }
-
     return requestJson<KornixCurrentIrrigationLayerDto>(
       `${KORNIX_API_PREFIX}/irrigation-layer/current?${seasonYearQuery(params.seasonYear)}`
     );
@@ -278,10 +243,6 @@ export const kornixApi = {
     methodCode: string;
     day: string;
   }): Promise<FieldSeasonMapFeatureCollection> {
-    if (mockEnabled) {
-      return delay(buildMockFieldSeasonMapForDay(params.calculationRunId || MOCK_INITIAL_CALCULATION_RUN_ID, params.day));
-    }
-
     const query = new URLSearchParams({
       calculationRunId: params.calculationRunId,
       methodCode: params.methodCode,
@@ -302,10 +263,6 @@ export const kornixApi = {
   },
 
   async getFieldSeasonCatalogV2(params: { seasonYear: number }): Promise<FieldSeasonMapFeatureCollection> {
-    if (mockEnabled) {
-      return delay(catalogToMapFeatureCollection(getMockFieldSeasonCatalog()));
-    }
-
     const query = new URLSearchParams({
       seasonYear: String(params.seasonYear)
     });
@@ -325,17 +282,6 @@ export const kornixApi = {
     fieldSeasonIds: string[];
     aggregation?: 'area_weighted_mean';
   }): Promise<KornixProfileTimeseriesDto> {
-    if (mockEnabled) {
-      const fields = buildMockFieldSeasonMapForDay(params.calculationRunId);
-      return delay(
-        buildMockProfileTimeseries({
-          calculationRunId: params.calculationRunId,
-          fieldSeasonIds: params.fieldSeasonIds,
-          fields
-        })
-      );
-    }
-
     const query = new URLSearchParams({
       calculationRunId: params.calculationRunId,
       methodCode: params.methodCode,

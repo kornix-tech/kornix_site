@@ -4,8 +4,6 @@
 
 ```env
 VITE_API_BASE_URL=http://localhost:8001
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
 VITE_KORNIX_CALCULATION_TIMEOUT_MS=120000
 ```
 
@@ -36,7 +34,7 @@ The project currently has no `npm test` script.
 
 ## Guardrails
 
-- Do not call `/api/v1/kornix/*` from production frontend code.
+- Do not call `/api/v2/kornix/*` from production frontend code.
 - Do not call `/api/admin/v1` or expose backend admin UI in the user frontend.
 - Do not store access/refresh tokens in browser storage.
 - Do not treat `localStorage` as the source of truth for approved irrigation.

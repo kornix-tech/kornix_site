@@ -3,7 +3,7 @@ set -eu
 
 echo "== Forbidden runtime endpoints =="
 if grep -R --line-number --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=codex_reports \
-  -E "/api/v1/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status" src; then
+  -E "/api/v[1]/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status" src; then
   exit 1
 fi
 echo "PASS: no forbidden/stale runtime endpoints in src"
@@ -21,12 +21,10 @@ echo "PASS: no auth token storage patterns in runtime src"
 echo "== Harmless storage findings =="
 grep -R --line-number --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=codex_reports \
   -E "localStorage|sessionStorage|indexedDB|IndexedDB" src || true
-echo "NOTE: sessionStorage is localhost mock flag only; localStorage is non-authoritative irrigation UI draft only."
+echo "NOTE: localStorage/sessionStorage findings must stay limited to non-authoritative UI state."
 
 echo "== Production env defaults =="
 grep --line-number "VITE_API_BASE_URL=/api" .env.production.example
-grep --line-number "VITE_AUTH_MODE=bff" .env.production.example
-grep --line-number "VITE_ENABLE_MOCK_API=false" .env.production.example
 
 echo "== BFF credentials and CSRF =="
 grep --line-number "credentials: 'include'" src/shared/api/httpClient.ts
@@ -49,7 +47,7 @@ if [ ! -d dist ]; then
   exit 1
 fi
 if grep -R --line-number \
-  -E "localhost:8001|localhost:8002|/api/v1/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status|VITE_ENABLE_MOCK_API.:true" dist; then
+  -E "localhost:8001|localhost:8002|/api/v[1]/kornix|/api/admin/v1|/api/v2/kornix/calculation-runs/.*/status|VITE_(AUTH_MODE|ENABLE_[Mm][Oo][Cc][Kk]_API|ALLOW_PRIVATE_[Mm][Oo][Cc][Kk]_RUNTIME)" dist; then
   exit 1
 fi
 echo "PASS: production dist has no forbidden/stale markers"

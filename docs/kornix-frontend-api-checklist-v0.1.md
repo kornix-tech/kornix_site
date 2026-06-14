@@ -1,23 +1,20 @@
 # KORNIX Frontend API Checklist v0.1
 
-> Archived/deprecated: чеклист ниже относится к раннему `/api/v1/kornix/*`
+> Archived/deprecated: чеклист ниже относится к раннему `/api/v2/kornix/*`
 > контракту. Текущий frontend runtime и UAT-проверки должны использовать
 > `/api/v2/kornix/*`.
 
 Статус документа: frontend-driven contract draft.
-Основано на текущем коде frontend: React + TypeScript + Vite, Leaflet, Recharts, mock API, `AuthProvider`, `kornixApi`, `KORNIX_METRICS`, `/map`, `/water-regime`.
 
 ## 1. Назначение документа
 
 Документ фиксирует требования frontend KORNIX к backend API. Его цель — передать backend/KORNIX-разработке проверяемый список endpoint'ов, DTO, состояний и правил безопасности, необходимых для production-подключения сайта к DB-first backend.
 
-Frontend не реализует backend API и не должен напрямую читать PostgreSQL/TimescaleDB/PostGIS. Runtime source of truth для production — backend поверх KORNIX DB-слоя, а не KML/raw Open-Meteo/mock fixtures.
 
 ## 2. Frontend scope
 
 Текущий frontend показывает:
 
-- авторизацию через mock или BFF/session-cookie режим;
 - текущий KORNIX-контекст организации и сезона;
 - карту полей на `/map`;
 - tooltip и текущие показатели по полю;
@@ -48,15 +45,14 @@ KML может быть import-source или seed-data, но не production run
 
 Frontend поддерживает два режима:
 
-- `mock`: только localhost runtime; private/LAN dev-доступ включается отдельным флагом, без production-доступа;
 - `bff`: production-default, cookie-based session через backend/BFF.
 
 Required endpoints:
 
 ```http
-GET  /api/v1/me
-GET  /api/v1/auth/login?returnTo=/map
-POST /api/v1/auth/logout
+GET  /api/v2/me
+GET  /api/v2/auth/login?returnTo=/map
+POST /api/v2/auth/logout
 ```
 
 Требования:
@@ -85,16 +81,16 @@ Backend обязан применять tenant scope из authenticated session.
 
 | Area | Endpoint | Required for MVP | Backend status | Notes |
 | --- | --- | ---: | --- | --- |
-| Auth | `GET /api/v1/me` | yes | TODO | current user/session check |
-| Auth | `GET /api/v1/auth/login` | yes | TODO | redirect to OIDC/BFF login |
-| Auth | `POST /api/v1/auth/logout` | yes | TODO | clear server-side session |
-| Context | `GET /api/v1/kornix/current-context?seasonYear=2026` | yes | TODO | org/farm/season/readiness |
-| Map | `GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=YYYY-MM-DD` | yes | TODO | GeoJSON + current values |
-| Tooltip | `GET /api/v1/kornix/field-seasons/current-water-regime?seasonYear=2026&day=YYYY-MM-DD` | recommended | TODO | may be merged into map endpoint |
-| Chart | `GET /api/v1/kornix/water-regime/timeseries` | yes | TODO | all graph metrics |
-| Metrics | `GET /api/v1/kornix/metrics` | recommended | TODO | backend/frontend metric sync |
-| Readiness | `GET /api/v1/kornix/readiness/current?seasonYear=2026` | recommended | TODO | explicit blockers |
-| Runs | `GET /api/v1/kornix/runs/latest?seasonYear=2026` | recommended | TODO | run id/model version/freshness |
+| Auth | `GET /api/v2/me` | yes | TODO | current user/session check |
+| Auth | `GET /api/v2/auth/login` | yes | TODO | redirect to OIDC/BFF login |
+| Auth | `POST /api/v2/auth/logout` | yes | TODO | clear server-side session |
+| Context | `GET /api/v2/kornix/current-context?seasonYear=2026` | yes | TODO | org/farm/season/readiness |
+| Map | `GET /api/v2/kornix/field-seasons/map?seasonYear=2026&day=YYYY-MM-DD` | yes | TODO | GeoJSON + current values |
+| Tooltip | `GET /api/v2/kornix/field-seasons/current-water-regime?seasonYear=2026&day=YYYY-MM-DD` | recommended | TODO | may be merged into map endpoint |
+| Chart | `GET /api/v2/kornix/water-regime/timeseries` | yes | TODO | all graph metrics |
+| Metrics | `GET /api/v2/kornix/metrics` | recommended | TODO | backend/frontend metric sync |
+| Readiness | `GET /api/v2/kornix/readiness/current?seasonYear=2026` | recommended | TODO | explicit blockers |
+| Runs | `GET /api/v2/kornix/runs/latest?seasonYear=2026` | recommended | TODO | run id/model version/freshness |
 
 Backend status vocabulary: `not_started`, `planned`, `implemented`, `partially_implemented`, `needs_frontend_validation`, `ready`, `blocked`.
 
@@ -103,7 +99,7 @@ Backend status vocabulary: `not_started`, `planned`, `implemented`, `partially_i
 ### 7.1 Auth/current user
 
 ```http
-GET /api/v1/me
+GET /api/v2/me
 ```
 
 Responses:
@@ -113,16 +109,16 @@ Responses:
 - `500 ApiErrorResponse` for backend exception.
 
 ```http
-GET /api/v1/auth/login?returnTo=/map
-POST /api/v1/auth/logout
+GET /api/v2/auth/login?returnTo=/map
+POST /api/v2/auth/logout
 ```
 
-Backend may choose redirect-based logout (`GET /api/v1/auth/logout`) only if documented; frontend currently calls `POST`.
+Backend may choose redirect-based logout (`GET /api/v2/auth/logout`) only if documented; frontend currently calls `POST`.
 
 ### 7.2 Current KORNIX context
 
 ```http
-GET /api/v1/kornix/current-context?seasonYear=2026
+GET /api/v2/kornix/current-context?seasonYear=2026
 ```
 
 Purpose:
@@ -136,7 +132,7 @@ Purpose:
 ### 7.3 Field map
 
 ```http
-GET /api/v1/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
+GET /api/v2/kornix/field-seasons/map?seasonYear=2026&day=2026-05-31
 ```
 
 Purpose:
@@ -152,7 +148,7 @@ Purpose:
 ### 7.4 Current water-regime summary
 
 ```http
-GET /api/v1/kornix/field-seasons/current-water-regime?seasonYear=2026&day=2026-05-31
+GET /api/v2/kornix/field-seasons/current-water-regime?seasonYear=2026&day=2026-05-31
 ```
 
 This endpoint is strongly recommended if map payload becomes too large. For 10-100 fields it may be merged into map endpoint, but backend must explicitly choose one contract.
@@ -160,7 +156,7 @@ This endpoint is strongly recommended if map payload becomes too large. For 10-1
 ### 7.5 Timeseries
 
 ```http
-GET /api/v1/kornix/water-regime/timeseries?fieldSeasonIds=fs_1,fs_2&metric=current_water_mm&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
+GET /api/v2/kornix/water-regime/timeseries?fieldSeasonIds=fs_1,fs_2&metric=current_water_mm&from=2026-05-01&to=2026-06-07&aggregation=area_weighted_mean
 ```
 
 Required:
@@ -177,7 +173,7 @@ Required:
 ### 7.6 Metric metadata
 
 ```http
-GET /api/v1/kornix/metrics
+GET /api/v2/kornix/metrics
 ```
 
 Recommended for backend/frontend synchronization. If metric registry remains frontend-owned for MVP, backend must still support every metric code listed in section 13.
@@ -185,8 +181,8 @@ Recommended for backend/frontend synchronization. If metric registry remains fro
 ### 7.7 Readiness and run status
 
 ```http
-GET /api/v1/kornix/readiness/current?seasonYear=2026
-GET /api/v1/kornix/runs/latest?seasonYear=2026
+GET /api/v2/kornix/readiness/current?seasonYear=2026
+GET /api/v2/kornix/runs/latest?seasonYear=2026
 ```
 
 These endpoints prevent frontend from showing an empty chart as a technical failure when real state is `not_calculated`, `readiness_blocked`, missing forcing or missing mapping.
@@ -670,7 +666,7 @@ Targets:
 Recommended future optimization:
 
 ```http
-GET /api/v1/kornix/water-regime/profile-timeseries?fieldSeasonIds=...&from=...&to=...&aggregation=area_weighted_mean
+GET /api/v2/kornix/water-regime/profile-timeseries?fieldSeasonIds=...&from=...&to=...&aggregation=area_weighted_mean
 ```
 
 It could return all graph metrics in one payload.
@@ -699,7 +695,7 @@ Required:
 
 - external OIDC/BFF/session-cookie compatible;
 - no browser token storage required;
-- `/api/v1/me` returns current user only from server-side session;
+- `/api/v2/me` returns current user only from server-side session;
 - backend enforces tenant scope;
 - frontend does not send trusted `organizationId`;
 - `Set-Cookie` uses `HttpOnly`;
@@ -746,7 +742,7 @@ CSRF:
 
 - SameSite helps but should not be the only design;
 - use Origin/Referer validation, CSRF token endpoint, or BFF anti-CSRF pattern;
-- `POST /api/v1/auth/logout` must be protected consistently with other unsafe methods.
+- `POST /api/v2/auth/logout` must be protected consistently with other unsafe methods.
 
 ## 22. Frontend acceptance tests for API
 
@@ -777,7 +773,7 @@ Backend must support these validation scenarios:
 
 Required MVP:
 
-- [ ] Implement `GET /api/v1/me`.
+- [ ] Implement `GET /api/v2/me`.
 - [ ] Implement BFF login redirect.
 - [ ] Implement logout and session clear.
 - [ ] Implement current context with readiness.
@@ -828,7 +824,6 @@ Recommended next:
 
 | Requirement | Status | Evidence / gap |
 | --- | --- | --- |
-| Frontend consumes HTTP API only | ready frontend-side | `kornixApi` uses HTTP/mock abstraction |
 | Frontend never connects to DB directly | ready frontend-side | no DB clients in frontend |
 | Backend enforces tenant scope | backend TODO | must be implemented server-side |
 | `fieldSeasonId` primary UI selection id | ready frontend-side | selector, URL and chart use `fieldSeasonId` |
@@ -847,7 +842,6 @@ Recommended next:
 Definition of DONE for backend integration:
 
 - required MVP endpoints implemented;
-- frontend can run with `VITE_AUTH_MODE=bff` and `VITE_ENABLE_MOCK_API=false`;
 - all acceptance scenarios pass against real backend;
 - no frontend secret is required;
 - backend returns readiness and data-quality states instead of using generic empty results for domain blockers.

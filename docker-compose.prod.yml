@@ -3,10 +3,7 @@ services:
     build:
       dockerfile: Dockerfile.prod
       args:
-        KORNIX_SESSION_MODE: bff
         KORNIX_API_BASE_URL: /api
-        KORNIX_ENABLE_MOCK_API: "false"
-        KORNIX_ALLOW_PRIVATE_MOCK_RUNTIME: "false"
     image: kornix-frontend:prod
     restart: unless-stopped
     ports:

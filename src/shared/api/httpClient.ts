@@ -192,7 +192,7 @@ export async function requestJson<T>(path: string, init: KornixRequestInit = {})
       buildUrl(path),
       {
         ...fetchInit,
-        // Cookie-based BFF session требует credentials: include. В mock-режиме этот флаг безвреден.
+        // Cookie-based BFF session требует credentials: include для всех API-запросов.
         credentials: 'include',
         headers
       },

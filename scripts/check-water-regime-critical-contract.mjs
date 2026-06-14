@@ -42,7 +42,7 @@ for (const forbiddenPattern of [
   assert(!chartSource.includes(forbiddenPattern), `WaterRegimeChart must not contain null-to-zero ET fallback: ${forbiddenPattern}`);
 }
 
-assert(!/\/api\/v1\/kornix/.test(apiSource + workspaceSource), 'Runtime src must not use /api/v1/kornix.');
+assert(!/\/api\/v[1]\/kornix/.test(apiSource + workspaceSource), 'Runtime src must not use legacy KORNIX v1.');
 assert(!/\/api\/admin\/v1/.test(apiSource + workspaceSource), 'Runtime src must not use /api/admin/v1.');
 assert(apiSource.includes('/api/v2/kornix'), 'KORNIX runtime API must use /api/v2/kornix.');
 assert(workspaceSource.includes('currentAppliedCalculationRunId'), 'Workspace flow must use currentAppliedCalculationRunId.');

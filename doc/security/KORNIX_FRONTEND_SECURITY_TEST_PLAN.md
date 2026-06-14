@@ -3,9 +3,9 @@
 ## Authentication
 
 - [ ] Unauthenticated `/api/v2/kornix/current-context` returns `401` in production.
-- [ ] Valid login succeeds through `POST /api/v1/auth/login`.
+- [ ] Valid login succeeds through `POST /api/v2/auth/login`.
 - [ ] Invalid login fails without creating a session.
-- [ ] Logout clears server session through `POST /api/v1/auth/logout`.
+- [ ] Logout clears server session through `POST /api/v2/auth/logout`.
 - [ ] Session expiration returns the frontend to `/login`.
 
 ## Authorization And Scope
@@ -33,8 +33,7 @@
 ## Frontend Bundle
 
 - [ ] Production API base is `/api`.
-- [ ] No `/api/v1/kornix/*` calls.
+- [ ] No `/api/v2/kornix/*` calls.
 - [ ] No `/api/admin/v1/*` calls.
 - [ ] No tokens in `localStorage`, `sessionStorage`, `IndexedDB`.
-- [ ] Mock mode is disabled in production.
 - [ ] CSP/security headers are present.

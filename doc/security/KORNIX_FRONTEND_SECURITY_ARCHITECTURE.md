@@ -25,12 +25,12 @@ Private surfaces:
 
 Frontend uses:
 
-- Auth/session: `/api/v1/me`, `/api/v1/auth/csrf`, `/api/v1/auth/login`, `/api/v1/auth/logout`.
+- Auth/session: `/api/v2/me`, `/api/v2/auth/csrf`, `/api/v2/auth/login`, `/api/v2/auth/logout`.
 - KORNIX user API: `/api/v2/kornix/*`.
 
 Frontend must not call:
 
-- `/api/v1/kornix/*`.
+- `/api/v2/kornix/*`.
 - `/api/admin/v1/*`.
 - Direct database, KML, Python, downloader or admin endpoints.
 

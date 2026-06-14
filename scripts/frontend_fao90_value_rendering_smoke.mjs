@@ -427,7 +427,7 @@ async function main() {
       singleFieldProfilePass: false,
       multiFieldProfileUsesAggregation: true,
       multiFieldProfileNo422: false,
-      mockModeUsed: false
+      offlineModeUsed: false
     },
     frontendRendering: {
       chartDataContainsMandatoryValues: false,

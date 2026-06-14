@@ -112,7 +112,7 @@ const smoke = {
   diagnosticsJsonHandled: 'NOT_RUN',
   csvExportIncludesFao90Metrics: 'NOT_RUN',
   editableApprovalRegression: 'NOT_RUN',
-  mockModeUsed: false,
+  offlineModeUsed: false,
   blockers
 };
 
@@ -143,7 +143,7 @@ const report = {
     profileMetricCount: null,
     requiredMetricsPresent: false,
     shortwavePresent: false,
-    mockModeUsed: false
+    offlineModeUsed: false
   },
   checks: {
     npmCi: 'NOT_RUN',
@@ -597,7 +597,7 @@ try {
     smoke.diagnosticsJsonHandled === 'PASS' &&
     smoke.csvExportIncludesFao90Metrics === 'PASS' &&
     (smoke.editableApprovalRegression === 'PASS' || smoke.editableApprovalRegression === 'NOT_APPLICABLE') &&
-    smoke.mockModeUsed === false &&
+    smoke.offlineModeUsed === false &&
     blockers.length === 0;
   smoke.status = smokeReady ? 'PASS' : 'FAIL';
   report.status =

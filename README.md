@@ -8,7 +8,6 @@
 - Docker multi-stage build;
 - Nginx production web server;
 - dev-режим через Vite внутри Docker;
-- mock API для автономной разработки без backend;
 - короткие URL `/map`, `/water-regime` и `/irrigation` с query-state только для выбранных полей, дат и дня карты.
 
 ## Быстрый запуск в WSL
@@ -49,7 +48,7 @@ http://localhost:5173
 ## Run frontend against local backend API
 
 Для smoke-проверки с локальным backend API используйте `.env.integration.example`.
-Этот профиль запускает frontend в BFF-режиме, отключает mock API и направляет
+Этот профиль запускает frontend только через backend session и направляет
 запросы на `http://localhost:8001`. Auth/session/CSRF endpoints и
 пользовательский KORNIX calculation API работают через `/api/v2/*`:
 
@@ -59,8 +58,8 @@ make integration-dev
 
 После изменения любых `VITE_*` переменных перезапускайте Vite dev server:
 эти значения читаются на старте dev server или встраиваются на этапе build.
-Mock-режим не использовать для backend smoke; tenant scope определяет backend
-через session endpoints.
+Автономный frontend fallback отсутствует; tenant scope определяет backend через
+session endpoints.
 
 В Docker dev-режиме браузер ходит в same-origin `/api/*`, а Vite проксирует
 эти запросы к backend. Это сохраняет внешний frontend env
@@ -79,8 +78,6 @@ docker compose up -d --build
 Для production/VDS используйте `.env.production.example` как шаблон:
 
 ```env
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
 VITE_API_BASE_URL=/api
 ```
 
@@ -148,8 +145,6 @@ Production frontend собирается с:
 
 ```env
 VITE_API_BASE_URL=/api
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
 ```
 
 Auth/session/CSRF работают через `/api/v2/*`. Пользовательский KORNIX API
@@ -162,53 +157,21 @@ admin routes запрещены для пользовательского fronte
 backend через `host.docker.internal:8001`; в VDS-контуре тот же контракт может
 выполнять внешний reverse-proxy.
 
-## Mock API
+## Auth/session
 
-Для автономной локальной разработки без backend в `.env.example` включён mock API:
+Frontend ожидает, что backend сам определяет organization/farm scope по
+авторизации. Клиент не передаёт `organizationId` как trust-фильтр, не хранит
+access/refresh token/JWT/session id в browser storage и не имеет автономного
+режима данных без backend.
 
-```env
-VITE_AUTH_MODE=mock
-VITE_ENABLE_MOCK_API=true
-VITE_ALLOW_PRIVATE_MOCK_RUNTIME=false
-VITE_API_BASE_URL=http://localhost:8001
-```
-
-Для подключения реального backend:
-
-```env
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
-VITE_ALLOW_PRIVATE_MOCK_RUNTIME=false
-VITE_API_BASE_URL=http://localhost:8001
-```
-
-Frontend ожидает, что backend сам определяет organization/farm scope по авторизации. Клиент не должен передавать `organizationId` как trust-фильтр.
-Production Docker defaults безопасны по умолчанию: `bff` auth и `VITE_ENABLE_MOCK_API=false`.
-Даже если mock-сборку случайно открыть вне `localhost`, mock auth/API
-отключаются runtime-защитой. Доступ к mock-режиму с private/LAN hostname
-разрешается только явным флагом `VITE_ALLOW_PRIVATE_MOCK_RUNTIME=true`.
-
-## Auth modes
-
-Frontend подготовлен к двум режимам авторизации:
-
-```text
-mock - локальный demo-вход без backend;
-bff  - будущий Backend-for-Frontend/session backend с внешним OIDC provider.
-```
-
-В mock mode кнопка входа создаёт только dev-флаг mock-сессии. Токены, JWT,
-refresh token, access token и session id не сохраняются в `localStorage` или
-`sessionStorage`.
-
-В bff mode frontend:
+Frontend session flow:
 
 1. вызывает `GET /api/v2/me`;
 2. при `401` показывает `/login`;
 3. форма входа отправляет `POST /api/v2/auth/login` с `username/password`;
 4. после успеха перечитывает `/api/v2/me` и возвращает пользователя на исходный URL;
 5. выполняет реальные API-запросы с `credentials: include`;
-6. при `401`, `403`, CSRF errors или session expired показывает понятное состояние входа/ошибки без fallback в mock.
+6. при `401`, `403`, CSRF errors или session expired показывает понятное состояние входа/ошибки без frontend fallback.
 
 Backend должен реализовать:
 
@@ -279,7 +242,7 @@ node scripts/frontend_editable_approval_uat_smoke.mjs
 READY для этого smoke требует backend handoff mode
 `frontendMode=current_editable`, `submitAllowed=true`, 37 map features,
 44 profile metrics с `shortwave_radiation_daily_mj_m2`, frontend-origin
-approval POST/readback, session-bound CSRF и `mockModeUsed=false`. Если
+approval POST/readback, session-bound CSRF и `offlineModeUsed=false`. Если
 `KORNIX_FRONTEND_SMOKE_USERNAME/PASSWORD` не заданы, runner создаёт
 ephemeral backend user через существующий backend helper, генерирует пароль
 только в памяти, отзывает сессии и деактивирует пользователя в конце. Отчёты
@@ -302,7 +265,7 @@ node scripts/frontend_eto_single_layer_soil_fao90_metrics_smoke.mjs
 `simple_eto_single_layer_soil`, profile code
 `potato_medium_fao90_single_layer_v1`, 37 SP fields, 44 profile metrics,
 `shortwave_radiation_daily_mj_m2`, crop/stage/diagnostics parsing и сохранение
-editable approval regression без mock mode. Если credentials не переданы через
+editable approval regression без offline mode. Если credentials не переданы через
 `KORNIX_FRONTEND_SMOKE_USERNAME/PASSWORD`, используется ephemeral backend user
 с паролем только в памяти и cleanup после smoke.
 
@@ -322,8 +285,7 @@ curl -i -H 'Accept: application/json' https://api.example.com/api/v2/me
 ```
 
 Важно: `VITE_*` переменные встраиваются Vite на этапе build. После изменения
-`VITE_AUTH_MODE`, `VITE_ENABLE_MOCK_API` или `VITE_API_BASE_URL` production image
-нужно пересобрать:
+`VITE_API_BASE_URL` production image нужно пересобрать:
 
 ```bash
 docker compose up -d --build
@@ -398,8 +360,8 @@ make validate
 
 ## Важные ограничения scaffold
 
-1. Авторизация подготовлена через `AuthClient` abstraction: `mock` mode работает только для локальной разработки, `bff` mode является production-default и ждёт backend session endpoints.
-2. Агрегация в mock API считается в браузерном/Node-слое только для разработки. В production агрегацию должен считать backend.
+1. Авторизация работает только через backend session endpoints.
+2. Агрегацию и расчётные ряды считает backend; frontend только отображает API-ответ.
 3. Основной идентификатор выбора — `fieldSeasonId`, а не `fieldId`.
 4. `NULL` и пропуски данных отображаются как отсутствие данных, а не как нули.
 5. Фактический полив и рекомендованный полив разделены семантически.

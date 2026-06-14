@@ -114,25 +114,9 @@ http://localhost:5173
 7. При выборе нескольких полей график показывает area-weighted aggregate.
 8. URL содержит только нужные параметры: `fields`, `from`, `to` или `day`.
 
-## 7. Auth/API режимы и подключение backend позже
-
-Локальный demo-режим:
+## 7. Auth/API и подключение backend
 
 ```env
-VITE_AUTH_MODE=mock
-VITE_ENABLE_MOCK_API=true
-VITE_API_BASE_URL=http://localhost:8000
-```
-
-Production-сборка по умолчанию использует `bff` и `VITE_ENABLE_MOCK_API=false`.
-Mock auth/API дополнительно отключаются в runtime на публичных hostname, поэтому
-их нельзя использовать как обход backend-авторизации при релизном деплое.
-
-Для будущего backend/BFF режима:
-
-```env
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
@@ -142,8 +126,6 @@ VITE_API_BASE_URL=http://localhost:8000
 docker compose build --no-cache
 docker compose up -d
 ```
-
-Важно: переменные `VITE_*` встраиваются на этапе build. При их изменении production image нужно пересобирать.
 
 Важно: переменные `VITE_*` встраиваются на этапе build. При их изменении production image нужно пересобирать.
 
@@ -165,8 +147,6 @@ cp .env.vds.example .env
 ```env
 KORNIX_FRONTEND_BIND=0.0.0.0
 KORNIX_FRONTEND_PORT=80
-VITE_AUTH_MODE=bff
-VITE_ENABLE_MOCK_API=false
 VITE_API_BASE_URL=https://<backend-domain-or-ip>
 ```
 
@@ -205,7 +185,6 @@ commands_executed:
   - curl -I http://127.0.0.1:<port>: PASS/FAIL
 local_windows_url: http://localhost:<port>
 mode: production-like nginx / vite dev
-mock_api_enabled: true/false
 notes:
   - ...
 ```
