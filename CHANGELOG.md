@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Fixed
+- BFF auth/session/CSRF frontend client switched from retired v1 auth/session
+  endpoints to canonical `/api/v2/*`, fixing the `API 404: Not Found`
+  authorization check in local front+back-via-API mode.
 - Frontend runtime очищен от устаревшего переключателя `VITE_KORNIX_API_VERSION`
   и внутреннего имени группы `water_balance`: пользовательский calculation API
   теперь явно считается v2-only/canonical, а soil-water метрики сгруппированы
@@ -194,7 +197,7 @@
   endpoints `current-context`, `readiness/current`, `irrigation-layer/current`
   и `field-seasons/catalog`, чтобы URL/state сезона не зависел от backend
   default.
-- Legacy `/api/v1/kornix/*` документы помечены как archived/deprecated; текущий
+- Документы старого KORNIX v1 контракта помечены как archived/deprecated; текущий
   UAT/production contract для расчётных данных — `/api/v2/kornix/*`.
 - График водного режима теперь потребляет и экспортирует солнечную радиацию
   `shortwave_radiation_daily_mj_m2` (`МДж/м²/сутки`) как отдельную линию в
@@ -208,7 +211,7 @@
   документирован и проверяется как `/api`, добавлены `Dockerfile.prod`,
   `docker-compose.prod.yml`, `.env.local.example` и `.env.production.example`.
 - BFF login UX переведён с redirect-сценария на форму `username/password` с
-  `POST /api/v1/auth/login`, последующим refetch `/api/v1/me` и сохранением
+  `POST /api/v2/auth/login`, последующим refetch `/api/v2/me` и сохранением
   запрета на хранение токенов в browser storage.
 - Production Nginx CSP ужесточён: удалены localhost API origins из `connect-src`,
   оставлены security headers и задокументирована причина временного
@@ -232,8 +235,8 @@
   блокируются и не могут попасть в approval submit.
 - Contract-check дополнительно запрещает `/api/admin/v1`, `/admin` leakage и
   локальную `approvedSignature`-семантику для утверждённых поливов.
-- Пользовательский workspace KORNIX переведён с legacy `/api/v1/kornix` на
-  контракт `/api/v2/kornix`, при этом auth/me и CSRF остаются на `/api/v1`.
+- Пользовательский workspace KORNIX переведён со старого KORNIX v1 контракта на
+  контракт `/api/v2/kornix`; auth/me и CSRF также используют canonical `/api/v2`.
 - Отображаемый расчёт теперь определяется `currentAppliedCalculationRunId` из
   backend current-context; старое предположение про `latestCalculationRunId`
   удалено из рабочего flow.
@@ -244,15 +247,15 @@
   polling статуса approval без переключения на failed расчёт.
 - `stale_read_only` и `not_ready` режимы current-context блокируют отправку и
   редактирование поливов, но не трактуются как ошибка авторизации.
-- Интеграционный env-профиль описывает разделение `/api/v1` auth endpoints и
+- Интеграционный env-профиль описывает canonical `/api/v2` auth endpoints и
   v2-only `/api/v2/kornix` расчётов.
 - В validate-проверку добавлен contract-check, который блокирует возврат
-  legacy `/api/v1/kornix`, `latestCalculationRunId`, старого calculate-flow и
+  legacy KORNIX v1, `latestCalculationRunId`, старого calculate-flow и
   `irrigation_tasks` в рабочем `src`.
 - Mock `calculationRunId` на рабочей странице теперь подчиняется той же
   runtime-защите, что mock API/auth, и не подставляется вне разрешённых
   локальных host.
-- BFF auth больше не маскирует сетевые ошибки `/api/v1/me` под гостевую
+- BFF auth больше не маскирует сетевые ошибки `/api/v2/me` под гостевую
   сессию: реальные ошибки backend показываются как сбой проверки авторизации.
 - Календарная арифметика карты, графика и ввода поливов переведена на
   timezone-neutral ISO-дни, чтобы не зависеть от локальной зоны браузера.
@@ -260,7 +263,7 @@
   после пустого значения — `1` мм.
 - Черновики и признак утверждения поливов в `localStorage` теперь разделены по
   пользователю и организации, а не только по году сезона.
-- Unsafe API-запросы получают CSRF token через `/api/v1/auth/csrf`, если token
+- Unsafe API-запросы получают CSRF token через `/api/v2/auth/csrf`, если token
   отсутствует в cookie/meta перед `POST`, `PUT`, `PATCH` или `DELETE`.
 - HTTP-клиент разбирает backend error envelope и сохраняет `code`, `message`,
   `details`, `requestId` в `ApiError` для понятного отображения в UI.

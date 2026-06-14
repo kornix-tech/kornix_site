@@ -260,18 +260,18 @@ try {
     fail(`Frontend static health failed with HTTP ${staticResponse.status}.`);
   }
 
-  const healthResponse = await request(apiPath('/v1/health'));
+  const healthResponse = await request(apiPath('/v2/health'));
   const healthContentType = healthResponse.headers.get('content-type') || '';
   const healthBody = await healthResponse.clone().text();
   report.sameOriginApiHealth = healthResponse.ok ? 'PASS' : 'FAIL';
   report.apiRouteReturnedJsonNotHtml = healthContentType.includes('application/json') && !healthBody.includes('<!doctype html');
   if (!healthResponse.ok || !report.apiRouteReturnedJsonNotHtml) {
-    fail(`Same-origin /api/v1/health did not return backend JSON: HTTP ${healthResponse.status}.`);
+    fail(`Same-origin /api/v2/health did not return backend JSON: HTTP ${healthResponse.status}.`);
   }
 
   provisionEphemeralUser();
 
-  const csrfResponse = await request(apiPath('/v1/auth/csrf'));
+  const csrfResponse = await request(apiPath('/v2/auth/csrf'));
   const csrfBody = await jsonOrNull(csrfResponse);
   const csrfToken = csrfBody?.csrfToken || csrfBody?.token;
   if (!csrfResponse.ok || !csrfToken) {
@@ -279,7 +279,7 @@ try {
   }
 
   report.auth.loginAttempted = true;
-  const loginResponse = await request(apiPath('/v1/auth/login'), {
+  const loginResponse = await request(apiPath('/v2/auth/login'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -292,12 +292,12 @@ try {
     fail(`Login through frontend origin failed with HTTP ${loginResponse.status}.`);
   }
 
-  const meResponse = await request(apiPath('/v1/me'));
+  const meResponse = await request(apiPath('/v2/me'));
   const meBody = await jsonOrNull(meResponse);
   report.auth.meStatusCode = meResponse.status;
   report.auth.organizationCode = meBody?.organizationCode || meBody?.organization?.code || null;
   if (!meResponse.ok || report.auth.organizationCode !== 'SP') {
-    fail(`/api/v1/me through frontend origin did not return SP organization: HTTP ${meResponse.status}.`);
+    fail(`/api/v2/me through frontend origin did not return SP organization: HTTP ${meResponse.status}.`);
   }
 
   const contextResponse = await request(apiPath('/v2/kornix/current-context?seasonYear=2026'));

@@ -36,7 +36,7 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const DEFAULT_TIMEOUT_MS = REQUEST_TIMEOUT_MS;
 export const AUTH_REQUIRED_EVENT = 'kornix:auth-required';
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-const CSRF_BOOTSTRAP_PATH = '/api/v1/auth/csrf';
+const CSRF_BOOTSTRAP_PATH = '/api/v2/auth/csrf';
 
 export type KornixRequestInit = RequestInit & {
   timeoutMs?: number;

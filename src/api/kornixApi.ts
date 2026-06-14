@@ -205,7 +205,7 @@ export const kornixApi = {
     if (mockEnabled) {
       return delay(mockAuthUser);
     }
-    return requestJson<CurrentUserDto>('/api/v1/me');
+    return requestJson<CurrentUserDto>('/api/v2/me');
   },
 
   async getCurrentContextV2(params: { seasonYear: number }): Promise<KornixCurrentContextDto> {

@@ -464,34 +464,34 @@ async function main() {
   let inventory = {};
 
   try {
-    const healthResponse = await request(frontendBaseUrl, '/v1/health');
-    liveSmoke.requests.push({ endpoint: '/api/v1/health', status: healthResponse.status });
+    const healthResponse = await request(frontendBaseUrl, '/v2/health');
+    liveSmoke.requests.push({ endpoint: '/api/v2/health', status: healthResponse.status });
     if (!healthResponse.ok) throw new Error(`same-origin health failed with HTTP ${healthResponse.status}`);
 
-    const apiUnauthed = await request(frontendBaseUrl, '/v1/me', { omitCookies: true });
-    liveSmoke.requests.push({ endpoint: '/api/v1/me', unauthenticatedStatus: apiUnauthed.status });
+    const apiUnauthed = await request(frontendBaseUrl, '/v2/me', { omitCookies: true });
+    liveSmoke.requests.push({ endpoint: '/api/v2/me', unauthenticatedStatus: apiUnauthed.status });
     provisionEphemeralUser();
 
-    const csrfResponse = await request(frontendBaseUrl, '/v1/auth/csrf');
+    const csrfResponse = await request(frontendBaseUrl, '/v2/auth/csrf');
     const csrfBody = await jsonOrNull(csrfResponse);
     const csrf = csrfBody?.csrfToken || csrfBody?.token;
-    liveSmoke.requests.push({ endpoint: '/api/v1/auth/csrf', status: csrfResponse.status });
+    liveSmoke.requests.push({ endpoint: '/api/v2/auth/csrf', status: csrfResponse.status });
     if (!csrfResponse.ok || !csrf) throw new Error(`CSRF bootstrap failed with HTTP ${csrfResponse.status}`);
 
-    const loginResponse = await request(frontendBaseUrl, '/v1/auth/login', {
+    const loginResponse = await request(frontendBaseUrl, '/v2/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
       body: JSON.stringify({ username: credentials.username, password: credentials.password })
     });
     const loginBody = await jsonOrNull(loginResponse);
     const sessionCsrf = loginBody?.csrfToken || loginBody?.token || csrf;
-    liveSmoke.requests.push({ endpoint: '/api/v1/auth/login', status: loginResponse.status });
+    liveSmoke.requests.push({ endpoint: '/api/v2/auth/login', status: loginResponse.status });
     if (!loginResponse.ok) throw new Error(`Login failed with HTTP ${loginResponse.status}`);
 
-    const meResponse = await request(frontendBaseUrl, '/v1/me');
+    const meResponse = await request(frontendBaseUrl, '/v2/me');
     const me = await jsonOrNull(meResponse);
-    liveSmoke.requests.push({ endpoint: '/api/v1/me', authenticatedStatus: meResponse.status, organizationCode: me?.organizationCode ?? null });
-    if (!meResponse.ok || me?.organizationCode !== 'SP') throw new Error(`/api/v1/me organization mismatch.`);
+    liveSmoke.requests.push({ endpoint: '/api/v2/me', authenticatedStatus: meResponse.status, organizationCode: me?.organizationCode ?? null });
+    if (!meResponse.ok || me?.organizationCode !== 'SP') throw new Error(`/api/v2/me organization mismatch.`);
 
     const contextResponse = await request(frontendBaseUrl, '/v2/kornix/current-context?seasonYear=2026');
     const context = await jsonOrNull(contextResponse);

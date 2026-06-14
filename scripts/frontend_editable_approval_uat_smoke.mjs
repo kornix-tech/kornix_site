@@ -318,7 +318,7 @@ function buildContractMap() {
     submitAllowedGating:
       table.includes("context.frontendMode !== 'current_editable'") && table.includes('!context.submitAllowed') ? 'PASS' : 'FAIL',
     csrfForUnsafeRequests:
-      http.includes('X-CSRF-Token') && http.includes('UNSAFE_METHODS') && http.includes('/api/v1/auth/csrf') ? 'PASS' : 'FAIL',
+      http.includes('X-CSRF-Token') && http.includes('UNSAFE_METHODS') && http.includes('/api/v2/auth/csrf') ? 'PASS' : 'FAIL',
     authStorage: /access[_-]?token|refresh[_-]?token|jwt/i.test(http + api + workspace + table) ? 'FAIL' : 'PASS'
   };
 }
@@ -399,7 +399,7 @@ function applyStaticContractProof() {
 try {
   applyStaticContractProof();
 
-  const backendHealth = await fetch(backendUrl('/api/v1/health'));
+  const backendHealth = await fetch(backendUrl('/api/v2/health'));
   report.preflight.backendRuntimeReachable = backendHealth.ok ? 'PASS' : 'FAIL';
   if (!backendHealth.ok) {
     throw new Error(`Backend health failed with HTTP ${backendHealth.status}.`);
@@ -421,7 +421,7 @@ try {
   report.uiProof.workspaceReachable =
     workspaceResponse.ok && workspaceText.includes('<div id="root"') ? 'PASS' : 'FAIL';
 
-  const healthResponse = await request(apiUrl('/v1/health'));
+  const healthResponse = await request(apiUrl('/v2/health'));
   const healthContentType = healthResponse.headers.get('content-type') || '';
   const healthText = await healthResponse.clone().text();
   report.liveSmoke.sameOriginApiHealth = healthResponse.ok ? 'PASS' : 'FAIL';
@@ -435,14 +435,14 @@ try {
 
   provisionEphemeralUser();
 
-  const csrfResponse = await request(apiUrl('/v1/auth/csrf'));
+  const csrfResponse = await request(apiUrl('/v2/auth/csrf'));
   const csrfBody = await jsonOrNull(csrfResponse);
   const bootstrapCsrfToken = csrfBody?.csrfToken || csrfBody?.token;
   if (!csrfResponse.ok || !bootstrapCsrfToken) {
     throw new Error(`CSRF bootstrap failed through frontend origin with HTTP ${csrfResponse.status}.`);
   }
 
-  const loginResponse = await request(apiUrl('/v1/auth/login'), {
+  const loginResponse = await request(apiUrl('/v2/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': bootstrapCsrfToken },
     body: JSON.stringify({ username: credentials.username, password: credentials.password })
@@ -459,11 +459,11 @@ try {
     throw new Error('Login did not provide a CSRF token usable for approval.');
   }
 
-  const meResponse = await request(apiUrl('/v1/me'));
+  const meResponse = await request(apiUrl('/v2/me'));
   const meBody = await jsonOrNull(meResponse);
   report.liveSmoke.organization = meBody?.organizationCode || null;
   if (!meResponse.ok || report.liveSmoke.organization !== organizationCode) {
-    throw new Error(`/api/v1/me returned unexpected organization through frontend origin: HTTP ${meResponse.status}.`);
+    throw new Error(`/api/v2/me returned unexpected organization through frontend origin: HTTP ${meResponse.status}.`);
   }
 
   const contextResponse = await request(apiUrl(`/v2/kornix/current-context?seasonYear=${seasonYear}`));
@@ -544,7 +544,7 @@ try {
     throw new Error(`Approval readback returned status ${approvalStatus?.approvalStatus ?? null}.`);
   }
 
-  await request(apiUrl('/v1/auth/logout'), {
+  await request(apiUrl('/v2/auth/logout'), {
     method: 'POST',
     headers: { 'X-CSRF-Token': sessionCsrfToken }
   });

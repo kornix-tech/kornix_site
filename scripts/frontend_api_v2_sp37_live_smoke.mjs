@@ -305,11 +305,11 @@ WHERE username = '${ephemeralUsername}';
 try {
   resolveCredentials();
 
-  const meBefore = await request('/api/v1/me');
+  const meBefore = await request('/api/v2/me');
   report.auth.meBeforeLoginStatus = meBefore.status;
 
   if (meBefore.status === 401 || meBefore.status === 403) {
-    const csrfResponse = await request('/api/v1/auth/csrf');
+    const csrfResponse = await request('/api/v2/auth/csrf');
     if (!csrfResponse.ok) {
       fail(`CSRF bootstrap failed with HTTP ${csrfResponse.status}.`);
     }
@@ -320,7 +320,7 @@ try {
     }
 
     report.auth.loginAttempted = true;
-    const loginResponse = await request('/api/v1/auth/login', {
+    const loginResponse = await request('/api/v2/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -334,15 +334,15 @@ try {
     }
   }
 
-  const meAfter = await request('/api/v1/me');
+  const meAfter = await request('/api/v2/me');
   report.auth.meAfterLoginStatus = meAfter.status;
   const meAfterBody = await jsonOrNull(meAfter);
   report.auth.organizationCode = meAfterBody?.organizationCode || meAfterBody?.organization?.code || null;
   if (!meAfter.ok) {
-    fail(`/api/v1/me did not return authenticated user: HTTP ${meAfter.status}.`);
+    fail(`/api/v2/me did not return authenticated user: HTTP ${meAfter.status}.`);
   }
   if (report.auth.organizationCode && report.auth.organizationCode !== 'SP') {
-    fail(`/api/v1/me returned unexpected organization scope: ${report.auth.organizationCode}.`);
+    fail(`/api/v2/me returned unexpected organization scope: ${report.auth.organizationCode}.`);
   }
 
   const contextResponse = await request('/api/v2/kornix/current-context');

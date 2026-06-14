@@ -30,12 +30,12 @@ grep --line-number "VITE_ENABLE_MOCK_API=false" .env.production.example
 
 echo "== BFF credentials and CSRF =="
 grep --line-number "credentials: 'include'" src/shared/api/httpClient.ts
-grep --line-number "CSRF_BOOTSTRAP_PATH = '/api/v1/auth/csrf'" src/shared/api/httpClient.ts
+grep --line-number "CSRF_BOOTSTRAP_PATH = '/api/v2/auth/csrf'" src/shared/api/httpClient.ts
 grep --line-number "UNSAFE_METHODS" src/shared/api/httpClient.ts
 grep --line-number "X-CSRF-Token" src/shared/api/httpClient.ts
 
 echo "== Auth endpoints =="
-grep --line-number -E "/api/v1/me|/api/v1/auth/login|/api/v1/auth/logout" src/features/auth/bffSessionAuthClient.ts
+grep --line-number -E "/api/v2/me|/api/v2/auth/login|/api/v2/auth/logout" src/features/auth/bffSessionAuthClient.ts
 
 echo "== SPA fallback =="
 grep --line-number "try_files .*index.html" nginx.conf

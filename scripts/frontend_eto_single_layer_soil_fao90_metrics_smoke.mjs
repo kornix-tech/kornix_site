@@ -188,7 +188,7 @@ function saveReports() {
       expectedMetricCount
     },
     endpointsUsed: [
-      '/api/v1/me',
+      '/api/v2/me',
       '/api/v2/kornix/current-context',
       '/api/v2/kornix/field-seasons/map',
       '/api/v2/kornix/water-regime/profile-timeseries',
@@ -391,7 +391,7 @@ try {
     throw new Error(`Static frontend failed with HTTP ${staticResponse.status}.`);
   }
 
-  const health = await request(apiUrl('/v1/health'));
+  const health = await request(apiUrl('/v2/health'));
   backendReachable = health.ok;
   report.backendObserved.reachable = health.ok;
   smoke.sameOriginApiHealth = health.ok ? 'PASS' : 'FAIL';
@@ -409,14 +409,14 @@ try {
 
   provisionEphemeralUser();
 
-  const csrfResponse = await request(apiUrl('/v1/auth/csrf'));
+  const csrfResponse = await request(apiUrl('/v2/auth/csrf'));
   const csrfBody = await jsonOrNull(csrfResponse);
   const bootstrapCsrf = csrfBody?.csrfToken || csrfBody?.token;
   if (!csrfResponse.ok || !bootstrapCsrf) {
     throw new Error(`CSRF bootstrap failed with HTTP ${csrfResponse.status}.`);
   }
 
-  const login = await request(apiUrl('/v1/auth/login'), {
+  const login = await request(apiUrl('/v2/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': bootstrapCsrf },
     body: JSON.stringify({ username: credentials.username, password: credentials.password })
@@ -429,11 +429,11 @@ try {
   }
   const sessionCsrf = loginBody?.csrfToken || loginBody?.token || bootstrapCsrf;
 
-  const me = await request(apiUrl('/v1/me'));
+  const me = await request(apiUrl('/v2/me'));
   const meBody = await jsonOrNull(me);
   smoke.organization = meBody?.organizationCode || null;
   if (!me.ok || smoke.organization !== organizationCode) {
-    throw new Error(`/api/v1/me returned unexpected organization: HTTP ${me.status}.`);
+    throw new Error(`/api/v2/me returned unexpected organization: HTTP ${me.status}.`);
   }
 
   const contextResponse = await request(apiUrl('/v2/kornix/current-context?seasonYear=2026'));
@@ -574,7 +574,7 @@ try {
     report.implementation.editableApprovalRegressionPreserved = 'NOT_APPLICABLE';
   }
 
-  await request(apiUrl('/v1/auth/logout'), {
+  await request(apiUrl('/v2/auth/logout'), {
     method: 'POST',
     headers: { 'X-CSRF-Token': sessionCsrf }
   });

@@ -39,6 +39,7 @@ check_file_contains() {
 }
 
 check_absent "/api/v1/kornix" "legacy KORNIX v1 endpoints must not be used by frontend src"
+check_absent "/api/v1/(auth|me)" "auth/session/CSRF endpoints must use canonical /api/v2 routes"
 check_absent "/api/admin/v1|/admin" "user frontend must not expose backend admin/research routes"
 check_absent "VITE_KORNIX_API_VERSION" "KORNIX frontend runtime is v2-only and must not expose an API version switch"
 check_absent "water_balance" "frontend runtime metric groups must not use retired water_balance naming"
@@ -54,7 +55,7 @@ check_present "irrigation-layer/current" "frontend must fetch backend active irr
 check_present "currentAppliedCalculationRunId" "workspace must use currentAppliedCalculationRunId"
 check_present "managedScope" "approval submit must return backend-issued managedScope"
 check_present "methodCode" "map/profile calls must carry methodCode"
-check_present "/api/v1/auth/login" "login form must target backend session login endpoint"
+check_present "/api/v2/auth/login" "login form must target backend session login endpoint"
 check_present "CSRF_TOKEN_INVALID" "unsafe requests must handle CSRF token refresh policy"
 
 check_file_contains ".env.production.example" "^VITE_API_BASE_URL=/api$" "production env example must use same-origin /api"
