@@ -53,7 +53,7 @@ docker compose \
 
 ```bash
 curl -I https://<domain>/
-curl -I https://<domain>/api/v1/health
+curl -I https://<domain>/api/v2/health
 ```
 
 Browser smoke:

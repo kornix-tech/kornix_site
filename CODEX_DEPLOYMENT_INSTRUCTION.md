@@ -21,7 +21,7 @@ docker-compose.yml
 docker-compose.dev.yml
 package.json
 src/
-docs/frontend-api-contract-v0.1.md
+doc/
 .env.example
 .env.vds.example
 README.md

@@ -6,13 +6,12 @@
 - Frontend runtime жёстко переведён на backend session/API: удалены
   синтетические auth/data builders и env-переключатели автономного режима,
   а сбой проверки сессии теперь показывает "отсутствует связь с сервером".
-- BFF auth/session/CSRF frontend client switched from retired v1 auth/session
-  endpoints to canonical `/api/v2/*`, fixing the `API 404: Not Found`
+- BFF auth/session/CSRF frontend client switched to canonical `/api/v2/*`,
+  fixing the `API 404: Not Found`
   authorization check in local front+back-via-API mode.
-- Frontend runtime очищен от устаревшего переключателя `VITE_KORNIX_API_VERSION`
-  и внутреннего имени группы `water_balance`: пользовательский calculation API
-  теперь явно считается v2-only/canonical, а soil-water метрики сгруппированы
-  как `soil_water`.
+- Frontend runtime очищен от удалённых переключателей и внутреннего имени
+  группы расчёта: пользовательский calculation API теперь canonical, а
+  soil-water метрики сгруппированы как `soil_water`.
 - API client стал устойчивее к неполному backend DTO: пустые `features`,
   `metrics`, `recommendations`, `methods` и `catalog.fields` больше не приводят
   к падению страницы при нормализации ответа.
@@ -200,8 +199,8 @@
   endpoints `current-context`, `readiness/current`, `irrigation-layer/current`
   и `field-seasons/catalog`, чтобы URL/state сезона не зависел от backend
   default.
-- Документы старого KORNIX v1 контракта помечены как archived/deprecated; текущий
-  UAT/production contract для расчётных данных — `/api/v2/kornix/*`.
+- Удалены устаревшие справочные документы, не соответствующие текущему
+  UAT/production contract для расчётных данных `/api/v2/kornix/*`.
 - График водного режима теперь потребляет и экспортирует солнечную радиацию
   `shortwave_radiation_daily_mj_m2` (`МДж/м²/сутки`) как отдельную линию в
   weather-зоне, чтобы backend SP37 profile response из 13 метрик не сжимался до
@@ -238,10 +237,10 @@
   блокируются и не могут попасть в approval submit.
 - Contract-check дополнительно запрещает `/api/admin/v1`, `/admin` leakage и
   локальную `approvedSignature`-семантику для утверждённых поливов.
-- Пользовательский workspace KORNIX переведён со старого KORNIX v1 контракта на
-  контракт `/api/v2/kornix`; auth/me и CSRF также используют canonical `/api/v2`.
+- Пользовательский workspace KORNIX использует контракт `/api/v2/kornix`;
+  auth/me и CSRF также используют canonical `/api/v2`.
 - Отображаемый расчёт теперь определяется `currentAppliedCalculationRunId` из
-  backend current-context; старое предположение про `latestCalculationRunId`
+  backend current-context; старое предположение про latest completed alias
   удалено из рабочего flow.
 - Добавлен выбор метода расчёта из `availableMethods`; map/profile запрашивают
   данные с выбранным `methodCode`, а URL хранит только валидный выбранный метод.
@@ -253,8 +252,8 @@
 - Интеграционный env-профиль описывает canonical `/api/v2` auth endpoints и
   v2-only `/api/v2/kornix` расчётов.
 - В validate-проверку добавлен contract-check, который блокирует возврат
-  legacy KORNIX v1, `latestCalculationRunId`, старого calculate-flow и
-  `irrigation_tasks` в рабочем `src`.
+  retired KORNIX routes, старого calculate-flow и `irrigation_tasks` в рабочем
+  `src`.
 - Старый синтетический `calculationRunId` на рабочей странице удалён из
   runtime-пути вместе с автономным frontend data fallback.
 - BFF auth больше не маскирует сетевые ошибки `/api/v2/me` под гостевую
@@ -344,5 +343,5 @@
 ### Technical
 - Сгенерированные отчёты `codex_reports/*` удалены из git и переведены в
   локальный ignored output; в репозитории оставлен только `codex_reports/.gitkeep`.
-- Добавлена документация `docs/kornix-frontend-api-v1.md` с фронтенд-частью
-  финального API-контракта.
+- Удалены устаревшие frontend API snapshots; актуальный контракт описан в
+  README и security/deployment документах.

@@ -148,8 +148,8 @@ VITE_API_BASE_URL=/api
 ```
 
 Auth/session/CSRF работают через `/api/v2/*`. Пользовательский KORNIX API
-работает только через `/api/v2/kornix/*`. Retired KORNIX v1 routes и backend
-admin routes запрещены для пользовательского frontend.
+работает только через `/api/v2/kornix/*`. Backend admin routes запрещены для
+пользовательского frontend.
 
 Для pre-UAT production-like проверки frontend origin должен обслуживать SPA и
 проксировать same-origin `/api/*` в backend JSON/API, а не в SPA fallback
@@ -233,7 +233,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 KORNIX_FRONTEND_ORIGIN=http://localhost:8080 \
 KORNIX_BACKEND_API_BASE_URL=http://localhost:8001 \
-KORNIX_BACKEND_REPO_PATH=/home/zenbook/meteo_stack_wsl_setup_v1_2/meteo_stack \
+KORNIX_BACKEND_REPO_PATH=/path/to/meteo_stack \
 KORNIX_SMOKE_ORGANIZATION_CODE=SP \
 KORNIX_SMOKE_SEASON_YEAR=2026 \
 node scripts/frontend_editable_approval_uat_smoke.mjs
@@ -335,12 +335,6 @@ React/Vite SPA, работающий через backend HTTP API: auth/session e
 `/api/v2/kornix`, production API base — `/api`. Runtime-код не должен читать
 PostgreSQL/PostGIS, KML или Python-модули напрямую и не должен хранить
 access/refresh tokens в browser storage.
-
-Исторические требования к KORNIX system API сохранены в
-[`docs/kornix-system-api-requirements-v0.2.md`](docs/kornix-system-api-requirements-v0.2.md).
-
-Исторический frontend-driven чек-лист v0.1 сохранен здесь:
-[`docs/kornix-frontend-api-checklist-v0.1.md`](docs/kornix-frontend-api-checklist-v0.1.md).
 
 ## Основные команды
 
