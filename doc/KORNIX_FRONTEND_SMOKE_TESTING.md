@@ -41,7 +41,7 @@ profile-timeseries returns all 44 required metrics including
 
 ## Browser Smoke
 
-- Open `http://localhost:5173/map`
+- Open `http://localhost:5173/fields/sp/2026`
 - Confirm network requests target `http://localhost:8001`
 - Confirm selected method is `simple_eto_single_layer_soil`
 - Confirm map/profile render
@@ -52,7 +52,7 @@ profile-timeseries returns all 44 required metrics including
 
 ## Negative Checks
 
-- No `/api/v2/kornix/*` requests
+- No `/api/v1/kornix/*` requests
 - No `/api/admin/v1` requests
 - `0 мм` is not submitted
 - Values outside `managedScope` are not editable or submitted

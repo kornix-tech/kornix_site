@@ -31,7 +31,8 @@ const IrrigationInputTable = lazy(() =>
   import('./IrrigationInputTable').then((module) => ({ default: module.IrrigationInputTable }))
 );
 const RESERVED_CALCULATION_RUN_IDS = new Set(['catalog']);
-const DEFAULT_FIELD_REGULATION_RANGE = { min: 0.6, max: 0.9 };
+const DEFAULT_FIELD_REGULATION_RANGE = { min: 0.75, max: 0.9 };
+const FIELD_REGULATION_RANGE_STORAGE_VERSION = 'v2';
 const DEFAULT_MAP_DISPLAY_MODE: MapDisplayMode = 'minimum_irrigation';
 const MAP_DISPLAY_MODES: MapDisplayMode[] = [
   'minimum_irrigation',
@@ -58,7 +59,10 @@ function storedFieldRegulationRange(storageScope: string): { min: number; max: n
   }
 
   try {
-    const raw = window.localStorage.getItem(`kornix-water-regime-regulation-range:${storageScope}`);
+    const legacyKey = `kornix-water-regime-regulation-range:${storageScope}`;
+    const storageKey = `kornix-water-regime-regulation-range:${FIELD_REGULATION_RANGE_STORAGE_VERSION}:${storageScope}`;
+    window.localStorage.removeItem(legacyKey);
+    const raw = window.localStorage.getItem(storageKey);
     const parsed = raw ? (JSON.parse(raw) as Partial<{ min: number; max: number }>) : null;
     const min = typeof parsed?.min === 'number' && Number.isFinite(parsed.min) ? parsed.min : DEFAULT_FIELD_REGULATION_RANGE.min;
     const max = typeof parsed?.max === 'number' && Number.isFinite(parsed.max) ? parsed.max : DEFAULT_FIELD_REGULATION_RANGE.max;

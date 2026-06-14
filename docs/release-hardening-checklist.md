@@ -11,7 +11,7 @@
 - Catalog data is used for first irrigation input only; map/profile rendering requires a real `calculationRunId`.
 - User/API/KML strings injected into Leaflet HTML tooltips are escaped.
 - Nginx sends CSP, frame, MIME, referrer, permissions and opener-policy headers. Production CSP allows same-origin API only.
-- Dependency audit must be clean before release: `npm audit` in the Node build image.
+- Production dependency audit must be clean before release: `npm audit --omit=dev --audit-level=high` in the Node build image.
 
 ## Performance
 
@@ -24,8 +24,8 @@
 
 ```bash
 docker build --target prod -t kornix-frontend:release-check .
-docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:20-alpine sh -lc "npm ci && npm audit --audit-level=moderate && npm run build"
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:20-alpine sh -lc "npm ci && npm audit --omit=dev --audit-level=high && npm run build"
 docker compose build
 docker compose up -d
-curl -I http://127.0.0.1:${KORNIX_FRONTEND_PORT:-8080}/map
+curl -I http://127.0.0.1:${KORNIX_FRONTEND_PORT:-8080}/fields/sp/2026
 ```

@@ -58,7 +58,8 @@ cp .env.example .env
 docker compose build
 docker compose up -d
 docker compose ps
-curl -I http://127.0.0.1:${KORNIX_FRONTEND_PORT:-8080}
+curl -I http://127.0.0.1:${KORNIX_FRONTEND_PORT:-8080}/healthz
+curl -I http://127.0.0.1:${KORNIX_FRONTEND_PORT:-8080}/fields/sp/2026
 ```
 
 Ожидаемый результат:
@@ -106,10 +107,10 @@ http://localhost:5173
 После открытия UI проверить:
 
 1. `/login` открывается.
-2. Кнопка входа переводит в `/map`.
+2. Кнопка входа переводит в `/fields/sp/2026`.
 3. Вкладка `Карта` показывает поля.
 4. Наведение на поле показывает tooltip водного режима.
-5. Click по полю переводит на `/water-regime`.
+5. Click по полю переводит на `/water-regime/sp/2026`.
 6. Слева от графика есть чекбоксы полей.
 7. При выборе нескольких полей график показывает area-weighted aggregate.
 8. URL содержит только нужные параметры: `fields`, `from`, `to` или `day`.
@@ -117,7 +118,7 @@ http://localhost:5173
 ## 7. Auth/API и подключение backend
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=/api
 ```
 
 Затем пересобрать production frontend:
@@ -145,9 +146,9 @@ cp .env.vds.example .env
 Проверить `.env`:
 
 ```env
-KORNIX_FRONTEND_BIND=0.0.0.0
-KORNIX_FRONTEND_PORT=80
-VITE_API_BASE_URL=https://<backend-domain-or-ip>
+KORNIX_FRONTEND_BIND=127.0.0.1
+KORNIX_FRONTEND_PORT=8080
+VITE_API_BASE_URL=/api
 ```
 
 Запуск:
@@ -155,7 +156,7 @@ VITE_API_BASE_URL=https://<backend-domain-or-ip>
 ```bash
 docker compose up -d --build
 docker compose ps
-curl -I http://127.0.0.1:${KORNIX_FRONTEND_PORT:-80}
+curl -I http://127.0.0.1:${KORNIX_FRONTEND_PORT:-8080}/fields/sp/2026
 ```
 
 Если на VDS используется внешний reverse proxy, не публиковать контейнер на `0.0.0.0:80`. Оставить:

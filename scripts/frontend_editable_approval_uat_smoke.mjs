@@ -296,6 +296,14 @@ function sourceIncludes(path, pattern) {
   return pattern.test(readFile(path));
 }
 
+function hasProductionApiProxy(nginxConfig) {
+  return (
+    nginxConfig.includes('location /api/') &&
+    nginxConfig.includes('host.docker.internal:8001') &&
+    /proxy_pass\s+(?:\$kornix_backend_api|http:\/\/host\.docker\.internal:8001\/?);/.test(nginxConfig)
+  );
+}
+
 function buildContractMap() {
   const workspace = readFile('src/workspace/WorkspacePage.tsx');
   const table = readFile('src/workspace/IrrigationInputTable.tsx');
@@ -306,7 +314,7 @@ function buildContractMap() {
     uiProofLevel: report.uiProof.uiProofLevel,
     frontendOrigin,
     sameOriginApiBase: `${frontendOrigin.replace(/\/$/, '')}/api`,
-    nginxProxy: nginx.includes('location /api/') && nginx.includes('proxy_pass http://host.docker.internal:8001/api/') ? 'PASS' : 'FAIL',
+    nginxProxy: hasProductionApiProxy(nginx) ? 'PASS' : 'FAIL',
     currentContextEndpoint: api.includes('/current-context') ? 'PASS' : 'FAIL',
     mapEndpoint: api.includes('/field-seasons/map') ? 'PASS' : 'FAIL',
     profileEndpoint: api.includes('/water-regime/profile-timeseries') ? 'PASS' : 'FAIL',

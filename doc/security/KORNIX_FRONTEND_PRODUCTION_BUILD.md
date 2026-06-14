@@ -48,9 +48,10 @@ Production Nginx serves React routes with:
 try_files $uri $uri/ /index.html;
 ```
 
-Direct refresh for `/`, `/login`, `/map`, `/water-regime` and other frontend
-routes must return `index.html` instead of `404`. Static assets under `/assets/`
-remain strict and return `404` when the file is missing.
+Direct refresh for `/`, `/login`, `/fields/sp/2026`, `/water-regime/sp/2026`,
+`/irrigation-input/sp/2026` and other frontend routes must return `index.html`
+instead of `404`. Static assets under `/assets/` remain strict and return `404`
+when the file is missing.
 
 ## Prohibited Build Inputs
 

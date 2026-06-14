@@ -10,3 +10,5 @@ services:
     restart: unless-stopped
     ports:
       - "${KORNIX_FRONTEND_BIND:-127.0.0.1}:${KORNIX_FRONTEND_PORT:-8080}:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

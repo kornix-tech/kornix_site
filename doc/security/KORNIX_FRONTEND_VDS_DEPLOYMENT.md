@@ -59,7 +59,7 @@ curl -I https://<domain>/api/v2/health
 Browser smoke:
 
 - Login.
-- Open `/map`.
+- Open `/fields/sp/2026`.
 - Verify `/api/v2/kornix/current-context`.
 - Open water regime chart.
 - Edit one managed irrigation value and approve.

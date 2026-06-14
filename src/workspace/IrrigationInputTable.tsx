@@ -745,6 +745,13 @@ export function IrrigationInputTable({
 
       isSyncingIrrigationScrollRef.current = true;
       target.scrollTop = source.scrollTop;
+      // У календаря есть sticky-шапка внутри scroll-container, поэтому его
+      // максимальный scrollTop может быть больше, чем у списка полей. Если один
+      // контейнер уже упёрся в нижнюю границу, второй нельзя оставлять дальше:
+      // иначе строки календаря и кнопки полей расходятся именно внизу списка.
+      if (Math.abs(target.scrollTop - source.scrollTop) > 1) {
+        source.scrollTop = target.scrollTop;
+      }
       window.requestAnimationFrame(() => {
         isSyncingIrrigationScrollRef.current = false;
       });

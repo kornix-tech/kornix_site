@@ -8,7 +8,9 @@
 - Docker multi-stage build;
 - Nginx production web server;
 - dev-режим через Vite внутри Docker;
-- короткие URL `/map`, `/water-regime` и `/irrigation` с query-state только для выбранных полей, дат и дня карты.
+- человекочитаемые URL `/fields/sp/2026`, `/water-regime/sp/2026` и
+  `/irrigation-input/sp/2026` с query-state только для выбранных полей, дат и
+  дня карты.
 
 ## Основная документация
 
@@ -109,9 +111,10 @@ sh scripts/frontend_stage1_nginx_smoke.sh 18081
 docker rm -f kornix-frontend-stage1-smoke
 ```
 
-Ожидаемо: `/`, `/login` и `/map` возвращают frontend HTML `200`,
-`/healthz` возвращает `200`, отсутствующий asset под `/assets/` возвращает
-`404`, а ответы frontend routes содержат production security headers и CSP.
+Ожидаемо: `/`, `/login`, `/fields/sp/2026`, `/water-regime/sp/2026` и
+`/irrigation-input/sp/2026` возвращают frontend HTML `200`, `/healthz`
+возвращает `200`, отсутствующий asset под `/assets/` возвращает `404`, а
+ответы frontend routes содержат production security headers и CSP.
 
 ## Перенос на VDS
 

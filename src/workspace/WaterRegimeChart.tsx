@@ -99,9 +99,10 @@ type RegulationRangeFractions = {
 };
 
 const DEFAULT_REGULATION_RANGE: RegulationRangeFractions = {
-  min: 0.6,
+  min: 0.75,
   max: 0.9
 };
+const REGULATION_RANGE_STORAGE_VERSION = 'v2';
 const REGULATION_RANGE_STEP = 0.01;
 const REGULATION_RANGE_MIN_GAP = 0.05;
 
@@ -525,7 +526,8 @@ function normalizeRegulationRange(value: unknown): RegulationRangeFractions {
 }
 
 function usePersistentRegulationRange(storageScope: string) {
-  const storageKey = `kornix-water-regime-regulation-range:${storageScope}`;
+  const legacyStorageKey = `kornix-water-regime-regulation-range:${storageScope}`;
+  const storageKey = `kornix-water-regime-regulation-range:${REGULATION_RANGE_STORAGE_VERSION}:${storageScope}`;
 
   const [value, setValue] = useState<RegulationRangeFractions>(() => {
     if (typeof window === 'undefined') {
@@ -533,6 +535,7 @@ function usePersistentRegulationRange(storageScope: string) {
     }
 
     try {
+      window.localStorage.removeItem(legacyStorageKey);
       const raw = window.localStorage.getItem(storageKey);
       return raw ? normalizeRegulationRange(JSON.parse(raw)) : DEFAULT_REGULATION_RANGE;
     } catch {

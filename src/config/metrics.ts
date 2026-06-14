@@ -94,7 +94,7 @@ export const KORNIX_METRICS: KornixMetricDefinition[] = [
   metric({ long_name_for_code: 'actual_evapotranspiration_cumulative_mm', label: 'Накопленная фактическая ET', unit: 'мм', valueKind: 'scalar', chartKind: 'line', group: 'plant', isDefaultVisible: true }),
   metric({ long_name_for_code: 'water_stress_coefficient', label: 'Коэффициент водного стресса', unit: '', valueKind: 'scalar', chartKind: 'line', group: 'plant', isDefaultVisible: true }),
   metric({ long_name_for_code: 'crop_stage_code', label: 'Фаза культуры', unit: '', valueKind: 'scalar', chartKind: 'table', group: 'plant', isDefaultVisible: true }),
-  metric({ long_name_for_code: 'days_after_sowing', label: 'Дней после сева', unit: 'дн.', valueKind: 'scalar', chartKind: 'line', group: 'plant', isDefaultVisible: false }),
+  metric({ long_name_for_code: 'days_after_sowing', label: 'Дней после посадки', unit: 'дн.', valueKind: 'scalar', chartKind: 'line', group: 'plant', isDefaultVisible: false }),
   metric({ long_name_for_code: 'drainage_runoff_daily_mm', label: 'Дренаж/сток', unit: 'мм/сутки', valueKind: 'scalar', chartKind: 'bar', group: 'diagnostics', isDefaultVisible: true }),
   metric({ long_name_for_code: 'calculation_diagnostics_json', label: 'Диагностика расчёта', unit: '', valueKind: 'scalar', chartKind: 'diagnostics', group: 'diagnostics', isDefaultVisible: false }),
   metric({ long_name_for_code: 'calculation_warnings_json', label: 'Предупреждения расчёта', unit: '', valueKind: 'scalar', chartKind: 'diagnostics', group: 'diagnostics', isDefaultVisible: false })

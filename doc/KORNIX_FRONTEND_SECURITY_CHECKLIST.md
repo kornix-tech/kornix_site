@@ -6,7 +6,7 @@
 - [x] Logout posts to `/api/v2/auth/logout`.
 - [x] CSRF token is sent on unsafe requests.
 - [x] One CSRF refresh/retry is implemented for `CSRF_TOKEN_INVALID`.
-- [x] No KORNIX legacy `/api/v2/kornix/*` calls in `src`.
+- [x] No KORNIX legacy `/api/v1/kornix/*` calls in `src`.
 - [x] No admin API calls in `src`.
 - [x] `irrigationMm=0` is not serialized.
 - [x] Approval submit uses backend `managedScope` and strips backend-only metadata.

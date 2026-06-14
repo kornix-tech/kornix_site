@@ -112,15 +112,6 @@ function formatCardDate(value: string | null | undefined): string {
   return `${isoDate[3]}.${isoDate[2]}.${isoDate[1].slice(2)}`;
 }
 
-function addDaysIso(day: string | null | undefined, days: number): string | null {
-  if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
-    return null;
-  }
-  const date = new Date(`${day}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
 function buildCompactTooltipLines(field: FieldSeasonMapPropertiesDto, regulationRange: FieldRegulationRange): string[] {
   const derived = deriveWaterMetrics(field);
   const fieldName = field.fieldDisplayName || stripTenantPrefix(field.fieldName || field.fieldKey);
@@ -131,7 +122,10 @@ function buildCompactTooltipLines(field: FieldSeasonMapPropertiesDto, regulation
   const availablePercent = field.soil_water_available_pct_taw ?? derived.available_water_fraction_pct;
   const irrigationToRegulationBoundaries = formatIrrigationToRegulationBoundaries(field, regulationRange);
   const weeklyIrrigationToRegulationBoundaries = formatWeeklyIrrigationToRegulationBoundaries(field, regulationRange);
-  const forecastSevenDayDate = field.forecastSevenDayDate ?? addDaysIso(field.day, 7);
+  const forecastSevenDayDate = field.forecastSevenDayDate ?? null;
+  const forecastSevenDayTitle = forecastSevenDayDate
+    ? `${formatCardDate(forecastSevenDayDate)} (прогноз на семь дней)`
+    : 'Прогноз на семь дней недоступен';
   const forecastSevenDayDeficit =
     typeof field.forecastSevenDayEvapotranspirationSumMm === 'number' &&
     Number.isFinite(field.forecastSevenDayEvapotranspirationSumMm) &&
@@ -152,7 +146,7 @@ function buildCompactTooltipLines(field: FieldSeasonMapPropertiesDto, regulation
     )}% доступных)`,
     `Влажность корнеобитаемого слоя ${formatRootZoneFieldCapacityPercent(field)} НВ`,
     `Полив до нижней границы регулирования ${irrigationToRegulationBoundaries.lower} мм, до верхней ${irrigationToRegulationBoundaries.upper} мм`,
-    `${formatCardDate(forecastSevenDayDate)} (прогноз на семь дней)`,
+    forecastSevenDayTitle,
     `Суммарное испарение ${formatNumber(
       field.forecastSevenDayEvapotranspirationSumMm
     )} мм, сумма осадков ${formatNumber(
