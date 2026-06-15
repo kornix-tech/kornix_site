@@ -28,6 +28,25 @@ The reverse proxy routes:
 - `/` to frontend static container.
 - `/api/` to backend.
 
+Supported deployment topologies:
+
+```text
+Local dev:
+  browser -> Vite 5173 -> /api proxy -> host.docker.internal:8001 -> backend app
+
+Local standalone nginx:
+  browser -> frontend nginx 8080 -> /api proxy -> host.docker.internal:8001 -> backend app
+
+VDS production:
+  browser -> Caddy 80/443 -> /api -> app:8000
+                         -> /    -> frontend:80
+```
+
+Do not use the standalone frontend compose as the main VDS reverse proxy. It is
+only a local production-like smoke topology and expects backend API to be
+published on host port `8001`. In unified VDS compose, backend `app` is exposed
+inside the Docker network as `app:8000`, and Caddy owns public `/api/*` routing.
+
 Do not publish frontend dev port `5173`, backend app ports, admin port or DB
 port to the Internet.
 
@@ -49,6 +68,7 @@ docker build -f Dockerfile.prod -t kornix-frontend-vds-smoke .
 docker run --rm -d --name kornix-frontend-vds-smoke \
   -p 127.0.0.1:18081:80 kornix-frontend-vds-smoke
 sh scripts/frontend_stage1_nginx_smoke.sh 18081
+npm run check:production-bundle
 docker rm -f kornix-frontend-vds-smoke
 ```
 
@@ -58,10 +78,11 @@ The production smoke must prove:
 - `/healthz` returns `200`.
 - missing `/assets/*` returns `404`.
 - `/api/*` is proxied to backend JSON/API, not SPA fallback.
+- production bundle does not contain `localhost:8001` or `127.0.0.1:8001`.
 
-`nginx.conf` intentionally resolves the `/api/` upstream at request time via
-Docker DNS. The frontend container must start and pass static SPA smoke even
-when backend DNS is not available during nginx startup.
+`nginx.conf` resolves `host.docker.internal` through the container hosts file
+provided by `extra_hosts`. Do not reintroduce a variable-based `proxy_pass` for
+this upstream: that makes nginx bypass `/etc/hosts` and ask Docker DNS instead.
 
 ## Documentation Gate
 

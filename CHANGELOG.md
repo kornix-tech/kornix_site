@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Fixed
+- Production-like env template, README и VDS docs теперь явно разделяют local
+  Vite, local standalone nginx и unified VDS/Caddy топологии; базовый
+  `.env.example` больше не встраивает прямой `localhost:8001` API URL в bundle.
 - Standalone nginx frontend снова проксирует `/api/*` в локальный backend через
   `host.docker.internal:8001`: upstream резолвится через `extra_hosts`, а
   production-like compose больше не наследует dev-only `VITE_API_BASE_URL`.
@@ -75,6 +78,11 @@
   timeout-механизм, что и остальные frontend API-запросы.
 
 ### Technical
+- `.env.local` явно добавлен в `.gitignore`, чтобы локальные frontend/API
+  настройки не попадали в production commit.
+- Добавлен smoke-gate `npm run check:production-bundle`, который падает, если
+  production `dist/` содержит прямой backend URL `localhost:8001` или
+  `127.0.0.1:8001`.
 - Production nginx `/api/` proxy resolves `host.docker.internal` through the
   container hosts file instead of Docker DNS, matching the local standalone
   frontend compose contract.

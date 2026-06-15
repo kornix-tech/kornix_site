@@ -36,6 +36,7 @@ npm audit --omit=dev --audit-level=high
 
 ```bash
 npm run build
+npm run check:production-bundle
 ```
 
 Если локальный Windows Node запускается поверх WSL `node_modules` и Vite/Rollup
@@ -82,10 +83,15 @@ VITE_KORNIX_CALCULATION_TIMEOUT_MS=120000
 ## VDS Topology
 
 ```text
-Internet
-  -> HTTPS reverse proxy, public 80/443
-    -> /      frontend static container
-    -> /api/  backend API
+Local dev:
+  browser -> Vite 5173 -> /api proxy -> host.docker.internal:8001 -> backend app
+
+Local standalone nginx:
+  browser -> frontend nginx 8080 -> /api proxy -> host.docker.internal:8001 -> backend app
+
+VDS production:
+  browser -> Caddy 80/443 -> /api -> app:8000
+                         -> /    -> frontend:80
 
 Private only:
   backend app internal/local port
@@ -113,12 +119,14 @@ docker compose \
 ```env
 KORNIX_FRONTEND_BIND=127.0.0.1
 KORNIX_FRONTEND_PORT=8080
-VITE_API_BASE_URL=/api
+KORNIX_FRONTEND_API_BASE_URL=/api
 VITE_KORNIX_CALCULATION_TIMEOUT_MS=120000
 ```
 
-Если frontend контейнер стоит за внешним reverse proxy, наружу публикуется
-только reverse proxy, а frontend bind остаётся локальным.
+Standalone frontend nginx ожидает backend на host-порту `8001` и подходит для
+локального production-like smoke. В unified VDS compose backend не публикует
+`8001` наружу: публичный `/api/*` должен обслуживать Caddy и проксировать в
+Docker-сети на `app:8000`.
 
 ## Post-Deploy Smoke
 

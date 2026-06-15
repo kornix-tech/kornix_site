@@ -60,13 +60,14 @@ check_present "/api/v2/auth/login" "login form must target backend session login
 check_present "CSRF_TOKEN_INVALID" "unsafe requests must handle CSRF token refresh policy"
 
 check_file_contains ".env.production.example" "^VITE_API_BASE_URL=/api$" "production env example must use same-origin /api"
+check_file_contains ".env.example" "^VITE_API_BASE_URL=/api$" "default env example must use same-origin /api"
 if grep -R -n -E "VITE_(AUTH_MODE|ENABLE_[Mm][Oo][Cc][Kk]_API|ALLOW_PRIVATE_[Mm][Oo][Cc][Kk]_RUNTIME|KORNIX_API_VERSION)" \
   .env.example .env.local.example .env.integration.example .env.production.example .env.vds.example docker-compose.dev.yml >/tmp/kornix-contract-grep.txt; then
   cat /tmp/kornix-contract-grep.txt >&2
   echo "frontend contract check failed: retired env toggles must not be documented or wired into compose" >&2
   exit 1
 fi
-check_file_contains "docker-compose.yml" "KORNIX_API_BASE_URL: \\$\\{VITE_API_BASE_URL:-/api\\}" "production compose default API base must be /api"
+check_file_contains "docker-compose.yml" "KORNIX_API_BASE_URL: \\$\\{KORNIX_FRONTEND_API_BASE_URL:-/api\\}" "production compose default API base must be /api"
 check_file_contains "nginx.conf" "Content-Security-Policy" "production nginx must set CSP"
 check_file_contains "nginx.conf" "proxy_read_timeout 130s" "production nginx must keep long approval/recalculation API calls open"
 if grep -E "localhost:8000|127\\.0\\.0\\.1:8000|localhost:8001|127\\.0\\.0\\.1:8001" nginx.conf >/dev/null; then
