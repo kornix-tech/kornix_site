@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Fixed
+- Standalone nginx frontend снова проксирует `/api/*` в локальный backend через
+  `host.docker.internal:8001`: upstream резолвится через `extra_hosts`, а
+  production-like compose больше не наследует dev-only `VITE_API_BASE_URL`.
 - Frontend больше не подставляет browser-derived даты вместо backend
   `current-context`: при недоступном контексте рабочее пространство показывает
   явную загрузку/ошибку, а API-запросы карты, графика и ввода поливов не
@@ -72,9 +75,9 @@
   timeout-механизм, что и остальные frontend API-запросы.
 
 ### Technical
-- Production nginx `/api/` proxy now resolves backend upstream at request time
-  through Docker DNS, so the static frontend container can start for VDS/static
-  smoke even when backend host DNS is unavailable during nginx startup.
+- Production nginx `/api/` proxy resolves `host.docker.internal` through the
+  container hosts file instead of Docker DNS, matching the local standalone
+  frontend compose contract.
 - Production nginx proxy получил таймауты для длинных approval/recalculation
   API-запросов, согласованные с frontend calculation timeout.
 
