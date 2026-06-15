@@ -3,11 +3,12 @@
 ## Required Environment
 
 ```env
-VITE_API_BASE_URL=http://localhost:8001
+VITE_API_BASE_URL=/api
 VITE_KORNIX_CALCULATION_TIMEOUT_MS=120000
+KORNIX_DEV_API_PROXY_TARGET=http://host.docker.internal:8001
 ```
 
-Restart Vite after changing any `VITE_*` value.
+Restart Vite after changing any `VITE_*` value or proxy target.
 
 ## Local Run
 
@@ -15,11 +16,11 @@ Restart Vite after changing any `VITE_*` value.
 make integration-dev
 ```
 
-This starts the frontend against the local backend API on port `8001`.
-Inside Docker the Vite dev server proxies same-origin `/api/*` requests to
-`KORNIX_DEV_API_PROXY_TARGET`, which defaults to
-`http://host.docker.internal:8001`. Keep `VITE_API_BASE_URL` set to
-`http://localhost:8001`; the proxy target is only the container-to-host route.
+This starts the frontend with same-origin `/api/*` browser requests. The Vite
+dev server proxies them to `KORNIX_DEV_API_PROXY_TARGET`; use
+`http://localhost:8001` for a local non-Docker backend and the
+`docker-compose.dev.yml` default `http://host.docker.internal:8001` inside
+Docker.
 
 ## Checks
 

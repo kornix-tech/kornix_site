@@ -61,6 +61,13 @@ check_present "CSRF_TOKEN_INVALID" "unsafe requests must handle CSRF token refre
 
 check_file_contains ".env.production.example" "^VITE_API_BASE_URL=/api$" "production env example must use same-origin /api"
 check_file_contains ".env.example" "^VITE_API_BASE_URL=/api$" "default env example must use same-origin /api"
+check_file_contains ".env.integration.example" "^VITE_API_BASE_URL=/api$" "integration env example must use same-origin /api"
+check_file_contains ".env.local.example" "^VITE_API_BASE_URL=/api$" "local env example must use same-origin /api"
+check_file_contains ".env.integration.example" "^KORNIX_DEV_API_PROXY_TARGET=http://host\\.docker\\.internal:8001$" "integration env example must target host backend from Docker"
+check_file_contains ".env.local.example" "^KORNIX_DEV_API_PROXY_TARGET=http://host\\.docker\\.internal:8001$" "local env example must target host backend from Docker"
+check_file_contains "docker-compose.dev.yml" 'VITE_API_BASE_URL: \$\{VITE_API_BASE_URL:-/api\}' "dev compose browser API base must be /api"
+check_file_contains "vite.config.ts" "loadEnv\\(mode, process\\.cwd\\(\\), ''\\)" "dev proxy target must be loadable from env files"
+check_file_contains "vite.config.ts" "env\\.KORNIX_DEV_API_PROXY_TARGET \\|\\| 'http://localhost:8001'" "dev proxy target must not reuse VITE_API_BASE_URL"
 if grep -R -n -E "VITE_(AUTH_MODE|ENABLE_[Mm][Oo][Cc][Kk]_API|ALLOW_PRIVATE_[Mm][Oo][Cc][Kk]_RUNTIME|KORNIX_API_VERSION)" \
   .env.example .env.local.example .env.integration.example .env.production.example .env.vds.example docker-compose.dev.yml >/tmp/kornix-contract-grep.txt; then
   cat /tmp/kornix-contract-grep.txt >&2

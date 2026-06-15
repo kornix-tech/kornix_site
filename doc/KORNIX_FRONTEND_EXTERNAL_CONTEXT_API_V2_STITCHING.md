@@ -7,7 +7,8 @@ Frontend targets the user-facing KORNIX API v2 workflow and BFF auth.
 ## Runtime
 
 - Frontend dev URL: `http://localhost:5173`
-- Backend API base: `http://localhost:8001`
+- Browser API base: same-origin `/api`
+- Local Vite proxy target: `http://localhost:8001`
 - Auth endpoints: `/api/v2/me`, `/api/v2/auth/csrf`, `/api/v2/auth/logout`
 - KORNIX endpoints: `/api/v2/kornix/*`
 

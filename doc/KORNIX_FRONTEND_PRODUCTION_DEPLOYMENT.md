@@ -66,6 +66,7 @@ Run before VDS deploy in Linux/Docker environment:
 ```bash
 docker build -f Dockerfile.prod -t kornix-frontend-vds-smoke .
 docker run --rm -d --name kornix-frontend-vds-smoke \
+  --add-host=host.docker.internal:host-gateway \
   -p 127.0.0.1:18081:80 kornix-frontend-vds-smoke
 sh scripts/frontend_stage1_nginx_smoke.sh 18081
 npm run check:production-bundle

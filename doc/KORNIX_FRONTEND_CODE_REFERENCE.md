@@ -41,7 +41,7 @@ Production-инварианты:
 - `/water-regime/:organizationCode/:seasonYear`;
 - `/irrigation-input/:organizationCode/:seasonYear`;
 - legacy routes `/map`, `/water-regime`, `/irrigation`, `/workspace`;
-- fallback на `/fields/sp/2026`.
+- fallback на нейтральный `/workspace`.
 
 Friendly routes являются canonical URL для VDS. Технические параметры
 экрана остаются в query string только там, где они нужны для восстановления
@@ -229,7 +229,7 @@ Production-инварианты:
 - выбор/снятие всех видимых полей;
 - фон карточки по текущей frontend-зоне влагозапасов;
 - круглый forecast indicator по зоне на конец прогноза;
-- hover-подсказки: `Нужен полив`, `Требуется анализ`,
+- hover-подсказки: `Влажно`, `Сухо`, `Нужен полив`,
   `Влагозапасы в норме`.
 
 Правило сопровождения: не дублировать левую плашку в других экранах. Если
@@ -484,12 +484,13 @@ VITE_KORNIX_CALCULATION_TIMEOUT_MS=120000
 Dev integration:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8001
+VITE_API_BASE_URL=/api
 KORNIX_DEV_API_PROXY_TARGET=http://host.docker.internal:8001
 ```
 
-После изменения `VITE_*` нужно перезапустить Vite или пересобрать production
-bundle.
+Для non-Docker Vite можно переопределить proxy target на
+`http://localhost:8001`. После изменения `VITE_*` или proxy target нужно
+перезапустить Vite или пересобрать production bundle.
 
 ## Deployment Files
 
@@ -519,7 +520,9 @@ Production-like build/smoke:
 
 ```bash
 docker build -f Dockerfile.prod -t kornix-frontend-vds-smoke .
-docker run --rm -d --name kornix-frontend-vds-smoke -p 127.0.0.1:18081:80 kornix-frontend-vds-smoke
+docker run --rm -d --name kornix-frontend-vds-smoke \
+  --add-host=host.docker.internal:host-gateway \
+  -p 127.0.0.1:18081:80 kornix-frontend-vds-smoke
 sh scripts/frontend_stage1_nginx_smoke.sh 18081
 docker rm -f kornix-frontend-vds-smoke
 ```

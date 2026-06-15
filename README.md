@@ -65,8 +65,9 @@ http://localhost:5173
 
 Для smoke-проверки с локальным backend API используйте `.env.integration.example`.
 Этот профиль запускает frontend только через backend session и направляет
-запросы на `http://localhost:8001`. Auth/session/CSRF endpoints и
-пользовательский KORNIX calculation API работают через `/api/v2/*`:
+browser-запросы в same-origin `/api/*`; Vite dev proxy отправляет их в локальный
+backend. Auth/session/CSRF endpoints и пользовательский KORNIX calculation API
+работают через `/api/v2/*`:
 
 ```bash
 make integration-dev
@@ -105,6 +106,7 @@ Production static smoke для Stage 1:
 ```bash
 docker build -f Dockerfile.prod -t kornix-frontend-stage1-smoke .
 docker run --rm -d --name kornix-frontend-stage1-smoke \
+  --add-host=host.docker.internal:host-gateway \
   -p 127.0.0.1:18081:80 kornix-frontend-stage1-smoke
 sh scripts/frontend_stage1_nginx_smoke.sh 18081
 docker rm -f kornix-frontend-stage1-smoke

@@ -42,7 +42,8 @@ profile-timeseries returns all 44 required metrics including
 ## Browser Smoke
 
 - Open `http://localhost:5173/fields/sp/2026`
-- Confirm network requests target `http://localhost:8001`
+- Confirm browser network requests target same-origin `/api/*`; Vite forwards
+  them to the backend proxy target.
 - Confirm selected method is `simple_eto_single_layer_soil`
 - Confirm map/profile render
 - Open irrigation tab and confirm active layer is visible
