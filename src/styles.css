@@ -976,6 +976,18 @@ input[type='checkbox'] {
   transform: translate(0, -50%);
 }
 
+.field-list-zone-upper_warning.field-status-card::after {
+  border-color: rgb(90 159 189 / 30%);
+  background: rgb(223 244 255 / 96%);
+  color: #245a70;
+}
+
+.field-list-zone-lower_warning.field-status-card::after {
+  border-color: rgb(216 177 62 / 34%);
+  background: rgb(255 248 223 / 96%);
+  color: #6f560f;
+}
+
 .field-status-ok {
   background: #edf8e8 !important;
   border-color: rgb(95 143 47 / 20%) !important;
@@ -998,7 +1010,11 @@ input[type='checkbox'] {
   border-color: rgb(80 97 116 / 20%) !important;
 }
 
-.field-list-zone-upper_warning,
+.field-list-zone-upper_warning {
+  background: #dff4ff !important;
+  border-color: rgb(90 159 189 / 30%) !important;
+}
+
 .field-list-zone-lower_warning {
   background: #fff8df !important;
   border-color: rgb(216 177 62 / 32%) !important;
@@ -1065,7 +1081,10 @@ input[type='checkbox'] {
   background: #b0b4b8;
 }
 
-.field-forecast-dot-zone-upper_warning,
+.field-forecast-dot-zone-upper_warning {
+  background: #8ed3ef;
+}
+
 .field-forecast-dot-zone-lower_warning {
   background: #f2d36b;
 }

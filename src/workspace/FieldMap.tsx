@@ -55,6 +55,7 @@ function styleForMoistureZone(zone: FieldMoistureZoneCode | undefined): L.PathOp
     case 'regulation':
       return { ...base, color: '#4f8f37', fillColor: '#eaf6e3' };
     case 'upper_warning':
+      return { ...base, color: '#5a9fbd', fillColor: '#dff4ff' };
     case 'lower_warning':
       return { ...base, color: '#b8941c', fillColor: '#fff8df' };
     case 'wilting_stress':

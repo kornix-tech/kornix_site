@@ -2310,7 +2310,7 @@ function CompositeProfileChart({
               dataKey="upperRegulationWarningRangeFact"
               name="Запас выше диапазона регулирования"
               stroke="none"
-              fill="#fff1b8"
+              fill="#dff4ff"
               fillOpacity={fillOpacityFor('regulationRange', 0.34)}
               tooltipType="none"
               connectNulls={false}
@@ -2320,7 +2320,7 @@ function CompositeProfileChart({
               dataKey="upperRegulationWarningRangeForecast"
               name="Запас выше диапазона регулирования"
               stroke="none"
-              fill="#fff1b8"
+              fill="#dff4ff"
               fillOpacity={fillOpacityFor('regulationRange', 0.14)}
               tooltipType="none"
               connectNulls={false}

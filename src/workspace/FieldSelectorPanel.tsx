@@ -16,9 +16,9 @@ type FieldSearchableProperties = FieldSeasonMapFeatureCollection['features'][num
 export type FieldMoistureZoneCode = 'upper_warning' | 'regulation' | 'lower_warning' | 'wilting_stress' | 'no_data';
 
 const fieldMoistureZoneLabels: Record<FieldMoistureZoneCode, string> = {
-  upper_warning: 'Требуется анализ',
+  upper_warning: 'Влажно',
   regulation: 'Влагозапасы в норме',
-  lower_warning: 'Требуется анализ',
+  lower_warning: 'Сухо',
   wilting_stress: 'Нужен полив',
   no_data: 'Состояние поля: нет данных'
 };
@@ -182,12 +182,14 @@ export function FieldListPanel({
           const displayFieldKey = formatFieldKey(field.fieldKey);
           const forecastMoistureZone = forecastMoistureZones?.get(field.fieldSeasonId) ?? 'no_data';
           const fieldMoistureZone = currentMoistureZones?.get(field.fieldSeasonId) ?? 'no_data';
+          const fieldMoistureZoneLabelText = fieldMoistureZoneLabel(fieldMoistureZone);
           const forecastMoistureZoneLabel = fieldMoistureZoneLabel(forecastMoistureZone);
           return (
             <label
               key={field.fieldSeasonId}
               className={`field-list-item field-status-card field-list-zone-${fieldMoistureZone}`}
-              data-status-label={fieldMoistureZoneLabel(fieldMoistureZone)}
+              data-status-label={fieldMoistureZoneLabelText}
+              title={`Текущий день: ${fieldMoistureZoneLabelText}. Последний день прогноза: ${forecastMoistureZoneLabel}`}
             >
               <input
                 type="checkbox"

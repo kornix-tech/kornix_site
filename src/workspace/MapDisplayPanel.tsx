@@ -15,8 +15,9 @@ const displayOptions: Array<{ value: MapDisplayMode; label: string }> = [
 ];
 
 const statusLegend: LegendItem[] = [
+  { label: 'Влажно', color: '#dff4ff' },
   { label: 'Норма', color: '#eaf6e3' },
-  { label: 'Требуется анализ', color: '#fff8df' },
+  { label: 'Сухо', color: '#fff8df' },
   { label: 'Нужен полив', color: '#fff0f0' },
   { label: 'Нет данных', color: '#f0f3ef' }
 ];
